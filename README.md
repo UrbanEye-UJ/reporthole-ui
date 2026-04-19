@@ -52,10 +52,14 @@ The Reporthole frontend is a web application built with Next.js that allows civi
 
 ## Running locally for development
 
+Create a folder called `reporthole` and navigate into it:
+
+```bash
+
 ### 1. Clone the repo and navigate to the frontend
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/UrbanEye-UJ/reporthole-ui.git
 cd reporthole/reporthole-fe
 ```
 
@@ -67,11 +71,9 @@ npm install
 
 ### 3. Set up your environment variables
 
-Copy the example env file:
+Create a file called `.env.local` in the `reporthole-fe` folder:
 
 ```bash
-cp .env.example .env.local
-```
 
 Open `.env.local` and fill in the values — ask a teammate if you are unsure:
 
