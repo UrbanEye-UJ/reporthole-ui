@@ -20,6 +20,12 @@ export default defineConfig({
             client: "react-query",
             httpClient: "axios",
             clean: true,
+            override: {
+                mutator: {
+                    path: "./lib/axios.ts",
+                    name: "apiClient",
+                },
+            },
         },
     },
 });

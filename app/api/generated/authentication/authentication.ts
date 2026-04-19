@@ -13,18 +13,7 @@ import type {
   UseMutationResult
 } from '@tanstack/react-query';
 
-import axios from 'axios';
 import type {
-  AxiosError,
-  AxiosRequestConfig,
-  AxiosResponse
-} from 'axios';
-
-import type {
-  Login200,
-  Login400,
-  Login404,
-  Login500,
   LoginRequest,
   RegisterRequest,
   Save201,
@@ -32,6 +21,7 @@ import type {
   Save500
 } from '../openAPIDefinition.schemas';
 
+import { apiClient } from '../../../../lib/axios';
 
 
 
@@ -41,28 +31,31 @@ import type {
  * @summary Register user
  */
 export const save = (
-    registerRequest: RegisterRequest, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<Save201>> => {
-    
-    
-    return axios.post(
-      `/auth/register`,
-      registerRequest,options
-    );
-  }
+    registerRequest: RegisterRequest,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<Save201>(
+      {url: `/auth/register`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: registerRequest, signal
+    },
+      );
+    }
+  
 
 
-
-export const getSaveMutationOptions = <TError = AxiosError<Save400 | Save500>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof save>>, TError,{data: RegisterRequest}, TContext>, axios?: AxiosRequestConfig}
+export const getSaveMutationOptions = <TError = Save400 | Save500,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof save>>, TError,{data: RegisterRequest}, TContext>, }
 ): UseMutationOptions<Awaited<ReturnType<typeof save>>, TError,{data: RegisterRequest}, TContext> => {
 
 const mutationKey = ['save'];
-const {mutation: mutationOptions, axios: axiosOptions} = options ?
+const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, axios: undefined};
+      : {mutation: { mutationKey, }};
 
       
 
@@ -70,7 +63,7 @@ const {mutation: mutationOptions, axios: axiosOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof save>>, {data: RegisterRequest}> = (props) => {
           const {data} = props ?? {};
 
-          return  save(data,axiosOptions)
+          return  save(data,)
         }
 
         
@@ -80,13 +73,13 @@ const {mutation: mutationOptions, axios: axiosOptions} = options ?
 
     export type SaveMutationResult = NonNullable<Awaited<ReturnType<typeof save>>>
     export type SaveMutationBody = RegisterRequest
-    export type SaveMutationError = AxiosError<Save400 | Save500>
+    export type SaveMutationError = Save400 | Save500
 
     /**
  * @summary Register user
  */
-export const useSave = <TError = AxiosError<Save400 | Save500>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof save>>, TError,{data: RegisterRequest}, TContext>, axios?: AxiosRequestConfig}
+export const useSave = <TError = Save400 | Save500,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof save>>, TError,{data: RegisterRequest}, TContext>, }
  ): UseMutationResult<
         Awaited<ReturnType<typeof save>>,
         TError,
@@ -103,28 +96,31 @@ export const useSave = <TError = AxiosError<Save400 | Save500>,
  * @summary Login user
  */
 export const login = (
-    loginRequest: LoginRequest, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<Login200>> => {
-    
-    
-    return axios.post(
-      `/auth/login`,
-      loginRequest,options
-    );
-  }
+    loginRequest: LoginRequest,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<string>(
+      {url: `/auth/login`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: loginRequest, signal
+    },
+      );
+    }
+  
 
 
-
-export const getLoginMutationOptions = <TError = AxiosError<Login400 | Login404 | Login500>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: LoginRequest}, TContext>, axios?: AxiosRequestConfig}
+export const getLoginMutationOptions = <TError = string | string | string,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: LoginRequest}, TContext>, }
 ): UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: LoginRequest}, TContext> => {
 
 const mutationKey = ['login'];
-const {mutation: mutationOptions, axios: axiosOptions} = options ?
+const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
       : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, axios: undefined};
+      : {mutation: { mutationKey, }};
 
       
 
@@ -132,7 +128,7 @@ const {mutation: mutationOptions, axios: axiosOptions} = options ?
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof login>>, {data: LoginRequest}> = (props) => {
           const {data} = props ?? {};
 
-          return  login(data,axiosOptions)
+          return  login(data,)
         }
 
         
@@ -142,13 +138,13 @@ const {mutation: mutationOptions, axios: axiosOptions} = options ?
 
     export type LoginMutationResult = NonNullable<Awaited<ReturnType<typeof login>>>
     export type LoginMutationBody = LoginRequest
-    export type LoginMutationError = AxiosError<Login400 | Login404 | Login500>
+    export type LoginMutationError = string | string | string
 
     /**
  * @summary Login user
  */
-export const useLogin = <TError = AxiosError<Login400 | Login404 | Login500>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: LoginRequest}, TContext>, axios?: AxiosRequestConfig}
+export const useLogin = <TError = string | string | string,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: LoginRequest}, TContext>, }
  ): UseMutationResult<
         Awaited<ReturnType<typeof login>>,
         TError,
