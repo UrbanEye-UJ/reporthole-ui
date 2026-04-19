@@ -1,36 +1,231 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Reporthole Frontend
 
-## Getting Started
+The Reporthole frontend is a web application built with Next.js that allows civilians to report road incidents in real time. It connects to the `reporthole-be` Spring Boot backend via a generated API client.
 
-First, run the development server:
+---
+
+## Tech stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16 |
+| Language | TypeScript 5 |
+| UI Library | React 19 |
+| Styling | Tailwind CSS 4 |
+| API Client | orval (generated from OpenAPI spec) |
+| Linting | ESLint 9 |
+| Package manager | npm |
+
+---
+
+## Documentation
+
+| Guide | Description |
+|-------|-------------|
+| [DEV_SETUP.md](#) *(this file — dev section)* | Set up your machine to write and run code |
+| [DOCKER.md](#) *(this file — docker section)* | Run the frontend via Docker for testing |
+| [GIT_GUIDE.md](GIT_GUIDE.md) | Git workflow, branches, and commit conventions |
+
+> The backend must be running before the frontend will work. See the backend [README](../reporthole-be/README.md) to get it started first.
+
+---
+
+## Prerequisites
+
+### For coding (local dev)
+
+| Tool | Version | Download |
+|------|---------|----------|
+| Node.js | 20 LTS | https://nodejs.org/en/download — select **LTS** |
+| npm | Comes with Node | Included with Node.js |
+| Git | Any | https://git-scm.com |
+| VS Code or IntelliJ | Latest | https://code.visualstudio.com or https://www.jetbrains.com/idea |
+
+### For testing only (Docker)
+
+| Tool | Version | Download |
+|------|---------|----------|
+| Docker Desktop | Latest | https://www.docker.com/products/docker-desktop |
+| Git | Any | https://git-scm.com |
+
+---
+
+## Running locally for development
+
+### 1. Clone the repo and navigate to the frontend
+
+```bash
+git clone <your-repo-url>
+cd reporthole/reporthole-fe
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Set up your environment variables
+
+Copy the example env file:
+
+```bash
+cp .env.example .env.local
+```
+
+Open `.env.local` and fill in the values — ask a teammate if you are unsure:
+
+```env
+REPORTHOLE_API_BASE_URL=http://localhost:8080/api
+```
+
+> `.env.local` is already in `.gitignore`. Never commit it.
+
+### 4. Start the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The app will be available at http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The dev server has hot reload — any changes you save will reflect in the browser immediately without restarting.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## Generating the API client
 
-To learn more about Next.js, take a look at the following resources:
+The frontend uses **orval** to generate a typed API client from the backend's OpenAPI spec. Whenever the backend API changes, you need to regenerate the client.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Make sure the backend is running first, then:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run generate:api
+```
 
-## Deploy on Vercel
+This reads the OpenAPI spec from the running backend and regenerates the typed client code. Commit the generated files after running this.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+> If you get an error, check that the backend is running at `http://localhost:8080/api` and that the Swagger spec is accessible at `http://localhost:8080/api/swagger-ui/index.html`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## Available scripts
+
+| Command | What it does |
+|---------|-------------|
+| `npm run dev` | Start the development server with hot reload |
+| `npm run build` | Build the app for production |
+| `npm run start` | Run the production build locally |
+| `npm run lint` | Check for linting errors |
+| `npm run generate:api` | Regenerate the API client from the backend OpenAPI spec |
+
+---
+
+## Project structure
+
+```
+reporthole-fe/
+├── app/                    # Next.js app router — pages and layouts
+├── components/             # Reusable UI components
+├── lib/                    # Utilities, API client, helpers
+├── public/                 # Static assets (images, icons)
+├── .env.local              # Your local environment variables (never commit)
+├── .env.example            # Template — copy this to .env.local
+├── middleware.ts           # Next.js middleware (auth guards, redirects)
+├── next.config.ts          # Next.js configuration
+├── orval.config.ts         # orval API generation config
+├── tailwind.config         # Tailwind CSS configuration (via postcss.config.mjs)
+├── tsconfig.json           # TypeScript configuration
+└── package.json
+```
+
+---
+
+## Running via Docker
+
+If you just want to run the frontend to test it without setting up Node.js:
+
+### 1. Make sure the backend is running first
+
+See the backend [DOCKER.md](../reporthole-be/DOCKER.md) and get it running before continuing.
+
+### 2. Navigate to the frontend folder
+
+```bash
+cd reporthole/reporthole-fe
+```
+
+### 3. Create your `.env.local` file
+
+```bash
+cp .env.example .env.local
+```
+
+The default value should work as-is if the backend is running locally:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8080/api
+```
+
+### 4. Build and run the Docker container
+
+```bash
+docker build -t reporthole-fe .
+docker run -p 3000:3000 --env-file .env.local reporthole-fe
+```
+
+The app will be available at http://localhost:3000
+
+### 5. Stopping the container
+
+```bash
+# Find the container ID
+docker ps
+
+# Stop it
+docker stop <container-id>
+```
+
+---
+
+## Common issues
+
+**`npm install` fails with permission errors (Mac/Linux)**
+
+Do not use `sudo npm install`. Instead fix npm permissions:
+
+```bash
+npm config set prefix ~/.npm-global
+export PATH=~/.npm-global/bin:$PATH
+```
+
+**`npm run dev` — port 3000 already in use**
+
+Kill whatever is on port 3000:
+
+```bash
+# Mac/Linux
+lsof -ti:3000 | xargs kill
+
+# Windows (PowerShell)
+netstat -ano | findstr :3000
+# then: taskkill /PID <pid> /F
+```
+
+Or just run on a different port:
+
+```bash
+npm run dev -- -p 3001
+```
+
+**API requests fail / CORS errors**
+
+Make sure the backend is running at `http://localhost:8080/api` and that `NEXT_PUBLIC_API_URL` in your `.env.local` matches that address exactly.
+
+**`npm run generate:api` fails**
+
+The backend must be running when you run this command. Start it first, wait for it to be healthy, then try again.
+
+**Changes not showing in the browser**
+
+The dev server has hot reload but occasionally gets out of sync. Stop it with `Ctrl + C` and run `npm run dev` again.
