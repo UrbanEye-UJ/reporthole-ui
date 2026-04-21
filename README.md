@@ -22,9 +22,7 @@ The Reporthole frontend is a web application built with Next.js that allows civi
 
 | Guide | Description |
 |-------|-------------|
-| [DEV_SETUP.md](#) *(this file — dev section)* | Set up your machine to write and run code |
-| [DOCKER.md](#) *(this file — docker section)* | Run the frontend via Docker for testing |
-| [GIT_GUIDE.md](GIT_GUIDE.md) | Git workflow, branches, and commit conventions |
+| [GIT_GUIDE.md](docs/GITHUBDESKTOP.md) | Git workflow, branches, and commit conventions |
 
 > The backend must be running before the frontend will work. See the backend [README](../reporthole-be/README.md) to get it started first.
 
