@@ -18,12 +18,19 @@ export default function LoginPage() {
     const { mutate: login, isPending } = useLogin({
         mutation: {
             onSuccess: (response) => {
-                // response.data is a plain JWT string (responseType: 'text' in generated client)
-                const token = response.data;
+                const token = response.data?.token;
+                const role = response.data?.role;
 
-                document.cookie = `reporthole_token=${token}; path=/; max-age=${60 * 60 * 24}; SameSite=Strict`;
+                const maxAge = 60 * 60 * 24;
+                document.cookie = `reporthole_token=${token}; path=/; max-age=${maxAge}; SameSite=Strict`;
+                document.cookie = `reporthole_role=${role}; path=/; max-age=${maxAge}; SameSite=Strict`;
 
-                router.push("/civilian/dashboard");
+                const dashboards: Record<string, string> = {
+                    CIVILIAN: "/civilian/dashboard",
+                    ADMIN: "/admin/dashboard",
+                    CONTRACTOR: "/contractor/dashboard",
+                };
+                router.push(dashboards[role ?? ""] ?? "/civilian/dashboard");
             },
             onError: (err) => {
                 const status = err.response?.status;
