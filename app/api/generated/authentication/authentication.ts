@@ -9,16 +9,16 @@ import {
 } from '@tanstack/react-query';
 import type {
   MutationFunction,
+  QueryClient,
   UseMutationOptions,
   UseMutationResult
 } from '@tanstack/react-query';
 
 import type {
+  AppResponseAuthResponse,
+  AppResponseVoid,
   LoginRequest,
-  RegisterRequest,
-  Save201,
-  Save400,
-  Save500
+  RegisterRequest
 } from '../openAPIDefinition.schemas';
 
 import { apiClient } from '../../../../lib/axios';
@@ -36,7 +36,7 @@ export const save = (
 ) => {
       
       
-      return apiClient<Save201>(
+      return apiClient<AppResponseVoid>(
       {url: `/auth/register`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: registerRequest, signal
@@ -46,7 +46,7 @@ export const save = (
   
 
 
-export const getSaveMutationOptions = <TError = Save400 | Save500,
+export const getSaveMutationOptions = <TError = AppResponseVoid | AppResponseVoid,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof save>>, TError,{data: RegisterRequest}, TContext>, }
 ): UseMutationOptions<Awaited<ReturnType<typeof save>>, TError,{data: RegisterRequest}, TContext> => {
 
@@ -73,14 +73,14 @@ const {mutation: mutationOptions} = options ?
 
     export type SaveMutationResult = NonNullable<Awaited<ReturnType<typeof save>>>
     export type SaveMutationBody = RegisterRequest
-    export type SaveMutationError = Save400 | Save500
+    export type SaveMutationError = AppResponseVoid | AppResponseVoid
 
     /**
  * @summary Register user
  */
-export const useSave = <TError = Save400 | Save500,
+export const useSave = <TError = AppResponseVoid | AppResponseVoid,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof save>>, TError,{data: RegisterRequest}, TContext>, }
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof save>>,
         TError,
         {data: RegisterRequest},
@@ -89,7 +89,7 @@ export const useSave = <TError = Save400 | Save500,
 
       const mutationOptions = getSaveMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * Authenticates the user using email and password and returns a JWT token.
@@ -101,7 +101,7 @@ export const login = (
 ) => {
       
       
-      return apiClient<string>(
+      return apiClient<AppResponseAuthResponse>(
       {url: `/auth/login`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: loginRequest, signal
@@ -111,7 +111,7 @@ export const login = (
   
 
 
-export const getLoginMutationOptions = <TError = string | string | string,
+export const getLoginMutationOptions = <TError = AppResponseAuthResponse | AppResponseAuthResponse | AppResponseAuthResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: LoginRequest}, TContext>, }
 ): UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: LoginRequest}, TContext> => {
 
@@ -138,14 +138,14 @@ const {mutation: mutationOptions} = options ?
 
     export type LoginMutationResult = NonNullable<Awaited<ReturnType<typeof login>>>
     export type LoginMutationBody = LoginRequest
-    export type LoginMutationError = string | string | string
+    export type LoginMutationError = AppResponseAuthResponse | AppResponseAuthResponse | AppResponseAuthResponse
 
     /**
  * @summary Login user
  */
-export const useLogin = <TError = string | string | string,
+export const useLogin = <TError = AppResponseAuthResponse | AppResponseAuthResponse | AppResponseAuthResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof login>>, TError,{data: LoginRequest}, TContext>, }
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof login>>,
         TError,
         {data: LoginRequest},
@@ -154,6 +154,6 @@ export const useLogin = <TError = string | string | string,
 
       const mutationOptions = getLoginMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     
