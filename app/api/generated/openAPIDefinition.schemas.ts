@@ -4,12 +4,21 @@
  * OpenAPI definition
  * OpenAPI spec version: v0
  */
+export type RegisterRequestRole = typeof RegisterRequestRole[keyof typeof RegisterRequestRole];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RegisterRequestRole = {
+  CIVILIAN: 'CIVILIAN',
+  CONTRACTOR: 'CONTRACTOR',
+  ADMIN: 'ADMIN',
+} as const;
+
 export interface RegisterRequest {
   firstName?: string;
   lastName?: string;
   email?: string;
-  emailHash?: string;
-  role?: string;
+  role?: RegisterRequestRole;
   password?: string;
   phoneNumber?: string;
 }

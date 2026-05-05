@@ -14,8 +14,9 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const { mutate: login, isPending } = useLogin({
+    const { mutate: login } = useLogin({
         mutation: {
             onSuccess: (response) => {
                 const token = response.data?.token;
@@ -32,7 +33,8 @@ export default function LoginPage() {
                 };
                 router.push(dashboards[role ?? ""] ?? "/civilian/dashboard");
             },
-            onError: (err) => {
+            onError: (err: any) => {
+                setIsSubmitting(false);
                 const status = err.response?.status;
                 if (status === 404) {
                     setError("No account found with that email.");
@@ -51,6 +53,7 @@ export default function LoginPage() {
             setError("Please fill in all fields.");
             return;
         }
+        setIsSubmitting(true);
         login({ data: { email, password } });
     };
 
@@ -107,10 +110,10 @@ export default function LoginPage() {
             <button
                 type="button"
                 onClick={handleLogin}
-                disabled={isPending}
+                disabled={isSubmitting}
                 className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-white font-semibold rounded-xl py-3.5 text-sm"
             >
-                {isPending ? "Logging in..." : "Login"}
+                {isSubmitting ? "Logging in..." : "Login"}
             </button>
 
             <p className="text-sm text-gray-500">
