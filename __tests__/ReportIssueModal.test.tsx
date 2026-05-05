@@ -91,7 +91,7 @@ describe("ReportIssueModal", () => {
         });
 
         it("shows coordinates after successful geolocation", async () => {
-            mockGeolocation.getCurrentPosition.mockImplementation((success: any) =>
+            mockGeolocation.getCurrentPosition.mockImplementation((success: unknown) =>
                 success({ coords: { latitude: -26.2041, longitude: 28.0473 } })
             );
             render(<ReportIssueModal visible={true} onClose={jest.fn()} />);
@@ -102,7 +102,7 @@ describe("ReportIssueModal", () => {
         });
 
         it("shows error when geolocation fails", async () => {
-            mockGeolocation.getCurrentPosition.mockImplementation((_: any, error: any) => error());
+            mockGeolocation.getCurrentPosition.mockImplementation((_: unknown, error: unknown) => error());
             render(<ReportIssueModal visible={true} onClose={jest.fn()} />);
             await act(async () => {
                 fireEvent.click(screen.getByText("Use my current location"));

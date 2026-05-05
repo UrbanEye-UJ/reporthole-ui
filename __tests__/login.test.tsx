@@ -7,10 +7,10 @@ jest.mock("next/navigation", () => ({
     useRouter: () => ({ push: mockPush }),
 }));
 
-let capturedOptions: any;
+let capturedOptions: unknown;
 
 jest.mock("@/app/api/generated/authentication/authentication", () => ({
-    useLogin: (options: any) => {
+    useLogin: (options: unknown) => {
         capturedOptions = options;
         return { mutate: jest.fn(), isPending: false };
     },

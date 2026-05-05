@@ -43,7 +43,7 @@ export const requestInterceptor = (config: AxiosRequestConfig): AxiosRequestConf
     return config;
 };
 
-export const responseErrorInterceptor = (error: any): Promise<never> => {
+export const responseErrorInterceptor = (error: unknown): Promise<never> => {
     const status = error.response?.status;
     const url = error.config?.url ?? "unknown";
 

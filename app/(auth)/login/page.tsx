@@ -33,7 +33,7 @@ export default function LoginPage() {
                 };
                 router.push(dashboards[role ?? ""] ?? "/civilian/dashboard");
             },
-            onError: (err: any) => {
+            onError: (err: unknown) => {
                 setIsSubmitting(false);
                 const status = err.response?.status;
                 if (status === 404) {

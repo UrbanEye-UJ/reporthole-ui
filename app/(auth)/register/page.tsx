@@ -24,7 +24,7 @@ export default function RegisterPage() {
             onSuccess: () => {
                 router.push("/login");
             },
-            onError: (err: any) => {
+            onError: (err: unknown) => {
                 setIsSubmitting(false);
                 const status = err.response?.status;
                 if (status === 400) {
