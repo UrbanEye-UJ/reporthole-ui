@@ -17,14 +17,15 @@ export default function RegisterPage() {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const { mutate: register, isPending } = useSave({
+    const { mutate: register } = useSave({
         mutation: {
             onSuccess: () => {
-                // 201 Created — send user to login
                 router.push("/login");
             },
-            onError: (err) => {
+            onError: (err: unknown) => {
+                setIsSubmitting(false);
                 const status = err.response?.status;
                 if (status === 400) {
                     setError("An account with this email already exists.");
@@ -48,6 +49,7 @@ export default function RegisterPage() {
             return;
         }
 
+        setIsSubmitting(true);
         register({
             data: {
                 firstName,
@@ -56,7 +58,6 @@ export default function RegisterPage() {
                 password,
                 role: "CIVILIAN",
                 phoneNumber: "",
-                emailHash: "",
             },
         });
     };
@@ -150,10 +151,10 @@ export default function RegisterPage() {
             <button
                 type="button"
                 onClick={handleRegister}
-                disabled={isPending}
+                disabled={isSubmitting}
                 className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-white font-semibold rounded-xl py-3.5 text-sm"
             >
-                {isPending ? "Creating account..." : "Create Account"}
+                {isSubmitting ? "Creating account..." : "Create Account"}
             </button>
 
             <p className="text-sm text-gray-500">

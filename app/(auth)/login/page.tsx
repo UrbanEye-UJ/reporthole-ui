@@ -14,18 +14,27 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const { mutate: login, isPending } = useLogin({
+    const { mutate: login } = useLogin({
         mutation: {
             onSuccess: (response) => {
-                // response.data is a plain JWT string (responseType: 'text' in generated client)
-                const token = response.data;
+                const token = response.data?.token;
+                const role = response.data?.role;
 
-                document.cookie = `reporthole_token=${token}; path=/; max-age=${60 * 60 * 24}; SameSite=Strict`;
+                const maxAge = 60 * 60 * 24;
+                document.cookie = `reporthole_token=${token}; path=/; max-age=${maxAge}; SameSite=Strict`;
+                document.cookie = `reporthole_role=${role}; path=/; max-age=${maxAge}; SameSite=Strict`;
 
-                router.push("/civilian/dashboard");
+                const dashboards: Record<string, string> = {
+                    CIVILIAN: "/civilian/dashboard",
+                    ADMIN: "/admin/dashboard",
+                    CONTRACTOR: "/contractor/dashboard",
+                };
+                router.push(dashboards[role ?? ""] ?? "/civilian/dashboard");
             },
-            onError: (err) => {
+            onError: (err: unknown) => {
+                setIsSubmitting(false);
                 const status = err.response?.status;
                 if (status === 404) {
                     setError("No account found with that email.");
@@ -44,6 +53,7 @@ export default function LoginPage() {
             setError("Please fill in all fields.");
             return;
         }
+        setIsSubmitting(true);
         login({ data: { email, password } });
     };
 
@@ -100,10 +110,10 @@ export default function LoginPage() {
             <button
                 type="button"
                 onClick={handleLogin}
-                disabled={isPending}
+                disabled={isSubmitting}
                 className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-white font-semibold rounded-xl py-3.5 text-sm"
             >
-                {isPending ? "Logging in..." : "Login"}
+                {isSubmitting ? "Logging in..." : "Login"}
             </button>
 
             <p className="text-sm text-gray-500">
