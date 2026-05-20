@@ -35,7 +35,7 @@ export default function LoginPage() {
             },
             onError: (err: unknown) => {
                 setIsSubmitting(false);
-                const status = err.response?.status;
+                const status = (err as { response?: { status?: number } }).response?.status;
                 if (status === 404) {
                     setError("No account found with that email.");
                 } else if (status === 400) {
