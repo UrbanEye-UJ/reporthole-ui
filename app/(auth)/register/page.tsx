@@ -26,7 +26,7 @@ export default function RegisterPage() {
             },
             onError: (err: unknown) => {
                 setIsSubmitting(false);
-                const status = err.response?.status;
+                const status = (err as { response?: { status?: number } }).response?.status;
                 if (status === 400) {
                     setError("An account with this email already exists.");
                 } else {

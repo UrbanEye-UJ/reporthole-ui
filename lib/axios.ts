@@ -1,4 +1,4 @@
-import axios, { type AxiosRequestConfig } from "axios";
+import axios, { type AxiosRequestConfig, type InternalAxiosRequestConfig } from "axios";
 
 const maskEmail = (email: string): string => {
     const atIndex = email.indexOf("@");
@@ -18,15 +18,14 @@ export const router = {
     },
 };
 
-export const requestInterceptor = (config: AxiosRequestConfig): AxiosRequestConfig => {
+export const requestInterceptor = (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     const token = document.cookie
         .split("; ")
         .find((row) => row.startsWith("reporthole_token="))
         ?.split("=")[1];
 
     if (token) {
-        config.headers = config.headers ?? {};
-        (config.headers as Record<string, string>).Authorization = `Bearer ${token}`;
+        config.headers.Authorization = `Bearer ${token}`;
     }
 
     const method = config.method?.toUpperCase() ?? "REQUEST";
@@ -44,8 +43,9 @@ export const requestInterceptor = (config: AxiosRequestConfig): AxiosRequestConf
 };
 
 export const responseErrorInterceptor = (error: unknown): Promise<never> => {
-    const status = error.response?.status;
-    const url = error.config?.url ?? "unknown";
+    const err = error as { response?: { status?: number }; config?: { url?: string } };
+    const status = err.response?.status;
+    const url = err.config?.url ?? "unknown";
 
     console.error(`[API] ${status ?? "NETWORK_ERROR"} ${url}`);
 
