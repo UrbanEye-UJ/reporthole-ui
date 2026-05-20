@@ -23,19 +23,19 @@ describe("axios interceptors", () => {
         it("adds Authorization header when token cookie is present", () => {
             setCookie("reporthole_token=my-jwt");
             const result = requestInterceptor({ headers: {} });
-            expect((result.headers as any).Authorization).toBe("Bearer my-jwt");
+            expect((result.headers as Record<string, string>).Authorization).toBe("Bearer my-jwt");
         });
 
         it("does not add Authorization header when no token cookie", () => {
             setCookie("");
             const result = requestInterceptor({ headers: {} });
-            expect((result.headers as any).Authorization).toBeUndefined();
+            expect((result.headers as Record<string, string>).Authorization).toBeUndefined();
         });
 
         it("reads only the token cookie when multiple cookies are present", () => {
             setCookie("other=value; reporthole_token=abc123; reporthole_role=CIVILIAN");
             const result = requestInterceptor({ headers: {} });
-            expect((result.headers as any).Authorization).toBe("Bearer abc123");
+            expect((result.headers as Record<string, string>).Authorization).toBe("Bearer abc123");
         });
     });
 

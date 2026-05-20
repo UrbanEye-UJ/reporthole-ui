@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import StatusCard from "@/components/shared/StatusCard";
 import IssueCard from "@/components/shared/IssueCard";
@@ -28,11 +28,7 @@ const getCookie = (name: string) =>
 export default function CivilianDashboard() {
     const router = useRouter();
     const [modalVisible, setModalVisible] = useState(false);
-    const [role, setRole] = useState("");
-
-    useEffect(() => {
-        setRole(getCookie("reporthole_role"));
-    }, []);
+    const [role] = useState(() => getCookie("reporthole_role"));
 
     const handleLogout = () => {
         document.cookie = "reporthole_token=; path=/; max-age=0";

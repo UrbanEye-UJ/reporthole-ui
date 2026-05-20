@@ -16,7 +16,7 @@ const ROLE_PREFIXES: Record<string, string> = {
     CONTRACTOR: "/contractor",
 };
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
     const token = request.cookies.get("reporthole_token")?.value;
     const role = request.cookies.get("reporthole_role")?.value ?? "";
     const { pathname } = request.nextUrl;
@@ -50,6 +50,8 @@ export function middleware(request: NextRequest) {
 
     return NextResponse.next();
 }
+
+export const middleware = proxy;
 
 export const config = {
     matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
