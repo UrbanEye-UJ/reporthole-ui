@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_ROUTES = ["/login", "/register"];
+const PUBLIC_EXACT = new Set(["/"]);
+const PUBLIC_PREFIXES = ["/login", "/register"];
 
 const ROLE_DASHBOARDS: Record<string, string> = {
     CIVILIAN: "/civilian/dashboard",
@@ -15,12 +16,14 @@ const ROLE_PREFIXES: Record<string, string> = {
     CONTRACTOR: "/contractor",
 };
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
     const token = request.cookies.get("reporthole_token")?.value;
     const role = request.cookies.get("reporthole_role")?.value ?? "";
     const { pathname } = request.nextUrl;
 
-    const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname.startsWith(route));
+    const isPublicRoute =
+        PUBLIC_EXACT.has(pathname) ||
+        PUBLIC_PREFIXES.some((route) => pathname.startsWith(route));
 
     // No token → send to login
     if (!token && !isPublicRoute) {

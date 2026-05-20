@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 import { NextRequest } from "next/server";
-import { proxy } from "../proxy";
+import { proxy } from "../middleware";
 
 const makeRequest = (pathname: string, cookies: Record<string, string> = {}) => {
     const url = new URL(pathname, "http://localhost:3000");
