@@ -28,7 +28,7 @@ const getCookie = (name: string) =>
 export default function CivilianDashboard() {
     const router = useRouter();
     const [modalVisible, setModalVisible] = useState(false);
-    const [role] = useState(() => getCookie("reporthole_role"));
+    const [role] = useState(() => typeof document !== "undefined" ? getCookie("reporthole_role") : "");
 
     const handleLogout = () => {
         document.cookie = "reporthole_token=; path=/; max-age=0";
