@@ -2,6 +2,9 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
+import { useCreateIncident } from "@/app/api/generated/incidents/incidents";
+import type { IncidentResponseDTO } from "@/app/api/generated/openAPIDefinition.schemas";
+import { IncidentRequestDTOIncidentType, IncidentRequestDTOSource } from "@/app/api/generated/openAPIDefinition.schemas";
 
 const ISSUE_TYPES = [
     "POTHOLE",
@@ -20,9 +23,11 @@ interface Coords {
 interface ReportIssueModalProps {
     visible: boolean;
     onClose: () => void;
+    onSuccess: (incident: IncidentResponseDTO) => void;
 }
 
-export default function ReportIssueModal({ visible, onClose }: ReportIssueModalProps) {
+export default function ReportIssueModal({ visible, onClose, onSuccess }: ReportIssueModalProps) {
+    const { mutateAsync: submitIncident } = useCreateIncident();
     const [type, setType] = useState(ISSUE_TYPES[0]);
     const [description, setDescription] = useState("");
     const [preview, setPreview] = useState<string | null>(null);
@@ -40,13 +45,6 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
             setImageFile(file);
             setPreview(URL.createObjectURL(file));
         }
-    };
-
-    const getCookie = (name: string) => {
-        return document.cookie
-            .split("; ")
-            .find((row) => row.startsWith(`${name}=`))
-            ?.split("=")[1];
     };
 
     const fileToBase64 = (file: File): Promise<string> => {
@@ -84,21 +82,10 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
     };
 
     const handleSubmit = async () => {
-        const userId = getCookie("reporthole_user_id");
-        const token = getCookie("reporthole_token");
-        if (!userId) {
-            setError("User session not found. Please login again.");
-            return;
-        }
-        if (!token) {
-            setError("Session expired. Please login again.");
-            return;
-        }
         if (!description || !imageFile) {
             setError("Please add a description and capture an image.");
             return;
         }
-
         if (!coords) {
             setError("Please capture your location.");
             return;
@@ -108,27 +95,21 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
             setSubmitting(true);
 
             const imageBase64 = await fileToBase64(imageFile);
-            const payload = {
-                incidentType: type,
-                description,
-                source: "CIVILIAN",
-                latitude: coords.latitude,
-                longitude: coords.longitude,
-                imageBase64,
-                userId
-            };
-            console.log("request: ", payload);
-            const response = await fetch("http://localhost:8080/api/incidents/create", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
+            const result = await submitIncident({
+                data: {
+                    incidentType: type as IncidentRequestDTOIncidentType,
+                    description,
+                    source: IncidentRequestDTOSource.MANUAL,
+                    latitude: coords.latitude,
+                    longitude: coords.longitude,
+                    imageBase64,
                 },
-                body: JSON.stringify(payload),
             });
-            console.log("response", response);
             setSubmitting(false);
             setSubmitted(true);
+            if (result.data) {
+                onSuccess(result.data);
+            }
         } catch(err) {
             console.error(err);
             setSubmitting(false);

@@ -4,6 +4,80 @@
  * OpenAPI definition
  * OpenAPI spec version: v0
  */
+export type IncidentRequestDTOIncidentType = typeof IncidentRequestDTOIncidentType[keyof typeof IncidentRequestDTOIncidentType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const IncidentRequestDTOIncidentType = {
+  POTHOLE: 'POTHOLE',
+  CRACK: 'CRACK',
+  FADED_MARKINGS: 'FADED_MARKINGS',
+  DAMAGED_SIGN: 'DAMAGED_SIGN',
+  BLOCKED_DRAIN: 'BLOCKED_DRAIN',
+  BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
+  ACCIDENT: 'ACCIDENT',
+} as const;
+
+export type IncidentRequestDTOSource = typeof IncidentRequestDTOSource[keyof typeof IncidentRequestDTOSource];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const IncidentRequestDTOSource = {
+  MANUAL: 'MANUAL',
+  DASHCAM: 'DASHCAM',
+} as const;
+
+export interface IncidentRequestDTO {
+  incidentType?: IncidentRequestDTOIncidentType;
+  description?: string;
+  source?: IncidentRequestDTOSource;
+  latitude?: number;
+  longitude?: number;
+  imageBase64?: string;
+}
+
+export interface AppResponseIncidentResponseDTO {
+  data?: IncidentResponseDTO;
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export type IncidentResponseDTOIncidentType = typeof IncidentResponseDTOIncidentType[keyof typeof IncidentResponseDTOIncidentType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const IncidentResponseDTOIncidentType = {
+  POTHOLE: 'POTHOLE',
+  CRACK: 'CRACK',
+  FADED_MARKINGS: 'FADED_MARKINGS',
+  DAMAGED_SIGN: 'DAMAGED_SIGN',
+  BLOCKED_DRAIN: 'BLOCKED_DRAIN',
+  BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
+  ACCIDENT: 'ACCIDENT',
+} as const;
+
+export type IncidentResponseDTOSource = typeof IncidentResponseDTOSource[keyof typeof IncidentResponseDTOSource];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const IncidentResponseDTOSource = {
+  MANUAL: 'MANUAL',
+  DASHCAM: 'DASHCAM',
+} as const;
+
+export interface IncidentResponseDTO {
+  incidentId?: string;
+  incidentType?: IncidentResponseDTOIncidentType;
+  description?: string;
+  source?: IncidentResponseDTOSource;
+  incidentDate?: string;
+  latitude?: number;
+  longitude?: number;
+  imageUrl?: string;
+  userId?: string;
+}
+
 export type RegisterRequestRole = typeof RegisterRequestRole[keyof typeof RegisterRequestRole];
 
 
@@ -56,5 +130,12 @@ export interface AuthResponse {
   token?: string;
   role?: AuthResponseRole;
   userId?: string;
+}
+
+export interface AppResponseListIncidentResponseDTO {
+  data?: IncidentResponseDTO[];
+  message?: string;
+  status?: number;
+  timestamp?: string;
 }
 

@@ -1,40 +1,65 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import StatusCard from "@/components/shared/StatusCard";
 import IssueCard from "@/components/shared/IssueCard";
 import ReportIssueModal from "@/components/shared/ReportIssueModal";
 import { Issue } from "@/app/types/issue";
+import type { IncidentResponseDTO } from "@/app/api/generated/openAPIDefinition.schemas";
+import { useGetMyIncidents } from "@/app/api/generated/incidents/incidents";
 
-const ISSUES: Issue[] = [
-    {
-        id: "1",
-        title: "Pothole",
-        description: "Large pothole causing damage",
-        location: "Johannesburg",
-        date: "Apr 26",
+function toIssue(dto: IncidentResponseDTO): Issue {
+    const rawType = dto.incidentType ?? "UNKNOWN";
+    const title = rawType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    const date = dto.incidentDate
+        ? new Date(dto.incidentDate).toLocaleDateString("en-ZA", { month: "short", day: "numeric" })
+        : "";
+    return {
+        id: dto.incidentId ?? crypto.randomUUID(),
+        title,
+        description: dto.description ?? "",
+        location: `${dto.latitude?.toFixed(4)}, ${dto.longitude?.toFixed(4)}`,
+        date,
         status: "reported",
-        image: "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=200",
-    },
-];
-
-const getCookie = (name: string) =>
-    document.cookie
-        .split("; ")
-        .find((row) => row.startsWith(`${name}=`))
-        ?.split("=")[1] ?? "";
+        image: dto.imageUrl ?? "",
+    };
+}
 
 export default function CivilianDashboard() {
     const router = useRouter();
     const [modalVisible, setModalVisible] = useState(false);
-    const [role] = useState(() => typeof document !== "undefined" ? getCookie("reporthole_role") : "");
+    const [role, setRole] = useState("");
+    const [newIncidents, setNewIncidents] = useState<IncidentResponseDTO[]>([]);
+    const { data: myIncidentsResponse, isLoading: loading } = useGetMyIncidents();
+
+    useEffect(() => {
+        const value = document.cookie
+            .split("; ")
+            .find((row) => row.startsWith("reporthole_role="))
+            ?.split("=")[1] ?? "";
+        setRole(value);
+    }, []);
+
+    const issues = useMemo(() => {
+        const fetched = (myIncidentsResponse?.data ?? []).map(toIssue);
+        const added = newIncidents.map(toIssue);
+        return [...added, ...fetched];
+    }, [myIncidentsResponse, newIncidents]);
 
     const handleLogout = () => {
         document.cookie = "reporthole_token=; path=/; max-age=0";
         document.cookie = "reporthole_role=; path=/; max-age=0";
+        document.cookie = "reporthole_user_id=; path=/; max-age=0";
         router.push("/login");
     };
+
+    const handleNewIncident = (dto: IncidentResponseDTO) => {
+        setNewIncidents((prev) => [dto, ...prev]);
+    };
+
+    const resolved = issues.filter((i) => i.status === "resolved").length;
+    const inProgress = issues.filter((i) => i.status === "in_progress").length;
 
     return (
         <main className="min-h-screen bg-gray-100">
@@ -73,15 +98,21 @@ export default function CivilianDashboard() {
 
                 {/* Stats */}
                 <div className="flex gap-3">
-                    <StatusCard label="Total" value="3" />
-                    <StatusCard label="In Progress" value="1" />
-                    <StatusCard label="Resolved" value="1" />
+                    <StatusCard label="Total" value={String(issues.length)} />
+                    <StatusCard label="In Progress" value={String(inProgress)} />
+                    <StatusCard label="Resolved" value={String(resolved)} />
                 </div>
 
                 {/* Recent Issues */}
                 <div className="flex flex-col gap-3">
                     <h2 className="text-base font-semibold text-gray-800">Recent Issues</h2>
-                    {ISSUES.map((issue, index) => (
+                    {loading && (
+                        <p className="text-sm text-gray-400 text-center py-6">Loading...</p>
+                    )}
+                    {!loading && issues.length === 0 && (
+                        <p className="text-sm text-gray-400 text-center py-6">No issues reported yet.</p>
+                    )}
+                    {issues.map((issue, index) => (
                         <IssueCard key={issue.id} issue={issue} priority={index === 0} />
                     ))}
                 </div>
@@ -90,6 +121,7 @@ export default function CivilianDashboard() {
             <ReportIssueModal
                 visible={modalVisible}
                 onClose={() => setModalVisible(false)}
+                onSuccess={handleNewIncident}
             />
         </main>
     );

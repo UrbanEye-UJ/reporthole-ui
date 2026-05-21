@@ -50,7 +50,12 @@ export const requestInterceptor = (config: InternalAxiosRequestConfig): Internal
 };
 
 export const responseErrorInterceptor = (error: unknown): Promise<never> => {
-    const err = error as { response?: { status?: number }; config?: { url?: string } };
+    const err = error as { response?: { status?: number }; config?: { url?: string }; code?: string };
+
+    if (err.code === "ERR_CANCELED") {
+        return Promise.reject(error);
+    }
+
     const status = err.response?.status;
     const url = err.config?.url ?? "unknown";
 
