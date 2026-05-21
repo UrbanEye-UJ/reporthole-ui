@@ -55,5 +55,6 @@ export const AuthResponseRole = {
 export interface AuthResponse {
   token?: string;
   role?: AuthResponseRole;
+  userId?: string;
 }
 

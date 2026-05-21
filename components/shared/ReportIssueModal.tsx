@@ -31,11 +31,36 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [imageFile, setImageFile] = useState<File | null>(null);
     const fileRef = useRef<HTMLInputElement>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) setPreview(URL.createObjectURL(file));
+        if (file) {
+            setImageFile(file);
+            setPreview(URL.createObjectURL(file));
+        }
+    };
+
+    const getCookie = (name: string) => {
+        return document.cookie
+            .split("; ")
+            .find((row) => row.startsWith(`${name}=`))
+            ?.split("=")[1];
+    };
+
+    const fileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+
+            reader.onload = () => {
+                const result = reader.result as string;
+                resolve(result.split(",")[1]);
+            };
+
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
     };
 
     const handleGetLocation = () => {
@@ -50,7 +75,8 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                 setCoords({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
                 setLocating(false);
             },
-            () => {
+            (err) => {
+                console.log(err);
                 setError("Could not get your location. Please try again.");
                 setLocating(false);
             }
@@ -58,25 +84,71 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
     };
 
     const handleSubmit = async () => {
-        if (!description || !preview) {
+        const userId = getCookie("reporthole_user_id");
+        const token = getCookie("reporthole_token");
+        if (!userId) {
+            setError("User session not found. Please login again.");
+            return;
+        }
+        if (!token) {
+            setError("Session expired. Please login again.");
+            return;
+        }
+        if (!description || !imageFile) {
             setError("Please add a description and capture an image.");
             return;
         }
-        setError(null);
-        setSubmitting(true);
-        // Submission will be wired to the incident API once the endpoint is implemented
-        await new Promise((r) => setTimeout(r, 800));
-        setSubmitting(false);
-        setSubmitted(true);
+
+        if (!coords) {
+            setError("Please capture your location.");
+            return;
+        }
+        try {
+            setError(null);
+            setSubmitting(true);
+
+            const imageBase64 = await fileToBase64(imageFile);
+            const payload = {
+                incidentType: type,
+                description,
+                source: "CIVILIAN",
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+                imageBase64,
+                userId
+            };
+            console.log("request: ", payload);
+            const response = await fetch("http://localhost:8080/api/incidents/create", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(payload),
+            });
+            console.log("response", response);
+            setSubmitting(false);
+            setSubmitted(true);
+        } catch(err) {
+            console.error(err);
+            setSubmitting(false);
+            setError("Failed to submit issue. Please try again.");
+        }
     };
 
     const handleClose = () => {
         setDescription("");
         setPreview(null);
+        setImageFile(null);
         setCoords(null);
         setType(ISSUE_TYPES[0]);
         setError(null);
         setSubmitted(false);
+
+        if (fileRef.current) {
+            fileRef.current.value = "";
+        }
+
         onClose();
     };
 

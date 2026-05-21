@@ -18,6 +18,13 @@ export const router = {
     },
 };
 
+export const getCookie = (name: string): string | undefined => {
+    return document.cookie
+        .split("; ")
+        .find((row) => row.startsWith(`${name}=`))
+        ?.split("=")[1];
+};
+
 export const requestInterceptor = (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     const token = document.cookie
         .split("; ")
@@ -52,6 +59,7 @@ export const responseErrorInterceptor = (error: unknown): Promise<never> => {
     if (status === 401) {
         document.cookie = "reporthole_token=; path=/; max-age=0";
         document.cookie = "reporthole_role=; path=/; max-age=0";
+        document.cookie = "reporthole_user_id=; path=/; max-age=0";
         console.warn("[API] Session expired — redirecting to login");
         router.navigate("/login");
     }
