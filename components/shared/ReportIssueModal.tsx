@@ -23,7 +23,7 @@ interface Coords {
 interface ReportIssueModalProps {
     visible: boolean;
     onClose: () => void;
-    onSuccess: (incident: IncidentResponseDTO) => void;
+    onSuccess?: (incident: IncidentResponseDTO) => void;
 }
 
 export default function ReportIssueModal({ visible, onClose, onSuccess }: ReportIssueModalProps) {
@@ -61,11 +61,20 @@ export default function ReportIssueModal({ visible, onClose, onSuccess }: Report
         });
     };
 
-    const handleGetLocation = () => {
+    const handleGetLocation = async () => {
         if (!navigator.geolocation) {
-            setError("Geolocation is not supported by your browser.");
+            setError("Your browser does not support location. Try Chrome or Safari.");
             return;
         }
+
+        if (navigator.permissions) {
+            const permission = await navigator.permissions.query({ name: "geolocation" });
+            if (permission.state === "denied") {
+                setError("Location access is blocked. To fix this: open your browser's site settings for this page and set Location to Allow, then refresh.");
+                return;
+            }
+        }
+
         setLocating(true);
         setError(null);
         navigator.geolocation.getCurrentPosition(
@@ -74,10 +83,18 @@ export default function ReportIssueModal({ visible, onClose, onSuccess }: Report
                 setLocating(false);
             },
             (err) => {
-                console.log(err);
-                setError("Could not get your location. Please try again.");
                 setLocating(false);
-            }
+                if (err.code === err.PERMISSION_DENIED) {
+                    setError("Location access was denied. This usually means the site is not on HTTPS. Ask your developer to run 'npm run dev:https', or open browser site settings and set Location to Allow.");
+                } else if (err.code === err.POSITION_UNAVAILABLE) {
+                    setError("Your location could not be determined. Check that your device has location services enabled.");
+                } else if (err.code === err.TIMEOUT) {
+                    setError("Location request timed out. Please try again.");
+                } else {
+                    setError("Could not get your location. Please try again.");
+                }
+            },
+            { timeout: 10000 }
         );
     };
 
@@ -107,7 +124,7 @@ export default function ReportIssueModal({ visible, onClose, onSuccess }: Report
             });
             setSubmitting(false);
             setSubmitted(true);
-            if (result.data) {
+            if (result.data && onSuccess) {
                 onSuccess(result.data);
             }
         } catch(err) {

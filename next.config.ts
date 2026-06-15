@@ -15,12 +15,13 @@ const getLocalIP = (): string | null => {
 const localIP = getLocalIP();
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   allowedDevOrigins: localIP ? [localIP] : [],
   async rewrites() {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:8080/api/:path*",
+        destination: `${process.env.BACKEND_URL ?? "http://localhost:8080"}/api/:path*`,
       },
     ];
   },

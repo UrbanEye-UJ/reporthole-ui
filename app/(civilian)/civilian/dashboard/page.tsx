@@ -11,7 +11,7 @@ import { useGetMyIncidents } from "@/app/api/generated/incidents/incidents";
 
 function toIssue(dto: IncidentResponseDTO): Issue {
     const rawType = dto.incidentType ?? "UNKNOWN";
-    const title = rawType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    const title = rawType.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
     const date = dto.incidentDate
         ? new Date(dto.incidentDate).toLocaleDateString("en-ZA", { month: "short", day: "numeric" })
         : "";
