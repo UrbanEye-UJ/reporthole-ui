@@ -1,0 +1,21 @@
+services:
+
+  reporthole-fe:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BACKEND_URL: http://reporthole-be:8080
+    container_name: reporthole-fe
+    ports:
+      - "3000:3000"
+    environment:
+      BACKEND_URL: http://reporthole-be:8080
+    networks:
+      - reporthole-net
+    restart: unless-stopped
+
+networks:
+  reporthole-net:
+    name: reporthole-net
+    external: true
