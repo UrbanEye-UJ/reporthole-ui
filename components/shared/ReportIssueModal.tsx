@@ -2,6 +2,9 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
+import { useCreateIncident } from "@/app/api/generated/incidents/incidents";
+import type { IncidentResponseDTO } from "@/app/api/generated/openAPIDefinition.schemas";
+import { IncidentRequestDTOIncidentType, IncidentRequestDTOSource } from "@/app/api/generated/openAPIDefinition.schemas";
 
 const ISSUE_TYPES = [
     "POTHOLE",
@@ -20,9 +23,11 @@ interface Coords {
 interface ReportIssueModalProps {
     visible: boolean;
     onClose: () => void;
+    onSuccess?: (incident: IncidentResponseDTO) => void;
 }
 
-export default function ReportIssueModal({ visible, onClose }: ReportIssueModalProps) {
+export default function ReportIssueModal({ visible, onClose, onSuccess }: ReportIssueModalProps) {
+    const { mutateAsync: submitIncident } = useCreateIncident();
     const [type, setType] = useState(ISSUE_TYPES[0]);
     const [description, setDescription] = useState("");
     const [preview, setPreview] = useState<string | null>(null);
@@ -31,18 +36,45 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [imageFile, setImageFile] = useState<File | null>(null);
     const fileRef = useRef<HTMLInputElement>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) setPreview(URL.createObjectURL(file));
+        if (file) {
+            setImageFile(file);
+            setPreview(URL.createObjectURL(file));
+        }
     };
 
-    const handleGetLocation = () => {
+    const fileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+
+            reader.onload = () => {
+                const result = reader.result as string;
+                resolve(result.split(",")[1]);
+            };
+
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    };
+
+    const handleGetLocation = async () => {
         if (!navigator.geolocation) {
-            setError("Geolocation is not supported by your browser.");
+            setError("Your browser does not support location. Try Chrome or Safari.");
             return;
         }
+
+        if (navigator.permissions) {
+            const permission = await navigator.permissions.query({ name: "geolocation" });
+            if (permission.state === "denied") {
+                setError("Location access is blocked. To fix this: open your browser's site settings for this page and set Location to Allow, then refresh.");
+                return;
+            }
+        }
+
         setLocating(true);
         setError(null);
         navigator.geolocation.getCurrentPosition(
@@ -50,33 +82,71 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                 setCoords({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
                 setLocating(false);
             },
-            () => {
-                setError("Could not get your location. Please try again.");
+            (err) => {
                 setLocating(false);
-            }
+                if (err.code === err.PERMISSION_DENIED) {
+                    setError("Location access was denied. This usually means the site is not on HTTPS. Ask your developer to run 'npm run dev:https', or open browser site settings and set Location to Allow.");
+                } else if (err.code === err.POSITION_UNAVAILABLE) {
+                    setError("Your location could not be determined. Check that your device has location services enabled.");
+                } else if (err.code === err.TIMEOUT) {
+                    setError("Location request timed out. Please try again.");
+                } else {
+                    setError("Could not get your location. Please try again.");
+                }
+            },
+            { timeout: 10000 }
         );
     };
 
     const handleSubmit = async () => {
-        if (!description || !preview) {
+        if (!description || !imageFile) {
             setError("Please add a description and capture an image.");
             return;
         }
-        setError(null);
-        setSubmitting(true);
-        // Submission will be wired to the incident API once the endpoint is implemented
-        await new Promise((r) => setTimeout(r, 800));
-        setSubmitting(false);
-        setSubmitted(true);
+        if (!coords) {
+            setError("Please capture your location.");
+            return;
+        }
+        try {
+            setError(null);
+            setSubmitting(true);
+
+            const imageBase64 = await fileToBase64(imageFile);
+            const result = await submitIncident({
+                data: {
+                    incidentType: type as IncidentRequestDTOIncidentType,
+                    description,
+                    source: IncidentRequestDTOSource.MANUAL,
+                    latitude: coords.latitude,
+                    longitude: coords.longitude,
+                    imageBase64,
+                },
+            });
+            setSubmitting(false);
+            setSubmitted(true);
+            if (result.data && onSuccess) {
+                onSuccess(result.data);
+            }
+        } catch(err) {
+            console.error(err);
+            setSubmitting(false);
+            setError("Failed to submit issue. Please try again.");
+        }
     };
 
     const handleClose = () => {
         setDescription("");
         setPreview(null);
+        setImageFile(null);
         setCoords(null);
         setType(ISSUE_TYPES[0]);
         setError(null);
         setSubmitted(false);
+
+        if (fileRef.current) {
+            fileRef.current.value = "";
+        }
+
         onClose();
     };
 

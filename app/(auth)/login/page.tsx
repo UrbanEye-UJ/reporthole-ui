@@ -21,10 +21,12 @@ export default function LoginPage() {
             onSuccess: (response) => {
                 const token = response.data?.token;
                 const role = response.data?.role;
+                const userId = response.data?.userId;
 
                 const maxAge = 60 * 60 * 24;
                 document.cookie = `reporthole_token=${token}; path=/; max-age=${maxAge}; SameSite=Strict`;
                 document.cookie = `reporthole_role=${role}; path=/; max-age=${maxAge}; SameSite=Strict`;
+                document.cookie = `reporthole_user_id=${userId}; path=/; max-age=${maxAge}; SameSite=Strict`;
 
                 const dashboards: Record<string, string> = {
                     CIVILIAN: "/civilian/dashboard",

@@ -1,5 +1,12 @@
 import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ReportIssueModal from "@/components/shared/ReportIssueModal";
+
+const mockMutateAsync = jest.fn().mockResolvedValue({ data: { incidentId: "1", incidentType: "POTHOLE" } });
+
+jest.mock("@/app/api/generated/incidents/incidents", () => ({
+    useCreateIncident: () => ({ mutateAsync: mockMutateAsync }),
+}));
 
 const mockGeolocation = {
     getCurrentPosition: jest.fn(),
@@ -15,17 +22,31 @@ beforeAll(() => {
 
 beforeEach(() => {
     mockGeolocation.getCurrentPosition.mockReset();
+    mockMutateAsync.mockClear();
 });
+
+const renderModal = (props: { visible: boolean; onClose?: () => void; onSuccess?: () => void }) => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    return render(
+        <QueryClientProvider client={queryClient}>
+            <ReportIssueModal
+                visible={props.visible}
+                onClose={props.onClose ?? jest.fn()}
+                onSuccess={props.onSuccess ?? jest.fn()}
+            />
+        </QueryClientProvider>
+    );
+};
 
 describe("ReportIssueModal", () => {
     describe("visibility", () => {
         it("does not render when visible is false", () => {
-            render(<ReportIssueModal visible={false} onClose={jest.fn()} />);
+            renderModal({ visible: false });
             expect(screen.queryByText("Report Issue")).not.toBeInTheDocument();
         });
 
         it("renders when visible is true", () => {
-            render(<ReportIssueModal visible={true} onClose={jest.fn()} />);
+            renderModal({ visible: true });
             expect(screen.getByText("Report Issue")).toBeInTheDocument();
         });
     });
@@ -33,14 +54,14 @@ describe("ReportIssueModal", () => {
     describe("closing", () => {
         it("calls onClose when Cancel is clicked", () => {
             const onClose = jest.fn();
-            render(<ReportIssueModal visible={true} onClose={onClose} />);
+            renderModal({ visible: true, onClose });
             fireEvent.click(screen.getByText("Cancel"));
             expect(onClose).toHaveBeenCalled();
         });
 
         it("calls onClose when backdrop is clicked", () => {
             const onClose = jest.fn();
-            const { container } = render(<ReportIssueModal visible={true} onClose={onClose} />);
+            const { container } = renderModal({ visible: true, onClose });
             fireEvent.click(container.firstChild as Element);
             expect(onClose).toHaveBeenCalled();
         });
@@ -48,12 +69,12 @@ describe("ReportIssueModal", () => {
 
     describe("submit validation", () => {
         it("submit button is disabled when description and image are missing", () => {
-            render(<ReportIssueModal visible={true} onClose={jest.fn()} />);
+            renderModal({ visible: true });
             expect(screen.getByRole("button", { name: /submit/i })).toBeDisabled();
         });
 
         it("submit button is disabled when only description is filled", () => {
-            render(<ReportIssueModal visible={true} onClose={jest.fn()} />);
+            renderModal({ visible: true });
             fireEvent.change(screen.getByPlaceholderText("Describe the issue..."), {
                 target: { value: "Big pothole" },
             });
@@ -63,7 +84,7 @@ describe("ReportIssueModal", () => {
 
     describe("image upload", () => {
         it("shows preview after file is selected", async () => {
-            render(<ReportIssueModal visible={true} onClose={jest.fn()} />);
+            renderModal({ visible: true });
             const file = new File(["img"], "photo.jpg", { type: "image/jpeg" });
             const input = document.querySelector("input[type='file']") as HTMLInputElement;
             await act(async () => {
@@ -73,7 +94,7 @@ describe("ReportIssueModal", () => {
         });
 
         it("shows retake button after image is selected", async () => {
-            render(<ReportIssueModal visible={true} onClose={jest.fn()} />);
+            renderModal({ visible: true });
             const file = new File(["img"], "photo.jpg", { type: "image/jpeg" });
             const input = document.querySelector("input[type='file']") as HTMLInputElement;
             await act(async () => {
@@ -85,16 +106,16 @@ describe("ReportIssueModal", () => {
 
     describe("geolocation", () => {
         it("requests geolocation when location button is clicked", () => {
-            render(<ReportIssueModal visible={true} onClose={jest.fn()} />);
+            renderModal({ visible: true });
             fireEvent.click(screen.getByText("Use my current location"));
             expect(mockGeolocation.getCurrentPosition).toHaveBeenCalled();
         });
 
         it("shows coordinates after successful geolocation", async () => {
             mockGeolocation.getCurrentPosition.mockImplementation((success: unknown) =>
-                success({ coords: { latitude: -26.2041, longitude: 28.0473 } })
+                (success as (pos: object) => void)({ coords: { latitude: -26.2041, longitude: 28.0473 } })
             );
-            render(<ReportIssueModal visible={true} onClose={jest.fn()} />);
+            renderModal({ visible: true });
             await act(async () => {
                 fireEvent.click(screen.getByText("Use my current location"));
             });
@@ -102,8 +123,10 @@ describe("ReportIssueModal", () => {
         });
 
         it("shows error when geolocation fails", async () => {
-            mockGeolocation.getCurrentPosition.mockImplementation((_: unknown, error: unknown) => error());
-            render(<ReportIssueModal visible={true} onClose={jest.fn()} />);
+            mockGeolocation.getCurrentPosition.mockImplementation((_: unknown, error: unknown) =>
+                (error as (e: object) => void)({ code: 0, message: "unknown error" })
+            );
+            renderModal({ visible: true });
             await act(async () => {
                 fireEvent.click(screen.getByText("Use my current location"));
             });
@@ -112,8 +135,11 @@ describe("ReportIssueModal", () => {
     });
 
     describe("submit flow", () => {
-        it("shows success screen after submitting with description and image", async () => {
-            render(<ReportIssueModal visible={true} onClose={jest.fn()} />);
+        const setupReadyModal = async (onClose = jest.fn(), onSuccess = jest.fn()) => {
+            mockGeolocation.getCurrentPosition.mockImplementation((success: unknown) =>
+                (success as (pos: object) => void)({ coords: { latitude: -26.2041, longitude: 28.0473 } })
+            );
+            renderModal({ visible: true, onClose, onSuccess });
 
             fireEvent.change(screen.getByPlaceholderText("Describe the issue..."), {
                 target: { value: "Big pothole" },
@@ -124,6 +150,14 @@ describe("ReportIssueModal", () => {
             await act(async () => {
                 fireEvent.change(input, { target: { files: [file] } });
             });
+
+            await act(async () => {
+                fireEvent.click(screen.getByText("Use my current location"));
+            });
+        };
+
+        it("shows success screen after submitting with description, image and location", async () => {
+            await setupReadyModal();
 
             await act(async () => {
                 fireEvent.click(screen.getByRole("button", { name: /submit/i }));
@@ -136,17 +170,7 @@ describe("ReportIssueModal", () => {
 
         it("calls onClose when Done is clicked on success screen", async () => {
             const onClose = jest.fn();
-            render(<ReportIssueModal visible={true} onClose={onClose} />);
-
-            fireEvent.change(screen.getByPlaceholderText("Describe the issue..."), {
-                target: { value: "Crack in road" },
-            });
-
-            const file = new File(["img"], "photo.jpg", { type: "image/jpeg" });
-            const input = document.querySelector("input[type='file']") as HTMLInputElement;
-            await act(async () => {
-                fireEvent.change(input, { target: { files: [file] } });
-            });
+            await setupReadyModal(onClose);
 
             await act(async () => {
                 fireEvent.click(screen.getByRole("button", { name: /submit/i }));

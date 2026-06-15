@@ -22,9 +22,7 @@ The Reporthole frontend is a web application built with Next.js that allows civi
 
 | Guide | Description |
 |-------|-------------|
-| [DEV_SETUP.md](#) *(this file — dev section)* | Set up your machine to write and run code |
-| [DOCKER.md](#) *(this file — docker section)* | Run the frontend via Docker for testing |
-| [GIT_GUIDE.md](GIT_GUIDE.md) | Git workflow, branches, and commit conventions |
+| [GIT_GUIDE.md](docs/GITHUBDESKTOP.md) | Git workflow, branches, and commit conventions |
 
 > The backend must be running before the frontend will work. See the backend [README](../reporthole-be/README.md) to get it started first.
 
@@ -95,19 +93,131 @@ The dev server has hot reload — any changes you save will reflect in the brows
 
 ---
 
-## Generating the API client
+## Generating the API client (orval)
 
-The frontend uses **orval** to generate a typed API client from the backend's OpenAPI spec. Whenever the backend API changes, you need to regenerate the client.
+The frontend uses **orval** to auto-generate a fully typed API client directly from the backend's OpenAPI spec. **Never write manual `fetch` or `axios` calls for backend endpoints** — always use the generated hooks.
 
-Make sure the backend is running first, then:
+### When do I need to regenerate?
+
+Regenerate any time a teammate on the backend:
+- Adds a new endpoint
+- Changes a request or response body (adds/removes/renames a field)
+- Renames or removes an endpoint
+- Changes a URL path
+
+If you skip this step your frontend types will be out of date and you will get runtime errors or TypeScript complaints.
+
+---
+
+### Step-by-step: after a backend change
+
+#### 1. Make sure the backend is running
+
+The backend must be up so orval can read its live OpenAPI spec. If it is not running, start it first — see the backend [README](../reporthole-be/README.md).
+
+You can confirm it is ready by opening this URL in your browser:
+
+```
+http://localhost:8080/api/swagger-ui/index.html
+```
+
+If Swagger UI loads, you are good to go.
+
+#### 2. Run the generator
+
+From inside the `reporthole-fe` folder:
 
 ```bash
 npm run generate:api
 ```
 
-This reads the OpenAPI spec from the running backend and regenerates the typed client code. Commit the generated files after running this.
+You will see output like:
 
-> If you get an error, check that the backend is running at `http://localhost:8080/api` and that the Swagger spec is accessible at `http://localhost:8080/api/swagger-ui/index.html`.
+```
+🍻 orval v7.x.x - A swagger client generator for typescript
+◇ injected env from .env.local
+reporthole: Cleaning output folder
+🎉 reporthole - Your OpenAPI spec has been converted into ready to use orval!
+```
+
+#### 3. Check what changed
+
+The generator writes into `app/api/generated/`. Run a quick git diff to see what was added or updated:
+
+```bash
+git diff app/api/generated/
+```
+
+New endpoints produce new hook functions. Changed DTOs update the TypeScript interfaces.
+
+#### 4. Use the generated hook in your component
+
+Every GET endpoint becomes a `useXxx` query hook. Every POST/PUT/PATCH/DELETE becomes a `useXxx` mutation hook. Import them directly from the generated file.
+
+**Example — GET endpoint:**
+
+```ts
+import { useGetMyIncidents } from "@/app/api/generated/incidents/incidents";
+
+const { data, isLoading } = useGetMyIncidents();
+const incidents = data?.data ?? [];
+```
+
+**Example — POST/mutation endpoint:**
+
+```ts
+import { useCreateIncident } from "@/app/api/generated/incidents/incidents";
+
+const { mutateAsync: submit } = useCreateIncident();
+
+await submit({
+    data: {
+        incidentType: "POTHOLE",
+        description: "Large hole on main road",
+        source: "MANUAL",
+        latitude: -26.2041,
+        longitude: 28.0473,
+        imageBase64: "...",
+    },
+});
+```
+
+All request/response types are imported from `@/app/api/generated/openAPIDefinition.schemas`.
+
+#### 5. Commit the generated files
+
+Generated files must be committed so other teammates get the updated types when they pull:
+
+```bash
+git add app/api/generated/
+git commit -m "chore: regenerate api client"
+```
+
+---
+
+### Rules
+
+| Rule | Reason |
+|------|--------|
+| Never edit files inside `app/api/generated/` | They are overwritten every time `generate:api` runs |
+| Never write manual `axios`/`fetch` wrappers for backend endpoints | The generated hooks handle auth headers, error handling, and types automatically |
+| Always commit generated files after regenerating | Teammates rely on them being up to date |
+| The only safe files to edit in `lib/` are `axios.ts` | That is the axios instance orval hooks use internally |
+
+---
+
+### Where the generated files live
+
+```
+app/api/generated/
+├── openAPIDefinition.schemas.ts   ← all request/response TypeScript types
+└── incidents/
+    └── incidents.ts               ← hooks for every incident endpoint
+└── authentication/
+    └── authentication.ts          ← hooks for login/register endpoints
+```
+
+A new backend tag (e.g. `@Tag(name = "Users")`) will create a new subfolder and file automatically when you regenerate.
 
 ---
 

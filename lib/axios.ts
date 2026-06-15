@@ -18,6 +18,13 @@ export const router = {
     },
 };
 
+export const getCookie = (name: string): string | undefined => {
+    return document.cookie
+        .split("; ")
+        .find((row) => row.startsWith(`${name}=`))
+        ?.split("=")[1];
+};
+
 export const requestInterceptor = (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     const token = document.cookie
         .split("; ")
@@ -43,7 +50,12 @@ export const requestInterceptor = (config: InternalAxiosRequestConfig): Internal
 };
 
 export const responseErrorInterceptor = (error: unknown): Promise<never> => {
-    const err = error as { response?: { status?: number }; config?: { url?: string } };
+    const err = error as { response?: { status?: number }; config?: { url?: string }; code?: string };
+
+    if (err.code === "ERR_CANCELED") {
+        return Promise.reject(error);
+    }
+
     const status = err.response?.status;
     const url = err.config?.url ?? "unknown";
 
@@ -52,6 +64,7 @@ export const responseErrorInterceptor = (error: unknown): Promise<never> => {
     if (status === 401) {
         document.cookie = "reporthole_token=; path=/; max-age=0";
         document.cookie = "reporthole_role=; path=/; max-age=0";
+        document.cookie = "reporthole_user_id=; path=/; max-age=0";
         console.warn("[API] Session expired — redirecting to login");
         router.navigate("/login");
     }
