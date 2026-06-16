@@ -1,23 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import StatusCard from "@/components/shared/StatusCard";
 import IssueCard from "@/components/shared/IssueCard";
 import ReportIssueModal from "@/components/shared/ReportIssueModal";
-import { Issue } from "@/app/types/issue";
-
-const ISSUES: Issue[] = [
-    {
-        id: "1",
-        title: "Pothole",
-        description: "Large pothole causing damage",
-        location: "Johannesburg",
-        date: "Apr 26",
-        status: "reported",
-        image: "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=200",
-    },
-];
+import IncidentDetailModal from "@/components/shared/IncidentDetailModal";
+import SessionExpiryWarning from "@/components/shared/SessionExpiryWarning";
+import { useGetMyIncidents } from "@/app/api/generated/incidents/incidents";
+import { Issue, Status } from "@/app/types/issue";
+import { IncidentResponseDTO } from "@/app/api/generated/openAPIDefinition.schemas";
 
 const getCookie = (name: string) =>
     document.cookie
@@ -25,10 +17,58 @@ const getCookie = (name: string) =>
         .find((row) => row.startsWith(`${name}=`))
         ?.split("=")[1] ?? "";
 
+function toIssue(dto: IncidentResponseDTO): Issue {
+    return {
+        id: dto.incidentId ?? "",
+        title: dto.incidentType?.replace(/_/g, " ") ?? "Unknown",
+        description: dto.description ?? "",
+        location: dto.locationAddress
+            ?? (dto.latitude != null && dto.longitude != null
+                ? `${dto.latitude.toFixed(4)}, ${dto.longitude.toFixed(4)}`
+                : "Unknown location"),
+        locationAddress: dto.locationAddress,
+        date: dto.incidentDate ? new Date(dto.incidentDate).toLocaleDateString("en-ZA", { day: "numeric", month: "short" }) : "",
+        status: (dto.incidentType ? "reported" : "reported") as Status,
+        image: dto.imageUrl ? `/api/image-proxy?url=${encodeURIComponent(dto.imageUrl)}` : "",
+        reporterCount: dto.reporterCount ?? 1,
+    };
+}
+
 export default function CivilianDashboard() {
     const router = useRouter();
     const [modalVisible, setModalVisible] = useState(false);
-    const [role] = useState(() => typeof document !== "undefined" ? getCookie("reporthole_role") : "");
+    const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
+    const [role, setRole] = useState("");
+
+    useEffect(() => {
+        setRole(getCookie("reporthole_role"));
+    }, []);
+
+    const { data, refetch } = useGetMyIncidents({ query: { staleTime: 0, refetchOnWindowFocus: false } });
+    const incidents: Issue[] = (data?.data ?? []).map(toIssue);
+
+    // Keep the open detail modal in sync when incidents refresh (e.g. after confirming a duplicate)
+    useEffect(() => {
+        if (selectedIssue && data?.data) {
+            const updatedDto = data.data.find((d) => d.incidentId === selectedIssue.id);
+            if (updatedDto) setSelectedIssue(toIssue(updatedDto));
+        }
+    }, [data]);
+
+    // Real-time updates: Next.js Route Handler proxies the SSE stream and adds the
+    // Authorization header server-side, so the token never appears in the URL and
+    // the connection works on any device (mobile, desktop, dev, prod).
+    useEffect(() => {
+        const token = getCookie("reporthole_token");
+        if (!token) return;
+        const es = new EventSource(`/api/incidents/events?token=${token}`);
+        es.addEventListener("incident-updated", () => { refetch(); });
+        es.onerror = () => { es.close(); refetch(); };
+        return () => { es.close(); };
+    }, []);
+
+    const resolved = incidents.filter((i) => i.status === "resolved").length;
+    const inProgress = incidents.filter((i) => i.status === "in_progress").length;
 
     const handleLogout = () => {
         document.cookie = "reporthole_token=; path=/; max-age=0";
@@ -73,24 +113,45 @@ export default function CivilianDashboard() {
 
                 {/* Stats */}
                 <div className="flex gap-3">
-                    <StatusCard label="Total" value="3" />
-                    <StatusCard label="In Progress" value="1" />
-                    <StatusCard label="Resolved" value="1" />
+                    <StatusCard label="Total" value={String(incidents.length)} />
+                    <StatusCard label="In Progress" value={String(inProgress)} />
+                    <StatusCard label="Resolved" value={String(resolved)} />
                 </div>
 
                 {/* Recent Issues */}
                 <div className="flex flex-col gap-3">
                     <h2 className="text-base font-semibold text-gray-800">Recent Issues</h2>
-                    {ISSUES.map((issue, index) => (
-                        <IssueCard key={issue.id} issue={issue} priority={index === 0} />
-                    ))}
+                    {incidents.length === 0 ? (
+                        <p className="text-sm text-gray-400 text-center py-6">No incidents reported yet.</p>
+                    ) : (
+                        incidents.map((issue, index) => (
+                            <button
+                                key={issue.id}
+                                type="button"
+                                className="w-full text-left"
+                                onClick={() => setSelectedIssue(issue)}
+                            >
+                                <IssueCard issue={issue} priority={index === 0} />
+                            </button>
+                        ))
+                    )}
                 </div>
             </div>
 
             <ReportIssueModal
                 visible={modalVisible}
-                onClose={() => setModalVisible(false)}
+                onClose={() => {
+                    setModalVisible(false);
+                    refetch();
+                }}
             />
+
+            <IncidentDetailModal
+                issue={selectedIssue}
+                onClose={() => setSelectedIssue(null)}
+            />
+
+            <SessionExpiryWarning />
         </main>
     );
 }

@@ -14,13 +14,16 @@ const getLocalIP = (): string | null => {
 
 const localIP = getLocalIP();
 
+const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api$/, "") ?? "http://localhost:8080";
+
 const nextConfig: NextConfig = {
+  output: "standalone",
   allowedDevOrigins: localIP ? [localIP] : [],
   async rewrites() {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:8080/api/:path*",
+        destination: `${backendUrl}/api/:path*`,
       },
     ];
   },
@@ -33,6 +36,11 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "res.cloudinary.com",
+      },
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "8080",
       },
     ],
   },

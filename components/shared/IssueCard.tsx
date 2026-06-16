@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { Issue } from "@/app/types/issue";
 
 interface IssueCardProps {
@@ -6,18 +5,17 @@ interface IssueCardProps {
     priority?: boolean;
 }
 
-export default function IssueCard({ issue, priority = false }: IssueCardProps) {
+export default function IssueCard({ issue }: IssueCardProps) {
     return (
         <div className="flex gap-3 bg-white rounded-xl p-3 shadow-sm">
-            <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
-                <Image
-                    src={issue.image}
-                    alt={issue.title}
-                    fill
-                    sizes="64px"
-                    priority={priority}
-                    className="object-cover"
-                />
+            <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+                {issue.image && (
+                    <img
+                        src={issue.image}
+                        alt={issue.title}
+                        className="w-full h-full object-cover"
+                    />
+                )}
             </div>
 
             <div className="flex flex-col justify-center flex-1 min-w-0">
