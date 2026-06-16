@@ -2,6 +2,14 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import CivilianDashboard from "@/app/(civilian)/civilian/dashboard/page";
 
+// Stub EventSource so the SSE useEffect doesn't crash in jsdom
+const mockEventSource = {
+    addEventListener: jest.fn(),
+    onerror: null as null | (() => void),
+    close: jest.fn(),
+};
+(global as unknown as { EventSource: unknown }).EventSource = jest.fn(() => mockEventSource);
+
 const mockPush = jest.fn();
 
 jest.mock("next/navigation", () => ({
@@ -23,11 +31,10 @@ jest.mock("@/app/api/generated/incidents/incidents", () => ({
                 },
             ],
         },
-        isLoading: false,
+        refetch: jest.fn(),
     }),
-    useCreateIncident: () => ({
-        mutateAsync: jest.fn().mockResolvedValue({ data: { incidentId: "2", incidentType: "POTHOLE" } }),
-    }),
+    useCreateIncident: () => ({ mutate: jest.fn(), isPending: false }),
+    useConfirmDuplicate: () => ({ mutate: jest.fn(), isPending: false }),
 }));
 
 const setCookie = (value: string) => {
@@ -38,14 +45,8 @@ const setCookie = (value: string) => {
     });
 };
 
-const renderDashboard = () => {
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    return render(
-        <QueryClientProvider client={queryClient}>
-            <CivilianDashboard />
-        </QueryClientProvider>
-    );
-};
+const renderWithClient = (ui: React.ReactElement) =>
+    render(<QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>);
 
 beforeEach(() => {
     mockPush.mockClear();
@@ -55,36 +56,36 @@ beforeEach(() => {
 describe("CivilianDashboard", () => {
     describe("rendering", () => {
         it("renders the app name", () => {
-            renderDashboard();
+            renderWithClient(<CivilianDashboard />);
             expect(screen.getByText("Reporthole")).toBeInTheDocument();
         });
 
         it("renders the Report Issue button", () => {
-            renderDashboard();
+            renderWithClient(<CivilianDashboard />);
             expect(screen.getByRole("button", { name: /report issue/i })).toBeInTheDocument();
         });
 
         it("renders status cards", () => {
-            renderDashboard();
+            renderWithClient(<CivilianDashboard />);
             expect(screen.getByText("Total")).toBeInTheDocument();
             expect(screen.getByText("In Progress")).toBeInTheDocument();
             expect(screen.getByText("Resolved")).toBeInTheDocument();
         });
 
         it("renders recent issues section", () => {
-            renderDashboard();
+            renderWithClient(<CivilianDashboard />);
             expect(screen.getByText("Recent Issues")).toBeInTheDocument();
         });
 
         it("renders the issue list", () => {
-            renderDashboard();
-            expect(screen.getByText("Pothole")).toBeInTheDocument();
+            renderWithClient(<CivilianDashboard />);
+            expect(screen.getByText("POTHOLE")).toBeInTheDocument();
         });
     });
 
     describe("logout", () => {
         it("redirects to /login on logout", () => {
-            renderDashboard();
+            renderWithClient(<CivilianDashboard />);
             fireEvent.click(screen.getByLabelText("Logout"));
             expect(mockPush).toHaveBeenCalledWith("/login");
         });
@@ -92,13 +93,13 @@ describe("CivilianDashboard", () => {
 
     describe("report modal", () => {
         it("opens the report modal when Report Issue is clicked", () => {
-            renderDashboard();
+            renderWithClient(<CivilianDashboard />);
             fireEvent.click(screen.getByRole("button", { name: /report issue/i }));
             expect(screen.getByText("Issue Type")).toBeInTheDocument();
         });
 
         it("closes the modal when Cancel is clicked", () => {
-            renderDashboard();
+            renderWithClient(<CivilianDashboard />);
             fireEvent.click(screen.getByRole("button", { name: /report issue/i }));
             fireEvent.click(screen.getByText("Cancel"));
             expect(screen.queryByText("Issue Type")).not.toBeInTheDocument();

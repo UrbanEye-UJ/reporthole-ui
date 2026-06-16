@@ -5,15 +5,24 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        BACKEND_URL: http://reporthole-be:8080
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://reporthole-be:8080/api}
     container_name: reporthole-fe
     ports:
       - "3000:3000"
     environment:
-      BACKEND_URL: http://reporthole-be:8080
+      APP_ENV: ${APP_ENV:-local}
+      HOSTNAME: "0.0.0.0"
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://reporthole-be:8080/api}
+      INTERNAL_API_URL: http://reporthole-be:8080/api
     networks:
       - reporthole-net
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 networks:
   reporthole-net:

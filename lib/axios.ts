@@ -62,11 +62,15 @@ export const responseErrorInterceptor = (error: unknown): Promise<never> => {
     console.error(`[API] ${status ?? "NETWORK_ERROR"} ${url}`);
 
     if (status === 401) {
+        const hadToken = document.cookie.includes("reporthole_token=");
         document.cookie = "reporthole_token=; path=/; max-age=0";
         document.cookie = "reporthole_role=; path=/; max-age=0";
-        document.cookie = "reporthole_user_id=; path=/; max-age=0";
-        console.warn("[API] Session expired — redirecting to login");
-        router.navigate("/login");
+        if (hadToken) {
+            console.warn("[API] Session invalid — showing expiry warning");
+            window.dispatchEvent(new CustomEvent("session-invalid"));
+        } else {
+            router.navigate("/login");
+        }
     }
 
     return Promise.reject(error);

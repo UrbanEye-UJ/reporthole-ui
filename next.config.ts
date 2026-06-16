@@ -14,6 +14,8 @@ const getLocalIP = (): string | null => {
 
 const localIP = getLocalIP();
 
+const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api$/, "") ?? "http://localhost:8080";
+
 const nextConfig: NextConfig = {
   output: "standalone",
   allowedDevOrigins: localIP ? [localIP] : [],
@@ -21,7 +23,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: `${process.env.BACKEND_URL ?? "http://localhost:8080"}/api/:path*`,
+        destination: `${backendUrl}/api/:path*`,
       },
     ];
   },
@@ -30,6 +32,19 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+      },
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "8080",
+      },
+      {
+        protocol: "https",
+        hostname: "unpkg.com",
       },
     ],
   },

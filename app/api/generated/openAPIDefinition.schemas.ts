@@ -4,38 +4,6 @@
  * OpenAPI definition
  * OpenAPI spec version: v0
  */
-export type IncidentRequestDTOIncidentType = typeof IncidentRequestDTOIncidentType[keyof typeof IncidentRequestDTOIncidentType];
-
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const IncidentRequestDTOIncidentType = {
-  POTHOLE: 'POTHOLE',
-  CRACK: 'CRACK',
-  FADED_MARKINGS: 'FADED_MARKINGS',
-  DAMAGED_SIGN: 'DAMAGED_SIGN',
-  BLOCKED_DRAIN: 'BLOCKED_DRAIN',
-  BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
-  ACCIDENT: 'ACCIDENT',
-} as const;
-
-export type IncidentRequestDTOSource = typeof IncidentRequestDTOSource[keyof typeof IncidentRequestDTOSource];
-
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const IncidentRequestDTOSource = {
-  MANUAL: 'MANUAL',
-  DASHCAM: 'DASHCAM',
-} as const;
-
-export interface IncidentRequestDTO {
-  incidentType?: IncidentRequestDTOIncidentType;
-  description?: string;
-  source?: IncidentRequestDTOSource;
-  latitude?: number;
-  longitude?: number;
-  imageBase64?: string;
-}
-
 export interface AppResponseIncidentResponseDTO {
   data?: IncidentResponseDTO;
   message?: string;
@@ -76,6 +44,46 @@ export interface IncidentResponseDTO {
   longitude?: number;
   imageUrl?: string;
   userId?: string;
+  reportCount?: number;
+  reporterCount?: number;
+  locationAddress?: string;
+  duplicate?: boolean;
+  alreadyConfirmed?: boolean;
+  existingIncidentId?: string;
+}
+
+export type IncidentRequestDTOIncidentType = typeof IncidentRequestDTOIncidentType[keyof typeof IncidentRequestDTOIncidentType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const IncidentRequestDTOIncidentType = {
+  POTHOLE: 'POTHOLE',
+  CRACK: 'CRACK',
+  FADED_MARKINGS: 'FADED_MARKINGS',
+  DAMAGED_SIGN: 'DAMAGED_SIGN',
+  BLOCKED_DRAIN: 'BLOCKED_DRAIN',
+  BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
+  ACCIDENT: 'ACCIDENT',
+} as const;
+
+export type IncidentRequestDTOSource = typeof IncidentRequestDTOSource[keyof typeof IncidentRequestDTOSource];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const IncidentRequestDTOSource = {
+  MANUAL: 'MANUAL',
+  DASHCAM: 'DASHCAM',
+} as const;
+
+export interface IncidentRequestDTO {
+  incidentType?: IncidentRequestDTOIncidentType;
+  description?: string;
+  source?: IncidentRequestDTOSource;
+  latitude?: number;
+  longitude?: number;
+  imageBase64?: string;
+  forceCreate?: boolean;
+  locationAddress?: string;
 }
 
 export type RegisterRequestRole = typeof RegisterRequestRole[keyof typeof RegisterRequestRole];
@@ -139,3 +147,8 @@ export interface AppResponseListIncidentResponseDTO {
   timestamp?: string;
 }
 
+export type SseEmitterTimeout = number | null;
+
+export interface SseEmitter {
+  timeout?: SseEmitterTimeout;
+}

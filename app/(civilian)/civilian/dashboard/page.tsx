@@ -1,51 +1,74 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import StatusCard from "@/components/shared/StatusCard";
 import IssueCard from "@/components/shared/IssueCard";
 import ReportIssueModal from "@/components/shared/ReportIssueModal";
-import { Issue } from "@/app/types/issue";
-import type { IncidentResponseDTO } from "@/app/api/generated/openAPIDefinition.schemas";
+import IncidentDetailModal from "@/components/shared/IncidentDetailModal";
+import SessionExpiryWarning from "@/components/shared/SessionExpiryWarning";
 import { useGetMyIncidents } from "@/app/api/generated/incidents/incidents";
+import { Issue, Status } from "@/app/types/issue";
+import { IncidentResponseDTO } from "@/app/api/generated/openAPIDefinition.schemas";
+
+const getCookie = (name: string) =>
+    document.cookie
+        .split("; ")
+        .find((row) => row.startsWith(`${name}=`))
+        ?.split("=")[1] ?? "";
 
 function toIssue(dto: IncidentResponseDTO): Issue {
-    const rawType = dto.incidentType ?? "UNKNOWN";
-    const title = rawType.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-    const date = dto.incidentDate
-        ? new Date(dto.incidentDate).toLocaleDateString("en-ZA", { month: "short", day: "numeric" })
-        : "";
     return {
-        id: dto.incidentId ?? crypto.randomUUID(),
-        title,
+        id: dto.incidentId ?? "",
+        title: dto.incidentType?.replace(/_/g, " ") ?? "Unknown",
         description: dto.description ?? "",
-        location: `${dto.latitude?.toFixed(4)}, ${dto.longitude?.toFixed(4)}`,
-        date,
-        status: "reported",
-        image: dto.imageUrl ?? "",
+        location: dto.locationAddress
+            ?? (dto.latitude != null && dto.longitude != null
+                ? `${dto.latitude.toFixed(4)}, ${dto.longitude.toFixed(4)}`
+                : "Unknown location"),
+        locationAddress: dto.locationAddress,
+        date: dto.incidentDate ? new Date(dto.incidentDate).toLocaleDateString("en-ZA", { day: "numeric", month: "short" }) : "",
+        status: (dto.incidentType ? "reported" : "reported") as Status,
+        image: dto.imageUrl ? `/api/image-proxy?url=${encodeURIComponent(dto.imageUrl)}` : "",
+        reporterCount: dto.reporterCount ?? 1,
     };
 }
 
 export default function CivilianDashboard() {
     const router = useRouter();
     const [modalVisible, setModalVisible] = useState(false);
+    const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
     const [role, setRole] = useState("");
-    const [newIncidents, setNewIncidents] = useState<IncidentResponseDTO[]>([]);
-    const { data: myIncidentsResponse, isLoading: loading } = useGetMyIncidents();
 
     useEffect(() => {
-        const value = document.cookie
-            .split("; ")
-            .find((row) => row.startsWith("reporthole_role="))
-            ?.split("=")[1] ?? "";
-        setRole(value);
+        setRole(getCookie("reporthole_role"));
     }, []);
 
-    const issues = useMemo(() => {
-        const fetched = (myIncidentsResponse?.data ?? []).map(toIssue);
-        const added = newIncidents.map(toIssue);
-        return [...added, ...fetched];
-    }, [myIncidentsResponse, newIncidents]);
+    const { data, refetch } = useGetMyIncidents({ query: { staleTime: 0, refetchOnWindowFocus: false } });
+    const incidents: Issue[] = (data?.data ?? []).map(toIssue);
+
+    // Keep the open detail modal in sync when incidents refresh (e.g. after confirming a duplicate)
+    useEffect(() => {
+        if (selectedIssue && data?.data) {
+            const updatedDto = data.data.find((d) => d.incidentId === selectedIssue.id);
+            if (updatedDto) setSelectedIssue(toIssue(updatedDto));
+        }
+    }, [data]);
+
+    // Real-time updates: Next.js Route Handler proxies the SSE stream and adds the
+    // Authorization header server-side, so the token never appears in the URL and
+    // the connection works on any device (mobile, desktop, dev, prod).
+    useEffect(() => {
+        const token = getCookie("reporthole_token");
+        if (!token) return;
+        const es = new EventSource(`/api/incidents/events?token=${token}`);
+        es.addEventListener("incident-updated", () => { refetch(); });
+        es.onerror = () => { es.close(); refetch(); };
+        return () => { es.close(); };
+    }, []);
+
+    const resolved = incidents.filter((i) => i.status === "resolved").length;
+    const inProgress = incidents.filter((i) => i.status === "in_progress").length;
 
     const handleLogout = () => {
         document.cookie = "reporthole_token=; path=/; max-age=0";
@@ -53,13 +76,6 @@ export default function CivilianDashboard() {
         document.cookie = "reporthole_user_id=; path=/; max-age=0";
         router.push("/login");
     };
-
-    const handleNewIncident = (dto: IncidentResponseDTO) => {
-        setNewIncidents((prev) => [dto, ...prev]);
-    };
-
-    const resolved = issues.filter((i) => i.status === "resolved").length;
-    const inProgress = issues.filter((i) => i.status === "in_progress").length;
 
     return (
         <main className="min-h-screen bg-gray-100">
@@ -98,7 +114,7 @@ export default function CivilianDashboard() {
 
                 {/* Stats */}
                 <div className="flex gap-3">
-                    <StatusCard label="Total" value={String(issues.length)} />
+                    <StatusCard label="Total" value={String(incidents.length)} />
                     <StatusCard label="In Progress" value={String(inProgress)} />
                     <StatusCard label="Resolved" value={String(resolved)} />
                 </div>
@@ -106,23 +122,37 @@ export default function CivilianDashboard() {
                 {/* Recent Issues */}
                 <div className="flex flex-col gap-3">
                     <h2 className="text-base font-semibold text-gray-800">Recent Issues</h2>
-                    {loading && (
-                        <p className="text-sm text-gray-400 text-center py-6">Loading...</p>
+                    {incidents.length === 0 ? (
+                        <p className="text-sm text-gray-400 text-center py-6">No incidents reported yet.</p>
+                    ) : (
+                        incidents.map((issue, index) => (
+                            <button
+                                key={issue.id}
+                                type="button"
+                                className="w-full text-left"
+                                onClick={() => setSelectedIssue(issue)}
+                            >
+                                <IssueCard issue={issue} priority={index === 0} />
+                            </button>
+                        ))
                     )}
-                    {!loading && issues.length === 0 && (
-                        <p className="text-sm text-gray-400 text-center py-6">No issues reported yet.</p>
-                    )}
-                    {issues.map((issue, index) => (
-                        <IssueCard key={issue.id} issue={issue} priority={index === 0} />
-                    ))}
                 </div>
             </div>
 
             <ReportIssueModal
                 visible={modalVisible}
-                onClose={() => setModalVisible(false)}
-                onSuccess={handleNewIncident}
+                onClose={() => {
+                    setModalVisible(false);
+                    refetch();
+                }}
             />
+
+            <IncidentDetailModal
+                issue={selectedIssue}
+                onClose={() => setSelectedIssue(null)}
+            />
+
+            <SessionExpiryWarning />
         </main>
     );
 }
