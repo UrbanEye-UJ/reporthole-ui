@@ -5,7 +5,9 @@ export interface Issue {
     title: string;
     description: string;
     location: string;
+    locationAddress?: string;
     date: string;
     status: Status;
     image: string;
+    reporterCount?: number;
 }

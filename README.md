@@ -50,15 +50,12 @@ The Reporthole frontend is a web application built with Next.js that allows civi
 
 ## Running locally for development
 
-Create a folder called `reporthole` and navigate into it:
+Use this when you want to write and test frontend code.
+
+### 1. Navigate to the frontend folder
 
 ```bash
-
-### 1. Clone the repo and navigate to the frontend
-
-```bash
-git clone https://github.com/UrbanEye-UJ/reporthole-ui.git
-cd reporthole/reporthole-fe
+cd reporthole-fe
 ```
 
 ### 2. Install dependencies
@@ -72,24 +69,31 @@ npm install
 Create a file called `.env.local` in the `reporthole-fe` folder:
 
 ```bash
+cp .env.example .env.local
+```
 
-Open `.env.local` and fill in the values — ask a teammate if you are unsure:
+Open `.env.local` and fill in the values:
 
 ```env
-REPORTHOLE_API_BASE_URL=http://localhost:8080/api
+# URL of the running backend. Change to your machine's LAN IP if testing on mobile.
+NEXT_PUBLIC_API_URL=http://localhost:8080/api
 ```
 
 > `.env.local` is already in `.gitignore`. Never commit it.
 
-### 4. Start the development server
+### 4. Start the backend
+
+The backend must be running before the frontend will work. Start it first — either standalone (IntelliJ) or via Docker. See the backend [README](../reporthole-be/README.md).
+
+### 5. Start the development server
 
 ```bash
 npm run dev
 ```
 
-The app will be available at http://localhost:3000
+The app will be available at `http://localhost:3000`.
 
-The dev server has hot reload — any changes you save will reflect in the browser immediately without restarting.
+The dev server has hot reload — any changes you save reflect in the browser immediately.
 
 ---
 
@@ -230,6 +234,7 @@ A new backend tag (e.g. `@Tag(name = "Users")`) will create a new subfolder and 
 | `npm run start` | Run the production build locally |
 | `npm run lint` | Check for linting errors |
 | `npm run generate:api` | Regenerate the API client from the backend OpenAPI spec |
+| `npm test` | Run the Jest unit test suite |
 
 ---
 
@@ -238,64 +243,87 @@ A new backend tag (e.g. `@Tag(name = "Users")`) will create a new subfolder and 
 ```
 reporthole-fe/
 ├── app/                    # Next.js app router — pages and layouts
+│   ├── api/                # Next.js Route Handlers (server-side API routes)
+│   │   ├── incidents/
+│   │   │   └── events/     # SSE proxy — forwards real-time updates from the backend
+│   │   └── image-proxy/    # Image proxy — fetches backend images server-side
+│   └── api/generated/      # orval-generated API client (do not edit manually)
 ├── components/             # Reusable UI components
-├── lib/                    # Utilities, API client, helpers
+├── lib/                    # Utilities, axios instance, helpers
 ├── public/                 # Static assets (images, icons)
+├── __tests__/              # Jest unit tests
 ├── .env.local              # Your local environment variables (never commit)
 ├── .env.example            # Template — copy this to .env.local
 ├── middleware.ts           # Next.js middleware (auth guards, redirects)
 ├── next.config.ts          # Next.js configuration
 ├── orval.config.ts         # orval API generation config
-├── tailwind.config         # Tailwind CSS configuration (via postcss.config.mjs)
 ├── tsconfig.json           # TypeScript configuration
 └── package.json
 ```
 
+### Route Handlers (Next.js server-side API routes)
+
+Two Route Handlers proxy requests to the backend. These run on the Next.js server — the browser never talks to the backend directly for these:
+
+| Route | Purpose |
+|-------|---------|
+| `/api/incidents/events` | Proxies the SSE stream from the backend. Adds the `Authorization` header server-side so EventSource (which cannot set custom headers) works from any device. |
+| `/api/image-proxy` | Fetches incident images from the backend and streams them to the browser. Needed because images are stored on the backend server's local disk. |
+
 ---
 
-## Running via Docker
+## Running via Docker (full stack)
 
-If you just want to run the frontend to test it without setting up Node.js:
+Use this when you want to run the complete system (frontend + backend + database) together without installing Node.js or Java.
 
-### 1. Make sure the backend is running first
+The full stack is orchestrated from the **backend folder** using a single `docker-compose.yml`.
 
-See the backend [DOCKER.md](../reporthole-be/DOCKER.md) and get it running before continuing.
-
-### 2. Navigate to the frontend folder
+### 1. Set up the backend `.env` file
 
 ```bash
-cd reporthole/reporthole-fe
+cd reporthole-be
+cp .env.example .env
 ```
 
-### 3. Create your `.env.local` file
+Fill in the required values (ask a teammate for `JASYPT_ENCRYPTOR_PASSWORD`).
+
+### 2. Set up the frontend `.env.local` file
 
 ```bash
+cd reporthole-fe
 cp .env.example .env.local
 ```
 
-The default value should work as-is if the backend is running locally:
+For Docker, the frontend calls the backend via Docker's internal network, not `localhost`. Set:
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:8080/api
+# Internal Docker network address — used by Route Handlers on the Next.js server
+NEXT_PUBLIC_API_URL=http://reporthole-be:8080/api
 ```
 
-### 4. Build and run the Docker container
+> **Note:** `NEXT_PUBLIC_API_URL` with the Docker service name (`reporthole-be`) works for server-side calls (Route Handlers, orval). Browser-side calls use relative paths (`/api/...`) which route through Route Handlers — the browser never needs to resolve `reporthole-be` directly.
+
+### 3. Build and start the full stack
+
+From the `reporthole-be` folder:
 
 ```bash
-docker build -t reporthole-fe .
-docker run -p 3000:3000 --env-file .env.local reporthole-fe
+docker compose up --build
 ```
 
-The app will be available at http://localhost:3000
+The frontend will be available at `http://localhost:3000`.
+The backend API will be available at `http://localhost:8080/api`.
 
-### 5. Stopping the container
+### 4. Stopping
 
 ```bash
-# Find the container ID
-docker ps
+docker compose down
+```
 
-# Stop it
-docker stop <container-id>
+To also wipe the database volume:
+
+```bash
+docker compose down -v
 ```
 
 ---
@@ -324,7 +352,7 @@ netstat -ano | findstr :3000
 # then: taskkill /PID <pid> /F
 ```
 
-Or just run on a different port:
+Or run on a different port:
 
 ```bash
 npm run dev -- -p 3001
@@ -337,6 +365,13 @@ Make sure the backend is running at `http://localhost:8080/api` and that `NEXT_P
 **`npm run generate:api` fails**
 
 The backend must be running when you run this command. Start it first, wait for it to be healthy, then try again.
+
+**Real-time updates (SSE) not working**
+
+The SSE stream runs through the Next.js Route Handler at `/api/incidents/events`. If updates are not appearing:
+- Check the browser Network tab for a long-lived request to `/api/incidents/events`
+- Check the backend logs for `[SSE] User ... connected`
+- Make sure your JWT cookie (`reporthole_token`) is present
 
 **Changes not showing in the browser**
 
