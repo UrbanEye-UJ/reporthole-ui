@@ -27,10 +27,13 @@ import type {
   AppResponseIncidentResponseDTO,
   AppResponseListIncidentResponseDTO,
   IncidentRequestDTO,
+  SearchMyIncidentsParams,
   SseEmitter
 } from '../openAPIDefinition.schemas';
 
 import { apiClient } from '../../../../lib/axios';
+
+
 
 
 /**
@@ -41,11 +44,14 @@ export const confirmDuplicate = (
     id: string,
  signal?: AbortSignal
 ) => {
+      
+      
       return apiClient<AppResponseIncidentResponseDTO>(
       {url: `/incidents/${id}/confirm`, method: 'POST', signal
     },
       );
     }
+  
 
 
 export const getConfirmDuplicateMutationOptions = <TError = AppResponseIncidentResponseDTO,
@@ -59,14 +65,22 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
+      
+
+
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmDuplicate>>, {id: string}> = (props) => {
           const {id} = props ?? {};
+
           return  confirmDuplicate(id,)
         }
+
+        
+
 
   return  { mutationFn, ...mutationOptions }}
 
     export type ConfirmDuplicateMutationResult = NonNullable<Awaited<ReturnType<typeof confirmDuplicate>>>
+    
     export type ConfirmDuplicateMutationError = AppResponseIncidentResponseDTO
 
     /**
@@ -82,10 +96,10 @@ export const useConfirmDuplicate = <TError = AppResponseIncidentResponseDTO,
       > => {
 
       const mutationOptions = getConfirmDuplicateMutationOptions(options);
+
       return useMutation(mutationOptions, queryClient);
     }
-
-/**
+    /**
  * Creates a new incident. If a similar incident exists nearby, returns it with duplicate=true so the client can prompt the user to confirm.
  * @summary Create incident
  */
@@ -93,13 +107,16 @@ export const createIncident = (
     incidentRequestDTO: IncidentRequestDTO,
  signal?: AbortSignal
 ) => {
-      return apiClient<AppResponseIncidentResponseDTO>(
+      
+      
+      return apiClient<AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO>(
       {url: `/incidents/create`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: incidentRequestDTO, signal
     },
       );
     }
+  
 
 
 export const getCreateIncidentMutationOptions = <TError = AppResponseIncidentResponseDTO,
@@ -113,10 +130,17 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
+      
+
+
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof createIncident>>, {data: IncidentRequestDTO}> = (props) => {
           const {data} = props ?? {};
+
           return  createIncident(data,)
         }
+
+        
+
 
   return  { mutationFn, ...mutationOptions }}
 
@@ -137,10 +161,10 @@ export const useCreateIncident = <TError = AppResponseIncidentResponseDTO,
       > => {
 
       const mutationOptions = getCreateIncidentMutationOptions(options);
+
       return useMutation(mutationOptions, queryClient);
     }
-
-/**
+    /**
  * Returns a single incident by its UUID.
  * @summary Get incident by ID
  */
@@ -148,23 +172,39 @@ export const getIncidentById = (
     id: string,
  signal?: AbortSignal
 ) => {
+      
+      
       return apiClient<AppResponseIncidentResponseDTO>(
       {url: `/incidents/${id}`, method: 'GET', signal
     },
       );
     }
+  
+
 
 
 export const getGetIncidentByIdQueryKey = (id?: string,) => {
-    return [`/incidents/${id}`] as const;
+    return [
+    `/incidents/${id}`
+    ] as const;
     }
 
+    
 export const getGetIncidentByIdQueryOptions = <TData = Awaited<ReturnType<typeof getIncidentById>>, TError = AppResponseIncidentResponseDTO>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentById>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
+
   const queryKey =  queryOptions?.queryKey ?? getGetIncidentByIdQueryKey(id);
+
+  
+
     const queryFn: QueryFunction<Awaited<ReturnType<typeof getIncidentById>>> = ({ signal }) => getIncidentById(id, signal);
+
+      
+
+      
+
    return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIncidentById>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
@@ -199,16 +239,21 @@ export function useGetIncidentById<TData = Awaited<ReturnType<typeof getIncident
 /**
  * @summary Get incident by ID
  */
+
 export function useGetIncidentById<TData = Awaited<ReturnType<typeof getIncidentById>>, TError = AppResponseIncidentResponseDTO>(
  id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentById>>, TError, TData>>, }
- , queryClient?: QueryClient
+ , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetIncidentByIdQueryOptions(id,options)
+
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
   query.queryKey = queryOptions.queryKey ;
+
   return query;
 }
+
 
 
 /**
@@ -216,25 +261,42 @@ export function useGetIncidentById<TData = Awaited<ReturnType<typeof getIncident
  * @summary Get my incidents
  */
 export const getMyIncidents = (
+    
  signal?: AbortSignal
 ) => {
+      
+      
       return apiClient<AppResponseListIncidentResponseDTO>(
       {url: `/incidents/my`, method: 'GET', signal
     },
       );
     }
+  
+
 
 
 export const getGetMyIncidentsQueryKey = () => {
-    return [`/incidents/my`] as const;
+    return [
+    `/incidents/my`
+    ] as const;
     }
 
+    
 export const getGetMyIncidentsQueryOptions = <TData = Awaited<ReturnType<typeof getMyIncidents>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyIncidents>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
+
   const queryKey =  queryOptions?.queryKey ?? getGetMyIncidentsQueryKey();
+
+  
+
     const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyIncidents>>> = ({ signal }) => getMyIncidents(signal);
+
+      
+
+      
+
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyIncidents>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
@@ -269,16 +331,114 @@ export function useGetMyIncidents<TData = Awaited<ReturnType<typeof getMyInciden
 /**
  * @summary Get my incidents
  */
+
 export function useGetMyIncidents<TData = Awaited<ReturnType<typeof getMyIncidents>>, TError = unknown>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyIncidents>>, TError, TData>>, }
- , queryClient?: QueryClient
+ , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetMyIncidentsQueryOptions(options)
+
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
   query.queryKey = queryOptions.queryKey ;
+
   return query;
 }
+
+
+
+/**
+ * Filters the authenticated user's incidents by a free-text keyword (matched against description and location address) and/or by issue type. Omit either parameter to skip that filter.
+ * @summary Search my incidents
+ */
+export const searchMyIncidents = (
+    params?: SearchMyIncidentsParams,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseListIncidentResponseDTO>(
+      {url: `/incidents/my/search`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+  
+
+
+
+export const getSearchMyIncidentsQueryKey = (params?: SearchMyIncidentsParams,) => {
+    return [
+    `/incidents/my/search`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getSearchMyIncidentsQueryOptions = <TData = Awaited<ReturnType<typeof searchMyIncidents>>, TError = AppResponseListIncidentResponseDTO>(params?: SearchMyIncidentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof searchMyIncidents>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchMyIncidentsQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchMyIncidents>>> = ({ signal }) => searchMyIncidents(params, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchMyIncidents>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SearchMyIncidentsQueryResult = NonNullable<Awaited<ReturnType<typeof searchMyIncidents>>>
+export type SearchMyIncidentsQueryError = AppResponseListIncidentResponseDTO
+
+
+export function useSearchMyIncidents<TData = Awaited<ReturnType<typeof searchMyIncidents>>, TError = AppResponseListIncidentResponseDTO>(
+ params: undefined |  SearchMyIncidentsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof searchMyIncidents>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof searchMyIncidents>>,
+          TError,
+          Awaited<ReturnType<typeof searchMyIncidents>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSearchMyIncidents<TData = Awaited<ReturnType<typeof searchMyIncidents>>, TError = AppResponseListIncidentResponseDTO>(
+ params?: SearchMyIncidentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof searchMyIncidents>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof searchMyIncidents>>,
+          TError,
+          Awaited<ReturnType<typeof searchMyIncidents>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSearchMyIncidents<TData = Awaited<ReturnType<typeof searchMyIncidents>>, TError = AppResponseListIncidentResponseDTO>(
+ params?: SearchMyIncidentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof searchMyIncidents>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Search my incidents
+ */
+
+export function useSearchMyIncidents<TData = Awaited<ReturnType<typeof searchMyIncidents>>, TError = AppResponseListIncidentResponseDTO>(
+ params?: SearchMyIncidentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof searchMyIncidents>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSearchMyIncidentsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
 
 
 /**
@@ -286,25 +446,42 @@ export function useGetMyIncidents<TData = Awaited<ReturnType<typeof getMyInciden
  * @summary SSE stream
  */
 export const subscribeToIncidentEvents = (
+    
  signal?: AbortSignal
 ) => {
+      
+      
       return apiClient<SseEmitter>(
       {url: `/incidents/events`, method: 'GET', signal
     },
       );
     }
+  
+
 
 
 export const getSubscribeToIncidentEventsQueryKey = () => {
-    return [`/incidents/events`] as const;
+    return [
+    `/incidents/events`
+    ] as const;
     }
 
+    
 export const getSubscribeToIncidentEventsQueryOptions = <TData = Awaited<ReturnType<typeof subscribeToIncidentEvents>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof subscribeToIncidentEvents>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
+
   const queryKey =  queryOptions?.queryKey ?? getSubscribeToIncidentEventsQueryKey();
+
+  
+
     const queryFn: QueryFunction<Awaited<ReturnType<typeof subscribeToIncidentEvents>>> = ({ signal }) => subscribeToIncidentEvents(signal);
+
+      
+
+      
+
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof subscribeToIncidentEvents>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
@@ -339,13 +516,20 @@ export function useSubscribeToIncidentEvents<TData = Awaited<ReturnType<typeof s
 /**
  * @summary SSE stream
  */
+
 export function useSubscribeToIncidentEvents<TData = Awaited<ReturnType<typeof subscribeToIncidentEvents>>, TError = unknown>(
   options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof subscribeToIncidentEvents>>, TError, TData>>, }
- , queryClient?: QueryClient
+ , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSubscribeToIncidentEventsQueryOptions(options)
+
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
   query.queryKey = queryOptions.queryKey ;
+
   return query;
 }
+
+
+

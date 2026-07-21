@@ -92,17 +92,26 @@ describe("CivilianDashboard", () => {
     });
 
     describe("report modal", () => {
-        it("opens the report modal when Report Issue is clicked", () => {
+        it("opens the mode chooser when Report Issue is clicked", () => {
             renderWithClient(<CivilianDashboard />);
             fireEvent.click(screen.getByRole("button", { name: /report issue/i }));
+            expect(screen.getByText("Report an Issue")).toBeInTheDocument();
+            expect(screen.getByText("Detect with AI")).toBeInTheDocument();
+            expect(screen.getByText("Report Manually")).toBeInTheDocument();
+        });
+
+        it("shows the form with Issue Type after choosing Report Manually", () => {
+            renderWithClient(<CivilianDashboard />);
+            fireEvent.click(screen.getByRole("button", { name: /report issue/i }));
+            fireEvent.click(screen.getByText("Report Manually"));
             expect(screen.getByText("Issue Type")).toBeInTheDocument();
         });
 
-        it("closes the modal when Cancel is clicked", () => {
+        it("closes the modal when Cancel is clicked on the chooser", () => {
             renderWithClient(<CivilianDashboard />);
             fireEvent.click(screen.getByRole("button", { name: /report issue/i }));
             fireEvent.click(screen.getByText("Cancel"));
-            expect(screen.queryByText("Issue Type")).not.toBeInTheDocument();
+            expect(screen.queryByText("Report an Issue")).not.toBeInTheDocument();
         });
     });
 });

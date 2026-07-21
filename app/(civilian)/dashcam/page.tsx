@@ -6,7 +6,7 @@
  * Turns the device into a road-damage dashcam:
  *  1. Streams the rear camera to a <video> element.
  *  2. Captures a frame every 2 seconds via a hidden <canvas>.
- *  3. Posts each frame to /api/ml/predict (Next.js proxy → ML service).
+ *  3. Posts each frame to /api/inference/predict (Spring Boot ONNX endpoint).
  *  4. Applies confidence-based routing:
  *       ≥ 0.80  → AUTO_LOG  — incident created immediately
  *       ≥ 0.65  → ESCALATE  — user must tap "Confirm" in the event log
@@ -211,7 +211,7 @@ export default function DashcamPage() {
         try {
             const form = new FormData();
             form.append("image", blob, "frame.jpg");
-            const mlRes = await fetch("/api/ml/predict", { method: "POST", body: form });
+            const mlRes = await fetch("/api/inference/predict", { method: "POST", body: form });
             if (!mlRes.ok) return;
             prediction = await mlRes.json();
         } catch {

@@ -6,6 +6,7 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://reporthole-be:8080/api}
+        INTERNAL_API_URL: http://reporthole-be:8080/api
     container_name: reporthole-fe
     ports:
       - "3000:3000"
