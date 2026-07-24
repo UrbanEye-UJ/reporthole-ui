@@ -14,6 +14,7 @@ export default function RegisterPage() {
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState("");
+    const [phoneNumber, setPhoneNumber] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
@@ -36,11 +37,18 @@ export default function RegisterPage() {
         },
     });
 
+    const PASSWORD_REGEX = /^(?=.*[0-9])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+
     const handleRegister = () => {
         setError(null);
 
-        if (!firstName || !lastName || !email || !password || !confirmPassword) {
+        if (!firstName || !lastName || !email || !phoneNumber || !password || !confirmPassword) {
             setError("Please fill in all fields.");
+            return;
+        }
+
+        if (!PASSWORD_REGEX.test(password)) {
+            setError("Password must be at least 8 characters and contain at least one number and one special character.");
             return;
         }
 
@@ -57,7 +65,7 @@ export default function RegisterPage() {
                 email,
                 password,
                 role: "CIVILIAN",
-                phoneNumber: "",
+                phoneNumber,
             },
         });
     };
@@ -77,6 +85,7 @@ export default function RegisterPage() {
                     placeholder="John"
                     type="text"
                     autoComplete="given-name"
+                    required
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     icon={
@@ -91,6 +100,7 @@ export default function RegisterPage() {
                     placeholder="Doe"
                     type="text"
                     autoComplete="family-name"
+                    required
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     icon={
@@ -105,6 +115,7 @@ export default function RegisterPage() {
                     placeholder="you@example.com"
                     type="email"
                     autoComplete="email"
+                    required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     icon={
@@ -116,10 +127,26 @@ export default function RegisterPage() {
                 />
 
                 <InputField
+                    label="Phone Number"
+                    placeholder="+27 71 234 5678"
+                    type="tel"
+                    autoComplete="tel"
+                    required
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    icon={
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                            <path fillRule="evenodd" d="M1.5 4.5a3 3 0 013-3h1.372c.86 0 1.61.586 1.819 1.42l1.105 4.423a1.875 1.875 0 01-.694 1.955l-1.293.97c-.135.101-.164.249-.126.352a11.285 11.285 0 006.697 6.697c.103.038.25.009.352-.126l.97-1.293a1.875 1.875 0 011.955-.694l4.423 1.105c.834.209 1.42.959 1.42 1.82V19.5a3 3 0 01-3 3h-2.25C8.552 22.5 1.5 15.448 1.5 6.75V4.5z" clipRule="evenodd" />
+                        </svg>
+                    }
+                />
+
+                <InputField
                     label="Password"
                     placeholder="••••••••"
                     type="password"
                     autoComplete="new-password"
+                    required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     icon={
@@ -128,12 +155,16 @@ export default function RegisterPage() {
                         </svg>
                     }
                 />
+                <p className="text-xs text-gray-400 -mt-1">
+                    Min. 8 characters · at least 1 number · at least 1 special character (!@#$%…)
+                </p>
 
                 <InputField
                     label="Confirm Password"
                     placeholder="••••••••"
                     type="password"
                     autoComplete="new-password"
+                    required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     icon={

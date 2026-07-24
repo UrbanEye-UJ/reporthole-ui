@@ -6,7 +6,7 @@ interface IssueCardProps {
     priority?: boolean;
 }
 
-export default function IssueCard({ issue, priority = false }: IssueCardProps) {
+export default function IssueCard({ issue, priority }: IssueCardProps) {
     return (
         <div className="flex gap-3 bg-white rounded-xl p-3 shadow-sm">
             <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">

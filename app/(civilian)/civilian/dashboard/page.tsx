@@ -1,51 +1,88 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import StatusCard from "@/components/shared/StatusCard";
 import IssueCard from "@/components/shared/IssueCard";
 import ReportIssueModal from "@/components/shared/ReportIssueModal";
-import { Issue } from "@/app/types/issue";
-import type { IncidentResponseDTO } from "@/app/api/generated/openAPIDefinition.schemas";
+import IncidentDetailModal from "@/components/shared/IncidentDetailModal";
+import SessionExpiryWarning from "@/components/shared/SessionExpiryWarning";
 import { useGetMyIncidents } from "@/app/api/generated/incidents/incidents";
+import { Issue, Status } from "@/app/types/issue";
+import { IncidentRequestDTOIncidentType, IncidentResponseDTO } from "@/app/api/generated/openAPIDefinition.schemas";
+
+const getCookie = (name: string) =>
+    document.cookie
+        .split("; ")
+        .find((row) => row.startsWith(`${name}=`))
+        ?.split("=")[1] ?? "";
 
 function toIssue(dto: IncidentResponseDTO): Issue {
-    const rawType = dto.incidentType ?? "UNKNOWN";
-    const title = rawType.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-    const date = dto.incidentDate
-        ? new Date(dto.incidentDate).toLocaleDateString("en-ZA", { month: "short", day: "numeric" })
-        : "";
     return {
-        id: dto.incidentId ?? crypto.randomUUID(),
-        title,
+        id: dto.incidentId ?? "",
+        userId: dto.userId ?? "",
+        title: dto.incidentType?.replace(/_/g, " ") ?? "Unknown",
         description: dto.description ?? "",
-        location: `${dto.latitude?.toFixed(4)}, ${dto.longitude?.toFixed(4)}`,
-        date,
-        status: "reported",
+        location: dto.locationAddress
+            ?? (dto.latitude != null && dto.longitude != null
+                ? `${dto.latitude.toFixed(4)}, ${dto.longitude.toFixed(4)}`
+                : "Unknown location"),
+        locationAddress: dto.locationAddress,
+        date: dto.incidentDate ? new Date(dto.incidentDate).toLocaleDateString("en-ZA", { day: "numeric", month: "short" }) : "",
+        status: (dto.incidentType ? "reported" : "reported") as Status,
         image: dto.imageUrl ?? "",
+        reporterCount: dto.reporterCount ?? 1,
     };
 }
+
+const ISSUE_TYPES = Object.values(IncidentRequestDTOIncidentType);
 
 export default function CivilianDashboard() {
     const router = useRouter();
     const [modalVisible, setModalVisible] = useState(false);
+    const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
     const [role, setRole] = useState("");
-    const [newIncidents, setNewIncidents] = useState<IncidentResponseDTO[]>([]);
-    const { data: myIncidentsResponse, isLoading: loading } = useGetMyIncidents();
+    const [searchKeyword, setSearchKeyword] = useState("");
+    const [searchType, setSearchType] = useState<string>("");
 
     useEffect(() => {
-        const value = document.cookie
-            .split("; ")
-            .find((row) => row.startsWith("reporthole_role="))
-            ?.split("=")[1] ?? "";
-        setRole(value);
+        setRole(getCookie("reporthole_role"));
     }, []);
 
-    const issues = useMemo(() => {
-        const fetched = (myIncidentsResponse?.data ?? []).map(toIssue);
-        const added = newIncidents.map(toIssue);
-        return [...added, ...fetched];
-    }, [myIncidentsResponse, newIncidents]);
+    const { data, refetch } = useGetMyIncidents({ query: { staleTime: 0, refetchOnWindowFocus: false } });
+    const allIncidents: Issue[] = (data?.data ?? []).map(toIssue);
+
+    const incidents: Issue[] = allIncidents.filter((issue) => {
+        const kw = searchKeyword.trim().toLowerCase();
+        const matchesKeyword = !kw ||
+            issue.title.toLowerCase().includes(kw) ||
+            issue.description.toLowerCase().includes(kw) ||
+            issue.location.toLowerCase().includes(kw);
+        const matchesType = !searchType || issue.title === searchType.replace(/_/g, " ");
+        return matchesKeyword && matchesType;
+    });
+
+    // Keep the open detail modal in sync when incidents refresh (e.g. after confirming a duplicate)
+    useEffect(() => {
+        if (selectedIssue && data?.data) {
+            const updatedDto = data.data.find((d) => d.incidentId === selectedIssue.id);
+            if (updatedDto) setSelectedIssue(toIssue(updatedDto));
+        }
+    }, [data]);
+
+    // Real-time updates: EventSource connects directly to Spring Boot.
+    // JWT is passed as ?token= because EventSource does not support custom headers.
+    useEffect(() => {
+        const token = getCookie("reporthole_token");
+        if (!token) return;
+        const es = new EventSource(`/api/incidents/events?token=${token}`);
+        es.addEventListener("incident-updated", () => { refetch(); });
+        es.onerror = () => { es.close(); refetch(); };
+        return () => { es.close(); };
+    }, []);
+
+    const resolved = allIncidents.filter((i) => i.status === "resolved").length;
+    const inProgress = allIncidents.filter((i) => i.status === "in_progress").length;
 
     const handleLogout = () => {
         document.cookie = "reporthole_token=; path=/; max-age=0";
@@ -53,13 +90,6 @@ export default function CivilianDashboard() {
         document.cookie = "reporthole_user_id=; path=/; max-age=0";
         router.push("/login");
     };
-
-    const handleNewIncident = (dto: IncidentResponseDTO) => {
-        setNewIncidents((prev) => [dto, ...prev]);
-    };
-
-    const resolved = issues.filter((i) => i.status === "resolved").length;
-    const inProgress = issues.filter((i) => i.status === "in_progress").length;
 
     return (
         <main className="min-h-screen bg-gray-100">
@@ -98,31 +128,86 @@ export default function CivilianDashboard() {
 
                 {/* Stats */}
                 <div className="flex gap-3">
-                    <StatusCard label="Total" value={String(issues.length)} />
+                    <StatusCard label="Total" value={String(allIncidents.length)} />
                     <StatusCard label="In Progress" value={String(inProgress)} />
                     <StatusCard label="Resolved" value={String(resolved)} />
                 </div>
 
+                {/* Search */}
+                <div className="flex flex-col gap-2">
+                    <div className="relative">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803a7.5 7.5 0 0010.607 10.607z" />
+                        </svg>
+                        <input
+                            type="text"
+                            placeholder="Search by description or location..."
+                            value={searchKeyword}
+                            onChange={(e) => setSearchKeyword(e.target.value)}
+                            className="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+                    <select
+                        value={searchType}
+                        onChange={(e) => setSearchType(e.target.value)}
+                        className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="">All issue types</option>
+                        {ISSUE_TYPES.map((t) => (
+                            <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
+                        ))}
+                    </select>
+                </div>
+
                 {/* Recent Issues */}
                 <div className="flex flex-col gap-3">
-                    <h2 className="text-base font-semibold text-gray-800">Recent Issues</h2>
-                    {loading && (
-                        <p className="text-sm text-gray-400 text-center py-6">Loading...</p>
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-base font-semibold text-gray-800">
+                            {searchKeyword || searchType ? "Search Results" : "Recent Issues"}
+                        </h2>
+                        {(searchKeyword || searchType) && (
+                            <button
+                                type="button"
+                                onClick={() => { setSearchKeyword(""); setSearchType(""); }}
+                                className="text-xs text-blue-600 hover:text-blue-800"
+                            >
+                                Clear
+                            </button>
+                        )}
+                    </div>
+                    {incidents.length === 0 ? (
+                        <p className="text-sm text-gray-400 text-center py-6">
+                            {searchKeyword || searchType ? "No incidents match your search." : "No incidents reported yet."}
+                        </p>
+                    ) : (
+                        incidents.map((issue, index) => (
+                            <button
+                                key={issue.id}
+                                type="button"
+                                className="w-full text-left"
+                                onClick={() => setSelectedIssue(issue)}
+                            >
+                                <IssueCard issue={issue} priority={index === 0} />
+                            </button>
+                        ))
                     )}
-                    {!loading && issues.length === 0 && (
-                        <p className="text-sm text-gray-400 text-center py-6">No issues reported yet.</p>
-                    )}
-                    {issues.map((issue, index) => (
-                        <IssueCard key={issue.id} issue={issue} priority={index === 0} />
-                    ))}
                 </div>
             </div>
 
             <ReportIssueModal
                 visible={modalVisible}
-                onClose={() => setModalVisible(false)}
-                onSuccess={handleNewIncident}
+                onClose={() => {
+                    setModalVisible(false);
+                    refetch();
+                }}
             />
+
+            <IncidentDetailModal
+                issue={selectedIssue}
+                onClose={() => setSelectedIssue(null)}
+            />
+
+            <SessionExpiryWarning />
         </main>
     );
 }

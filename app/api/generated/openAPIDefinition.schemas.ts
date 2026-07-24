@@ -4,36 +4,15 @@
  * OpenAPI definition
  * OpenAPI spec version: v0
  */
-export type IncidentRequestDTOIncidentType = typeof IncidentRequestDTOIncidentType[keyof typeof IncidentRequestDTOIncidentType];
+export interface DetectionDTO {
+  label?: string;
+  confidence?: number;
+  rawLabel?: string;
+}
 
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const IncidentRequestDTOIncidentType = {
-  POTHOLE: 'POTHOLE',
-  CRACK: 'CRACK',
-  FADED_MARKINGS: 'FADED_MARKINGS',
-  DAMAGED_SIGN: 'DAMAGED_SIGN',
-  BLOCKED_DRAIN: 'BLOCKED_DRAIN',
-  BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
-  ACCIDENT: 'ACCIDENT',
-} as const;
-
-export type IncidentRequestDTOSource = typeof IncidentRequestDTOSource[keyof typeof IncidentRequestDTOSource];
-
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const IncidentRequestDTOSource = {
-  MANUAL: 'MANUAL',
-  DASHCAM: 'DASHCAM',
-} as const;
-
-export interface IncidentRequestDTO {
-  incidentType?: IncidentRequestDTOIncidentType;
-  description?: string;
-  source?: IncidentRequestDTOSource;
-  latitude?: number;
-  longitude?: number;
-  imageBase64?: string;
+export interface PredictResponseDTO {
+  detected?: boolean;
+  detection?: DetectionDTO;
 }
 
 export interface AppResponseIncidentResponseDTO {
@@ -76,6 +55,76 @@ export interface IncidentResponseDTO {
   longitude?: number;
   imageUrl?: string;
   userId?: string;
+  reportCount?: number;
+  reporterCount?: number;
+  locationAddress?: string;
+  duplicate?: boolean;
+  alreadyConfirmed?: boolean;
+  existingIncidentId?: string;
+}
+
+export type IncidentRequestDTOIncidentType = typeof IncidentRequestDTOIncidentType[keyof typeof IncidentRequestDTOIncidentType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const IncidentRequestDTOIncidentType = {
+  POTHOLE: 'POTHOLE',
+  CRACK: 'CRACK',
+  FADED_MARKINGS: 'FADED_MARKINGS',
+  DAMAGED_SIGN: 'DAMAGED_SIGN',
+  BLOCKED_DRAIN: 'BLOCKED_DRAIN',
+  BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
+  ACCIDENT: 'ACCIDENT',
+} as const;
+
+export type IncidentRequestDTOSource = typeof IncidentRequestDTOSource[keyof typeof IncidentRequestDTOSource];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const IncidentRequestDTOSource = {
+  MANUAL: 'MANUAL',
+  DASHCAM: 'DASHCAM',
+} as const;
+
+export interface IncidentRequestDTO {
+  incidentType: IncidentRequestDTOIncidentType;
+  /** @minLength 1 */
+  description: string;
+  source: IncidentRequestDTOSource;
+  latitude?: number;
+  longitude?: number;
+  /** @minLength 1 */
+  imageBase64: string;
+  forceCreate?: boolean;
+  locationAddress?: string;
+}
+
+export interface AppResponseDeviceTokenResponse {
+  data?: DeviceTokenResponse;
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export interface DeviceTokenResponse {
+  deviceToken?: string;
+}
+
+export interface AppResponseVoid {
+  data?: unknown;
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export interface ResetPasswordRequest {
+  /** @minLength 1 */
+  token: string;
+  /**
+   * @minLength 8
+   * @maxLength 2147483647
+   */
+  password: string;
 }
 
 export type RegisterRequestRole = typeof RegisterRequestRole[keyof typeof RegisterRequestRole];
@@ -89,24 +138,27 @@ export const RegisterRequestRole = {
 } as const;
 
 export interface RegisterRequest {
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  role?: RegisterRequestRole;
-  password?: string;
-  phoneNumber?: string;
-}
-
-export interface AppResponseVoid {
-  data?: unknown;
-  message?: string;
-  status?: number;
-  timestamp?: string;
+  /** @minLength 1 */
+  firstName: string;
+  /** @minLength 1 */
+  lastName: string;
+  /** @minLength 1 */
+  email: string;
+  role: RegisterRequestRole;
+  /**
+   * @minLength 1
+   * @pattern ^(?=.*[0-9])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$
+   */
+  password: string;
+  /** @minLength 1 */
+  phoneNumber: string;
 }
 
 export interface LoginRequest {
-  email?: string;
-  password?: string;
+  /** @minLength 1 */
+  email: string;
+  /** @minLength 1 */
+  password: string;
 }
 
 export interface AppResponseAuthResponse {
@@ -132,10 +184,48 @@ export interface AuthResponse {
   userId?: string;
 }
 
+export interface ForgotPasswordRequest {
+  /** @minLength 1 */
+  email: string;
+}
+
 export interface AppResponseListIncidentResponseDTO {
   data?: IncidentResponseDTO[];
   message?: string;
   status?: number;
   timestamp?: string;
 }
+
+export type SseEmitterTimeout = number | null;
+
+export interface SseEmitter {
+  timeout?: SseEmitterTimeout;
+}
+
+export type PredictBody = {
+  image: Blob;
+};
+
+export type VerifyEmailParams = {
+token: string;
+};
+
+export type SearchMyIncidentsParams = {
+keyword?: string;
+type?: SearchMyIncidentsType;
+};
+
+export type SearchMyIncidentsType = typeof SearchMyIncidentsType[keyof typeof SearchMyIncidentsType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SearchMyIncidentsType = {
+  POTHOLE: 'POTHOLE',
+  CRACK: 'CRACK',
+  FADED_MARKINGS: 'FADED_MARKINGS',
+  DAMAGED_SIGN: 'DAMAGED_SIGN',
+  BLOCKED_DRAIN: 'BLOCKED_DRAIN',
+  BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
+  ACCIDENT: 'ACCIDENT',
+} as const;
 

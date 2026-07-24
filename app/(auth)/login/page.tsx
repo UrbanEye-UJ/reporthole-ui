@@ -38,10 +38,17 @@ export default function LoginPage() {
             onError: (err: unknown) => {
                 setIsSubmitting(false);
                 const status = (err as { response?: { status?: number } }).response?.status;
+
                 if (status === 404) {
                     setError("No account found with that email.");
+                } else if (status === 423) {
+                    setError("Your account has been locked after too many failed attempts.");
+                } else if (status === 403) {
+                    setError("Your email address hasn't been verified yet. Check your inbox.");
                 } else if (status === 400) {
-                    setError("Incorrect password. Please try again.");
+                    const message = (err as { response?: { data?: { message?: string } } })
+                        .response?.data?.message;
+                    setError(message ?? "Incorrect password. Please try again.");
                 } else {
                     setError("Something went wrong. Please try again later.");
                 }
@@ -74,6 +81,7 @@ export default function LoginPage() {
                     placeholder="you@example.com"
                     type="email"
                     autoComplete="email"
+                    required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     icon={
@@ -89,6 +97,7 @@ export default function LoginPage() {
                     placeholder="••••••••"
                     type="password"
                     autoComplete="current-password"
+                    required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     icon={
@@ -105,7 +114,17 @@ export default function LoginPage() {
                 </div>
 
                 {error && (
-                    <p className="text-sm text-red-500 text-center">{error}</p>
+                    <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3">
+                        <p className="text-sm text-red-600">{error}</p>
+                        {error.includes("locked") && (
+                            <Link
+                                href="/forgot-password"
+                                className="text-sm text-red-700 font-semibold underline mt-1 block"
+                            >
+                                Reset your password to unlock your account →
+                            </Link>
+                        )}
+                    </div>
                 )}
             </div>
 
