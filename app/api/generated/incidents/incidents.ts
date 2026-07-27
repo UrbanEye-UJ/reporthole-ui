@@ -257,6 +257,68 @@ export function useGetIncidentById<TData = Awaited<ReturnType<typeof getIncident
 
 
 /**
+ * Soft-deletes an incident. Only the original reporter may delete their own incident.
+ * @summary Delete incident
+ */
+export const deleteIncident = (
+    id: string,
+ ) => {
+      
+      
+      return apiClient<void>(
+      {url: `/incidents/${id}`, method: 'DELETE'
+    },
+      );
+    }
+  
+
+
+export const getDeleteIncidentMutationOptions = <TError = void | void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteIncident>>, TError,{id: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof deleteIncident>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteIncident'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteIncident>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteIncident(id,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteIncidentMutationResult = NonNullable<Awaited<ReturnType<typeof deleteIncident>>>
+    
+    export type DeleteIncidentMutationError = void | void
+
+    /**
+ * @summary Delete incident
+ */
+export const useDeleteIncident = <TError = void | void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteIncident>>, TError,{id: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteIncident>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+
+      const mutationOptions = getDeleteIncidentMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
  * Returns all incidents reported by the authenticated user.
  * @summary Get my incidents
  */

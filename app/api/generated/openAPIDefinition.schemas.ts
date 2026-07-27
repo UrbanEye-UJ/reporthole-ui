@@ -189,6 +189,42 @@ export interface ForgotPasswordRequest {
   email: string;
 }
 
+export interface UpdateProfileRequest {
+  /** @minLength 1 */
+  firstName: string;
+  /** @minLength 1 */
+  lastName: string;
+  /** @minLength 1 */
+  phoneNumber: string;
+}
+
+export interface AppResponseUserProfileResponse {
+  data?: UserProfileResponse;
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export type UserProfileResponseRole = typeof UserProfileResponseRole[keyof typeof UserProfileResponseRole];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UserProfileResponseRole = {
+  CIVILIAN: 'CIVILIAN',
+  CONTRACTOR: 'CONTRACTOR',
+  ADMIN: 'ADMIN',
+} as const;
+
+export interface UserProfileResponse {
+  userId?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+  role?: UserProfileResponseRole;
+  createdAt?: string;
+}
+
 export interface AppResponseListIncidentResponseDTO {
   data?: IncidentResponseDTO[];
   message?: string;
