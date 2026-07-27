@@ -12,7 +12,12 @@
  */
 
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import DashcamPage from "@/app/(civilian)/dashcam/page";
+
+jest.mock("@/app/api/generated/devices/devices", () => ({
+    useGenerateToken: () => ({ mutate: jest.fn(), isPending: false }),
+}));
 
 // ── Browser API stubs ──────────────────────────────────────────────────────
 

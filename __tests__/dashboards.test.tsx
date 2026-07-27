@@ -13,6 +13,8 @@ jest.mock("next/navigation", () => ({
 
 jest.mock("@/app/api/generated/incidents/incidents", () => ({
     useGetMyIncidents: () => ({ data: undefined, refetch: jest.fn() }),
+    useSearchMyIncidents: () => ({ data: undefined }),
+    useDeleteIncident: () => ({ mutate: jest.fn() }),
     useCreateIncident: () => ({ mutate: jest.fn(), isPending: false }),
     useConfirmDuplicate: () => ({ mutate: jest.fn(), isPending: false }),
 }));

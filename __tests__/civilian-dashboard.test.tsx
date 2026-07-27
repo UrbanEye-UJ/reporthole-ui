@@ -33,6 +33,8 @@ jest.mock("@/app/api/generated/incidents/incidents", () => ({
         },
         refetch: jest.fn(),
     }),
+    useSearchMyIncidents: () => ({ data: undefined }),
+    useDeleteIncident: () => ({ mutate: jest.fn() }),
     useCreateIncident: () => ({ mutate: jest.fn(), isPending: false }),
     useConfirmDuplicate: () => ({ mutate: jest.fn(), isPending: false }),
 }));
@@ -79,7 +81,7 @@ describe("CivilianDashboard", () => {
 
         it("renders the issue list", () => {
             renderWithClient(<CivilianDashboard />);
-            expect(screen.getByText("POTHOLE")).toBeInTheDocument();
+            expect(screen.getByText("Big pothole on main road")).toBeInTheDocument();
         });
     });
 

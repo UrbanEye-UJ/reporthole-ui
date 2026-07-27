@@ -2,14 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import StatusCard from "@/components/shared/StatusCard";
 import IssueCard from "@/components/shared/IssueCard";
 import ReportIssueModal from "@/components/shared/ReportIssueModal";
 import IncidentDetailModal from "@/components/shared/IncidentDetailModal";
 import SessionExpiryWarning from "@/components/shared/SessionExpiryWarning";
-import { useGetMyIncidents } from "@/app/api/generated/incidents/incidents";
+import {
+    useGetMyIncidents,
+    useDeleteIncident,
+    useSearchMyIncidents,
+} from "@/app/api/generated/incidents/incidents";
 import { Issue, Status } from "@/app/types/issue";
-import { IncidentRequestDTOIncidentType, IncidentResponseDTO } from "@/app/api/generated/openAPIDefinition.schemas";
+import { IncidentResponseDTO, SearchMyIncidentsType } from "@/app/api/generated/openAPIDefinition.schemas";
 
 const getCookie = (name: string) =>
     document.cookie
@@ -35,31 +40,39 @@ function toIssue(dto: IncidentResponseDTO): Issue {
     };
 }
 
-const ISSUE_TYPES = Object.values(IncidentRequestDTOIncidentType);
+const SEARCH_TYPES = Object.values(SearchMyIncidentsType);
 
 export default function CivilianDashboard() {
     const router = useRouter();
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
     const [role, setRole] = useState("");
+    const [userId, setUserId] = useState("");
     const [searchKeyword, setSearchKeyword] = useState("");
-    const [searchType, setSearchType] = useState<string>("");
+    const [searchType, setSearchType] = useState<SearchMyIncidentsType | "">("");
 
     useEffect(() => {
         setRole(getCookie("reporthole_role"));
+        setUserId(getCookie("reporthole_user_id"));
     }, []);
 
     const { data, refetch } = useGetMyIncidents({ query: { staleTime: 0, refetchOnWindowFocus: false } });
     const allIncidents: Issue[] = (data?.data ?? []).map(toIssue);
 
-    const incidents: Issue[] = allIncidents.filter((issue) => {
-        const kw = searchKeyword.trim().toLowerCase();
-        const matchesKeyword = !kw ||
-            issue.title.toLowerCase().includes(kw) ||
-            issue.description.toLowerCase().includes(kw) ||
-            issue.location.toLowerCase().includes(kw);
-        const matchesType = !searchType || issue.title === searchType.replace(/_/g, " ");
-        return matchesKeyword && matchesType;
+    const hasSearch = !!(searchKeyword.trim() || searchType);
+    const { data: searchData } = useSearchMyIncidents(
+        { keyword: searchKeyword.trim() || undefined, type: searchType || undefined },
+        { query: { staleTime: 0, refetchOnWindowFocus: false, enabled: hasSearch } }
+    );
+    const incidents: Issue[] = hasSearch ? (searchData?.data ?? []).map(toIssue) : allIncidents;
+
+    const { mutate: deleteIncident } = useDeleteIncident({
+        mutation: {
+            onSuccess: () => {
+                setSelectedIssue(null);
+                refetch();
+            },
+        },
     });
 
     // Keep the open detail modal in sync when incidents refresh (e.g. after confirming a duplicate)
@@ -101,16 +114,27 @@ export default function CivilianDashboard() {
                         <h1 className="text-xl font-bold text-blue-600">Reporthole</h1>
                         <p className="text-sm text-gray-500 capitalize">{role.toLowerCase()}</p>
                     </div>
-                    <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="text-blue-600 hover:text-blue-800 transition-colors"
-                        aria-label="Logout"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-                        </svg>
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <Link
+                            href="/profile"
+                            className="text-gray-500 hover:text-blue-600 transition-colors"
+                            aria-label="Profile"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                            </svg>
+                        </Link>
+                        <button
+                            type="button"
+                            onClick={handleLogout}
+                            className="text-blue-600 hover:text-blue-800 transition-colors"
+                            aria-label="Logout"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Report Button */}
@@ -149,11 +173,11 @@ export default function CivilianDashboard() {
                     </div>
                     <select
                         value={searchType}
-                        onChange={(e) => setSearchType(e.target.value)}
+                        onChange={(e) => setSearchType(e.target.value as SearchMyIncidentsType | "")}
                         className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="">All issue types</option>
-                        {ISSUE_TYPES.map((t) => (
+                        {SEARCH_TYPES.map((t) => (
                             <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
                         ))}
                     </select>
@@ -205,6 +229,8 @@ export default function CivilianDashboard() {
             <IncidentDetailModal
                 issue={selectedIssue}
                 onClose={() => setSelectedIssue(null)}
+                currentUserId={userId}
+                onDelete={(id) => deleteIncident({ id })}
             />
 
             <SessionExpiryWarning />

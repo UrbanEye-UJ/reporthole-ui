@@ -21,6 +21,7 @@
  */
 
 import { useRef, useState, useEffect, useCallback } from "react";
+import { useGenerateToken } from "@/app/api/generated/devices/devices";
 
 const DISCARD_THRESHOLD = 0.65;
 const AUTO_LOG_THRESHOLD = 0.80;
@@ -320,6 +321,19 @@ export default function DashcamPage() {
     // Stop camera on unmount
     useEffect(() => () => { stopCamera(); }, [stopCamera]);
 
+    // ── Token generation ───────────────────────────────────────────────────
+
+    const isLoggedIn = typeof document !== "undefined" && !!document.cookie.match(/reporthole_token=[^;]+/);
+
+    const { mutate: generateToken, isPending: isGenerating } = useGenerateToken({
+        mutation: {
+            onSuccess: (res) => {
+                const token = res.data?.deviceToken;
+                if (token) setTokenInput(token);
+            },
+        },
+    });
+
     // ── Token actions ──────────────────────────────────────────────────────
 
     const handleTokenSubmit = () => {
@@ -360,6 +374,16 @@ export default function DashcamPage() {
                         placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                         className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                    {isLoggedIn && (
+                        <button
+                            type="button"
+                            onClick={() => generateToken()}
+                            disabled={isGenerating}
+                            className="w-full border border-blue-200 hover:bg-blue-50 disabled:opacity-40 text-blue-600 font-semibold py-2.5 rounded-xl text-sm transition-colors"
+                        >
+                            {isGenerating ? "Generating…" : "Generate token for this device"}
+                        </button>
+                    )}
                     <button
                         type="button"
                         onClick={handleTokenSubmit}
