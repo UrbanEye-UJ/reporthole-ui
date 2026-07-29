@@ -1,8 +1,14 @@
+"use client";
+
+import { useState } from "react";
 import { Issue } from "@/app/types/issue";
 
 interface IncidentDetailModalProps {
     issue: Issue | null;
     onClose: () => void;
+    /** Called after the incident is successfully deleted. Provided only when the current user is the original reporter. */
+    onDelete?: (id: string) => void;
+    currentUserId?: string;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -19,13 +25,27 @@ const STATUS_COLORS: Record<string, string> = {
     resolved: "bg-green-100 text-green-800",
 };
 
-export default function IncidentDetailModal({ issue, onClose }: IncidentDetailModalProps) {
+export default function IncidentDetailModal({ issue, onClose, onDelete, currentUserId }: IncidentDetailModalProps) {
+    const [confirmDelete, setConfirmDelete] = useState(false);
+
     if (!issue) return null;
+
+    const isOwner = currentUserId && issue.userId && currentUserId === issue.userId;
+
+    const handleDelete = () => {
+        if (!confirmDelete) {
+            setConfirmDelete(true);
+            return;
+        }
+        onDelete?.(issue.id);
+        setConfirmDelete(false);
+        onClose();
+    };
 
     return (
         <div
             className="fixed inset-0 z-50 flex items-end justify-center bg-black/50"
-            onClick={onClose}
+            onClick={() => { setConfirmDelete(false); onClose(); }}
         >
             <div
                 className="w-full max-w-lg bg-white rounded-t-2xl p-5 pb-8 flex flex-col gap-4"
@@ -85,13 +105,28 @@ export default function IncidentDetailModal({ issue, onClose }: IncidentDetailMo
                     </div>
                 </div>
 
-                <button
-                    type="button"
-                    onClick={onClose}
-                    className="w-full mt-1 bg-gray-100 hover:bg-gray-200 transition-colors text-gray-700 font-semibold py-3 rounded-xl text-sm"
-                >
-                    Close
-                </button>
+                <div className="flex flex-col gap-2 mt-1">
+                    {isOwner && onDelete && (
+                        <button
+                            type="button"
+                            onClick={handleDelete}
+                            className={`w-full font-semibold py-3 rounded-xl text-sm transition-colors ${
+                                confirmDelete
+                                    ? "bg-red-600 hover:bg-red-700 text-white"
+                                    : "bg-red-50 hover:bg-red-100 text-red-600"
+                            }`}
+                        >
+                            {confirmDelete ? "Tap again to confirm delete" : "Delete incident"}
+                        </button>
+                    )}
+                    <button
+                        type="button"
+                        onClick={() => { setConfirmDelete(false); onClose(); }}
+                        className="w-full bg-gray-100 hover:bg-gray-200 transition-colors text-gray-700 font-semibold py-3 rounded-xl text-sm"
+                    >
+                        Close
+                    </button>
+                </div>
             </div>
         </div>
     );

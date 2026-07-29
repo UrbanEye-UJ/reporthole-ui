@@ -28,6 +28,8 @@ beforeEach(() => {
     mockGeolocation.getCurrentPosition.mockReset();
     mockCreateMutate.mockReset();
     mockConfirmMutate.mockReset();
+    (global.fetch as jest.Mock).mockReset();
+    (global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => ({}) });
 });
 
 function renderModal(props: { visible: boolean; onClose?: () => void }) {
@@ -39,14 +41,22 @@ function renderModal(props: { visible: boolean; onClose?: () => void }) {
     );
 }
 
+/** Navigates past the mode chooser and fills the manual form. */
 async function fillForm() {
+    // Navigate from choose → form
+    fireEvent.click(screen.getByText("Report Manually"));
+
     fireEvent.change(screen.getByPlaceholderText("Describe the issue..."), {
         target: { value: "Big pothole" },
     });
     const file = new File(["img"], "photo.jpg", { type: "image/jpeg" });
-    const input = document.querySelector("input[type='file']") as HTMLInputElement;
+    // After the form step, there are two file inputs (camera + gallery).
+    // Use the gallery input (no capture attribute) as it accepts files in tests.
+    const galleryInput = Array.from(document.querySelectorAll("input[type='file']")).find(
+        (el) => !(el as HTMLInputElement).hasAttribute("capture")
+    ) as HTMLInputElement;
     await act(async () => {
-        fireEvent.change(input, { target: { files: [file] } });
+        fireEvent.change(galleryInput, { target: { files: [file] } });
     });
 }
 
@@ -54,17 +64,19 @@ describe("ReportIssueModal", () => {
     describe("visibility", () => {
         it("does not render when visible is false", () => {
             renderModal({ visible: false });
-            expect(screen.queryByText("Report Issue")).not.toBeInTheDocument();
+            expect(screen.queryByText("Report an Issue")).not.toBeInTheDocument();
         });
 
-        it("renders when visible is true", () => {
+        it("shows the mode chooser when visible is true", () => {
             renderModal({ visible: true });
-            expect(screen.getByText("Report Issue")).toBeInTheDocument();
+            expect(screen.getByText("Report an Issue")).toBeInTheDocument();
+            expect(screen.getByText("Detect with AI")).toBeInTheDocument();
+            expect(screen.getByText("Report Manually")).toBeInTheDocument();
         });
     });
 
     describe("closing", () => {
-        it("calls onClose when Cancel is clicked", () => {
+        it("calls onClose when Cancel is clicked on the choose screen", () => {
             const onClose = jest.fn();
             renderModal({ visible: true, onClose });
             fireEvent.click(screen.getByText("Cancel"));
@@ -77,16 +89,51 @@ describe("ReportIssueModal", () => {
             fireEvent.click(container.firstChild as Element);
             expect(onClose).toHaveBeenCalled();
         });
+
+        it("calls onClose when Cancel is clicked on the form step", () => {
+            const onClose = jest.fn();
+            renderModal({ visible: true, onClose });
+            fireEvent.click(screen.getByText("Report Manually"));
+            // Two Cancel buttons exist — click the one inside the form
+            fireEvent.click(screen.getByText("Cancel"));
+            expect(onClose).toHaveBeenCalled();
+        });
     });
 
-    describe("submit validation", () => {
+    describe("mode chooser navigation", () => {
+        it("shows the form when Report Manually is selected", () => {
+            renderModal({ visible: true });
+            fireEvent.click(screen.getByText("Report Manually"));
+            expect(screen.getByPlaceholderText("Describe the issue...")).toBeInTheDocument();
+        });
+
+        it("shows the AI-detect step when Detect with AI is selected", () => {
+            renderModal({ visible: true });
+            fireEvent.click(screen.getByText("Detect with AI"));
+            expect(screen.getByText("Take Photo")).toBeInTheDocument();
+            expect(screen.getByText("Upload Photo")).toBeInTheDocument();
+        });
+
+        it("back arrow from form returns to the mode chooser", () => {
+            renderModal({ visible: true });
+            fireEvent.click(screen.getByText("Report Manually"));
+            // Click the back arrow (aria role is button, only arrow in form header)
+            const backButtons = screen.getAllByRole("button");
+            fireEvent.click(backButtons[0]); // first button is the back arrow
+            expect(screen.getByText("Report an Issue")).toBeInTheDocument();
+        });
+    });
+
+    describe("submit validation (form step)", () => {
         it("submit button is disabled when description and image are missing", () => {
             renderModal({ visible: true });
+            fireEvent.click(screen.getByText("Report Manually"));
             expect(screen.getByRole("button", { name: /submit/i })).toBeDisabled();
         });
 
         it("submit button is disabled when only description is filled", () => {
             renderModal({ visible: true });
+            fireEvent.click(screen.getByText("Report Manually"));
             fireEvent.change(screen.getByPlaceholderText("Describe the issue..."), {
                 target: { value: "Big pothole" },
             });
@@ -94,23 +141,36 @@ describe("ReportIssueModal", () => {
         });
     });
 
-    describe("image upload", () => {
-        it("shows preview after file is selected", async () => {
+    describe("image upload (form step)", () => {
+        it("shows Take Photo and Upload Photo buttons before image is selected", () => {
             renderModal({ visible: true });
+            fireEvent.click(screen.getByText("Report Manually"));
+            expect(screen.getByText("Take Photo")).toBeInTheDocument();
+            expect(screen.getByText("Upload Photo")).toBeInTheDocument();
+        });
+
+        it("shows preview after file is selected via gallery input", async () => {
+            renderModal({ visible: true });
+            fireEvent.click(screen.getByText("Report Manually"));
             const file = new File(["img"], "photo.jpg", { type: "image/jpeg" });
-            const input = document.querySelector("input[type='file']") as HTMLInputElement;
+            const galleryInput = Array.from(document.querySelectorAll("input[type='file']")).find(
+                (el) => !(el as HTMLInputElement).hasAttribute("capture")
+            ) as HTMLInputElement;
             await act(async () => {
-                fireEvent.change(input, { target: { files: [file] } });
+                fireEvent.change(galleryInput, { target: { files: [file] } });
             });
             expect(screen.getByAltText("Preview")).toBeInTheDocument();
         });
 
         it("shows retake button after image is selected", async () => {
             renderModal({ visible: true });
+            fireEvent.click(screen.getByText("Report Manually"));
             const file = new File(["img"], "photo.jpg", { type: "image/jpeg" });
-            const input = document.querySelector("input[type='file']") as HTMLInputElement;
+            const galleryInput = Array.from(document.querySelectorAll("input[type='file']")).find(
+                (el) => !(el as HTMLInputElement).hasAttribute("capture")
+            ) as HTMLInputElement;
             await act(async () => {
-                fireEvent.change(input, { target: { files: [file] } });
+                fireEvent.change(galleryInput, { target: { files: [file] } });
             });
             expect(screen.getByText("Retake")).toBeInTheDocument();
         });
@@ -120,18 +180,19 @@ describe("ReportIssueModal", () => {
         it("requests geolocation automatically when modal opens", async () => {
             mockGeolocation.getCurrentPosition.mockImplementation(() => {});
             await act(async () => {
-                render(<ReportIssueModal visible={true} onClose={jest.fn()} />);
+                renderModal({ visible: true });
             });
             expect(mockGeolocation.getCurrentPosition).toHaveBeenCalled();
         });
 
-        it("shows coordinates after successful geolocation on open", async () => {
+        it("shows coordinates in form step after successful geolocation", async () => {
             mockGeolocation.getCurrentPosition.mockImplementation((success: Function) =>
                 success({ coords: { latitude: -26.2041, longitude: 28.0473 } })
             );
             await act(async () => {
-                render(<ReportIssueModal visible={true} onClose={jest.fn()} />);
+                renderModal({ visible: true });
             });
+            fireEvent.click(screen.getByText("Report Manually"));
             expect(screen.getByText(/-26\.20/)).toBeInTheDocument();
         });
 
@@ -140,8 +201,9 @@ describe("ReportIssueModal", () => {
                 error({ code: 1, message: "denied" })
             );
             await act(async () => {
-                render(<ReportIssueModal visible={true} onClose={jest.fn()} />);
+                renderModal({ visible: true });
             });
+            fireEvent.click(screen.getByText("Report Manually"));
             expect(
                 screen.getByText(/Could not get your location/i)
             ).toBeInTheDocument();
@@ -154,7 +216,7 @@ describe("ReportIssueModal", () => {
                 onSuccess({ data: { duplicate: false, incidentId: "abc-123" } })
             );
 
-            render(<ReportIssueModal visible={true} onClose={jest.fn()} />);
+            renderModal({ visible: true });
             await fillForm();
 
             await act(async () => {
@@ -172,7 +234,7 @@ describe("ReportIssueModal", () => {
             );
 
             const onClose = jest.fn();
-            render(<ReportIssueModal visible={true} onClose={onClose} />);
+            renderModal({ visible: true, onClose });
             await fillForm();
 
             await act(async () => {
@@ -187,7 +249,7 @@ describe("ReportIssueModal", () => {
         it("shows error message when mutation fails", async () => {
             mockCreateMutate.mockImplementation((_: unknown, { onError }: { onError: Function }) => onError(new Error("fail")));
 
-            render(<ReportIssueModal visible={true} onClose={jest.fn()} />);
+            renderModal({ visible: true });
             await fillForm();
 
             await act(async () => {
@@ -224,7 +286,7 @@ describe("ReportIssueModal", () => {
         });
 
         it("shows duplicate confirmation screen when duplicate is detected", async () => {
-            render(<ReportIssueModal visible={true} onClose={jest.fn()} />);
+            renderModal({ visible: true });
             await fillForm();
 
             await act(async () => {
@@ -250,7 +312,7 @@ describe("ReportIssueModal", () => {
                 onSuccess({ data: { ...duplicateData, userId: OWN_USER_ID } })
             );
 
-            render(<ReportIssueModal visible={true} onClose={jest.fn()} />);
+            renderModal({ visible: true });
             await fillForm();
 
             await act(async () => {
@@ -269,7 +331,7 @@ describe("ReportIssueModal", () => {
                 onSuccess({ data: { ...duplicateData, alreadyConfirmed: true } })
             );
 
-            render(<ReportIssueModal visible={true} onClose={jest.fn()} />);
+            renderModal({ visible: true });
             await fillForm();
 
             await act(async () => {
@@ -286,7 +348,7 @@ describe("ReportIssueModal", () => {
                 onSuccess({ data: { reportCount: 3 } })
             );
 
-            render(<ReportIssueModal visible={true} onClose={jest.fn()} />);
+            renderModal({ visible: true });
             await fillForm();
 
             await act(async () => {
@@ -316,7 +378,7 @@ describe("ReportIssueModal", () => {
                     onSuccess({ data: { duplicate: false, incidentId: "new-456" } })
                 );
 
-            render(<ReportIssueModal visible={true} onClose={jest.fn()} />);
+            renderModal({ visible: true });
             await fillForm();
 
             await act(async () => {
@@ -334,6 +396,184 @@ describe("ReportIssueModal", () => {
 
             const secondCallPayload = mockCreateMutate.mock.calls[1][0];
             expect(secondCallPayload.data.forceCreate).toBe(true);
+        });
+    });
+
+    describe("AI-detect flow", () => {
+        it("shows loading overlay while analyzing", async () => {
+            // Keep fetch pending so the analyzing state persists
+            (global.fetch as jest.Mock).mockImplementation(
+                () => new Promise(() => {}) // never resolves
+            );
+
+            renderModal({ visible: true });
+            fireEvent.click(screen.getByText("Detect with AI"));
+
+            const file = new File(["img"], "road.jpg", { type: "image/jpeg" });
+            const aiGalleryInput = Array.from(document.querySelectorAll("input[type='file']")).find(
+                (el) => !(el as HTMLInputElement).hasAttribute("capture")
+            ) as HTMLInputElement;
+
+            await act(async () => {
+                fireEvent.change(aiGalleryInput, { target: { files: [file] } });
+            });
+
+            expect(screen.getByText("Analyzing...")).toBeInTheDocument();
+            expect(screen.getByAltText("AI analysis preview")).toBeInTheDocument();
+        });
+
+        it("shows AI prediction result when inference succeeds", async () => {
+            (global.fetch as jest.Mock).mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    detected: true,
+                    detection: { label: "POTHOLE", confidence: 0.87, rawLabel: "Pothole_FP" },
+                }),
+            });
+
+            renderModal({ visible: true });
+            fireEvent.click(screen.getByText("Detect with AI"));
+
+            const aiGalleryInput = Array.from(document.querySelectorAll("input[type='file']")).find(
+                (el) => !(el as HTMLInputElement).hasAttribute("capture")
+            ) as HTMLInputElement;
+
+            await act(async () => {
+                fireEvent.change(aiGalleryInput, { target: { files: [new File(["img"], "road.jpg", { type: "image/jpeg" })] } });
+            });
+
+            await waitFor(() => {
+                expect(screen.getByText("AI Detected")).toBeInTheDocument();
+                expect(screen.getByText("POTHOLE")).toBeInTheDocument();
+                expect(screen.getByText("87% confidence")).toBeInTheDocument();
+            });
+        });
+
+        it("pre-fills form and switches to form step when user accepts AI prediction", async () => {
+            (global.fetch as jest.Mock).mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    detected: true,
+                    detection: { label: "POTHOLE", confidence: 0.87, rawLabel: "Pothole_FP" },
+                }),
+            });
+
+            renderModal({ visible: true });
+            fireEvent.click(screen.getByText("Detect with AI"));
+
+            const aiGalleryInput = Array.from(document.querySelectorAll("input[type='file']")).find(
+                (el) => !(el as HTMLInputElement).hasAttribute("capture")
+            ) as HTMLInputElement;
+
+            await act(async () => {
+                fireEvent.change(aiGalleryInput, { target: { files: [new File(["img"], "road.jpg", { type: "image/jpeg" })] } });
+            });
+
+            await waitFor(() => screen.getByText("Yes, that looks right"));
+            fireEvent.click(screen.getByText("Yes, that looks right"));
+
+            // Should be on the form step now with pre-filled description
+            expect(screen.getByPlaceholderText("Describe the issue...")).toBeInTheDocument();
+            const descriptionField = screen.getByPlaceholderText("Describe the issue...") as HTMLTextAreaElement;
+            expect(descriptionField.value).toContain("AI detected");
+            expect(descriptionField.value).toContain("87%");
+        });
+
+        it("goes to manual form when user rejects AI prediction", async () => {
+            (global.fetch as jest.Mock).mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    detected: true,
+                    detection: { label: "CRACK", confidence: 0.72, rawLabel: "Alligator_Crack_FP" },
+                }),
+            });
+
+            renderModal({ visible: true });
+            fireEvent.click(screen.getByText("Detect with AI"));
+
+            const aiGalleryInput = Array.from(document.querySelectorAll("input[type='file']")).find(
+                (el) => !(el as HTMLInputElement).hasAttribute("capture")
+            ) as HTMLInputElement;
+
+            await act(async () => {
+                fireEvent.change(aiGalleryInput, { target: { files: [new File(["img"], "road.jpg", { type: "image/jpeg" })] } });
+            });
+
+            await waitFor(() => screen.getByText("No, I'll select the type manually"));
+            fireEvent.click(screen.getByText("No, I'll select the type manually"));
+
+            expect(screen.getByPlaceholderText("Describe the issue...")).toBeInTheDocument();
+        });
+
+        it("shows error message when inference returns not detected", async () => {
+            (global.fetch as jest.Mock).mockResolvedValue({
+                ok: true,
+                json: async () => ({ detected: false, detection: { label: null, confidence: null, rawLabel: null } }),
+            });
+
+            renderModal({ visible: true });
+            fireEvent.click(screen.getByText("Detect with AI"));
+
+            const aiGalleryInput = Array.from(document.querySelectorAll("input[type='file']")).find(
+                (el) => !(el as HTMLInputElement).hasAttribute("capture")
+            ) as HTMLInputElement;
+
+            await act(async () => {
+                fireEvent.change(aiGalleryInput, { target: { files: [new File(["img"], "road.jpg", { type: "image/jpeg" })] } });
+            });
+
+            await waitFor(() => {
+                expect(screen.getByText(/No road damage detected/i)).toBeInTheDocument();
+            });
+            expect(screen.getByText("Report manually instead →")).toBeInTheDocument();
+        });
+
+        it("shows error message when inference service is unreachable", async () => {
+            (global.fetch as jest.Mock).mockRejectedValue(new Error("Network error"));
+
+            renderModal({ visible: true });
+            fireEvent.click(screen.getByText("Detect with AI"));
+
+            const aiGalleryInput = Array.from(document.querySelectorAll("input[type='file']")).find(
+                (el) => !(el as HTMLInputElement).hasAttribute("capture")
+            ) as HTMLInputElement;
+
+            await act(async () => {
+                fireEvent.change(aiGalleryInput, { target: { files: [new File(["img"], "road.jpg", { type: "image/jpeg" })] } });
+            });
+
+            await waitFor(() => {
+                expect(screen.getByText(/Could not reach the analysis service/i)).toBeInTheDocument();
+            });
+        });
+
+        it("sends the image to /api/ml/predict", async () => {
+            (global.fetch as jest.Mock).mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    detected: true,
+                    detection: { label: "POTHOLE", confidence: 0.90, rawLabel: "Pothole_FP" },
+                }),
+            });
+
+            renderModal({ visible: true });
+            fireEvent.click(screen.getByText("Detect with AI"));
+
+            const aiGalleryInput = Array.from(document.querySelectorAll("input[type='file']")).find(
+                (el) => !(el as HTMLInputElement).hasAttribute("capture")
+            ) as HTMLInputElement;
+
+            await act(async () => {
+                fireEvent.change(aiGalleryInput, { target: { files: [new File(["img"], "road.jpg", { type: "image/jpeg" })] } });
+            });
+
+            await waitFor(() => screen.getByText("AI Detected"));
+
+            const fetchCall = (global.fetch as jest.Mock).mock.calls.find(
+                ([url]: [string]) => url === "/api/ml/predict"
+            );
+            expect(fetchCall).toBeDefined();
+            expect(fetchCall[1].method).toBe("POST");
         });
     });
 });
