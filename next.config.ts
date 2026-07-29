@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
     output: "standalone",
     images: { unoptimized: true },
-    allowedDevOrigins: ["192.168.1.101"],
+    allowedDevOrigins: ["192.168.1.105"],
 
     /**
      * Proxy all /api/** requests to the Spring Boot backend.
