@@ -27,6 +27,7 @@ export default function ProfilePage() {
 
     useEffect(() => {
         if (profile) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setEditValues({
                 firstName: profile.firstName ?? "",
                 lastName: profile.lastName ?? "",

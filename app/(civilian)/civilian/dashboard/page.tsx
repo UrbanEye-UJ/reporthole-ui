@@ -46,15 +46,10 @@ export default function CivilianDashboard() {
     const router = useRouter();
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
-    const [role, setRole] = useState("");
-    const [userId, setUserId] = useState("");
+    const [role] = useState(() => typeof window !== "undefined" ? getCookie("reporthole_role") : "");
+    const [userId] = useState(() => typeof window !== "undefined" ? getCookie("reporthole_user_id") : "");
     const [searchKeyword, setSearchKeyword] = useState("");
     const [searchType, setSearchType] = useState<SearchMyIncidentsType | "">("");
-
-    useEffect(() => {
-        setRole(getCookie("reporthole_role"));
-        setUserId(getCookie("reporthole_user_id"));
-    }, []);
 
     const { data, refetch } = useGetMyIncidents({ query: { staleTime: 0, refetchOnWindowFocus: false } });
     const allIncidents: Issue[] = (data?.data ?? []).map(toIssue);
@@ -79,6 +74,7 @@ export default function CivilianDashboard() {
     useEffect(() => {
         if (selectedIssue && data?.data) {
             const updatedDto = data.data.find((d) => d.incidentId === selectedIssue.id);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             if (updatedDto) setSelectedIssue(toIssue(updatedDto));
         }
     }, [data]);
