@@ -1,7 +1,6 @@
 name: PR Auto-Review
 
-# Runs on every PR to develop. Posts an opening checklist, runs CI checks,
-# then posts a review summary comment with pass/fail per check.
+# Posts an opening checklist on new PRs, runs frontend CI, then posts a result summary.
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -13,7 +12,6 @@ permissions:
 
 jobs:
 
-  # Posts a one-time review checklist the first time a PR is opened.
   opening-checklist:
     name: Post Checklist
     runs-on: ubuntu-latest
@@ -29,70 +27,40 @@ jobs:
               body: [
                 '## PR Review Checklist',
                 '',
-                'Automated CI will run lint, tests, and a build. Human reviewer — please also check:',
+                'Automated CI will run lint, tests, and a production build. Human reviewer — please also check:',
                 '',
                 '### Code quality',
                 '- [ ] No `console.log` / debug statements left in',
                 '- [ ] No hardcoded secrets, credentials, or environment-specific URLs',
-                '- [ ] New code has doc comments (per CLAUDE.md)',
+                '- [ ] New components and hooks have doc comments (project rule)',
+                '- [ ] No TypeScript `any` or `Function` types introduced',
                 '',
                 '### Security',
-                '- [ ] Reporter PII fields are AES-256 encrypted — GPS coordinates must **not** be encrypted',
-                '- [ ] JWT validation is not bypassed on new endpoints',
-                '- [ ] No `any` / `Function` types introduced in TypeScript',
+                '- [ ] No JWT or session token logged or exposed to the DOM',
+                '- [ ] User-supplied content rendered in the DOM is escaped (no `dangerouslySetInnerHTML`)',
                 '',
                 '### API & data layer',
-                '- [ ] New BE endpoints have Swagger `@Operation` / `@ApiResponse` annotations',
-                '- [ ] `orval` was re-run if the OpenAPI spec changed — generated files are committed',
-                '- [ ] New FE API calls use orval-generated hooks, not manual `fetch`/`axios`',
+                '- [ ] All backend calls use orval-generated hooks — no manual `fetch`/`axios` for BE endpoints',
+                '- [ ] If the OpenAPI spec changed, `npm run generate:api` was re-run and generated files are committed',
                 '',
                 '### Tests',
-                '- [ ] New features include BE unit tests (Mockito) and integration tests (H2)',
-                '- [ ] New FE components include Jest + RTL unit tests',
-                '- [ ] Integration tests use `forceCreate: true` to bypass PostGIS duplicate check in H2',
+                '- [ ] New components have Jest + RTL unit tests',
+                '- [ ] Tests mock browser APIs that jsdom does not implement (e.g. `createImageBitmap`, Canvas)',
+                '- [ ] No `any` / `Function` types in test files',
+                '',
+                '### Next.js / SSR',
+                '- [ ] Browser APIs (`document`, `localStorage`, `window`) are guarded with `typeof window !== "undefined"` in lazy `useState` initializers',
+                '- [ ] Images use `next/image`, not `<img>`',
                 '',
                 '### Scope',
                 '- [ ] Branch targets `develop`, not `main`',
-                '- [ ] PR does not include unrelated changes',
+                '- [ ] PR does not bundle unrelated changes',
               ].join('\n')
             });
 
-  # ── Backend ──────────────────────────────────────────────────────────────────
-
-  backend:
-    name: Backend Tests
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: reporthole-be
-    outputs:
-      result: ${{ job.status }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Cache Maven packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
-
-      - name: Run tests
-        run: ./mvnw test --no-transfer-progress
-
-  # ── Frontend ─────────────────────────────────────────────────────────────────
-
   frontend-lint:
-    name: FE Lint
+    name: Lint
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: reporthole-fe
     outputs:
       result: ${{ job.status }}
     steps:
@@ -101,16 +69,12 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: reporthole-fe/package-lock.json
       - run: npm ci
       - run: npm run lint
 
   frontend-test:
-    name: FE Tests
+    name: Tests
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: reporthole-fe
     outputs:
       result: ${{ job.status }}
     steps:
@@ -119,16 +83,12 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: reporthole-fe/package-lock.json
       - run: npm ci
       - run: npm test -- --ci --passWithNoTests
 
   frontend-build:
-    name: FE Build
+    name: Build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: reporthole-fe
     outputs:
       result: ${{ job.status }}
     steps:
@@ -137,28 +97,24 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: reporthole-fe/package-lock.json
       - run: npm ci
       - run: npm run build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8080/api
 
-  # ── Summary review comment ───────────────────────────────────────────────────
-
   post-review:
     name: Post Review Summary
     runs-on: ubuntu-latest
-    needs: [backend, frontend-lint, frontend-test, frontend-build]
+    needs: [frontend-lint, frontend-test, frontend-build]
     if: always()
     steps:
       - uses: actions/github-script@v7
         with:
           script: |
             const results = {
-              'Backend Tests':  '${{ needs.backend.result }}',
-              'FE Lint':        '${{ needs.frontend-lint.result }}',
-              'FE Tests':       '${{ needs.frontend-test.result }}',
-              'FE Build':       '${{ needs.frontend-build.result }}',
+              'Lint':  '${{ needs.frontend-lint.result }}',
+              'Tests': '${{ needs.frontend-test.result }}',
+              'Build': '${{ needs.frontend-build.result }}',
             };
 
             const icon = (r) => r === 'success' ? '✅' : r === 'skipped' ? '⏭️' : '❌';
@@ -178,7 +134,7 @@ jobs:
               '',
               allPassed
                 ? '**All checks passed.** This PR is ready for human review.'
-                : '**One or more checks failed.** Please fix the issues above before this PR can be merged.',
+                : '**One or more checks failed.** Fix the issues above before this PR can be merged.',
             ].join('\n');
 
             await github.rest.issues.createComment({
