@@ -65,7 +65,7 @@ function blobToBase64(blob: Blob): Promise<string> {
 
 export default function DashcamPage() {
     // ── Token state ────────────────────────────────────────────────────────
-    const [deviceToken, setDeviceToken] = useState<string | null>(null);
+    const [deviceToken, setDeviceToken] = useState<string | null>(() => typeof window !== "undefined" ? localStorage.getItem(DEVICE_TOKEN_KEY) : null);
     const [tokenInput, setTokenInput] = useState("");
 
     // ── Camera state ───────────────────────────────────────────────────────
@@ -91,13 +91,6 @@ export default function DashcamPage() {
     /** Mirrors deviceToken state so the interval callback always reads the latest value. */
     const tokenRef = useRef<string | null>(null);
 
-    // ── Load token from localStorage on mount ──────────────────────────────
-    useEffect(() => {
-        const saved = localStorage.getItem(DEVICE_TOKEN_KEY);
-        setDeviceToken(saved);
-        tokenRef.current = saved;
-    }, []);
-
     // Keep refs in sync with state
     useEffect(() => { gpsRef.current = gps; }, [gps]);
     useEffect(() => { tokenRef.current = deviceToken; }, [deviceToken]);
@@ -106,6 +99,7 @@ export default function DashcamPage() {
     useEffect(() => {
         if (deviceToken === null) return;
         if (!("geolocation" in navigator)) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setGpsError("Geolocation not available on this device.");
             return;
         }

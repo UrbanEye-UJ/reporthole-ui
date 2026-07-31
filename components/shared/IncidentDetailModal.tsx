@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Issue } from "@/app/types/issue";
 
 interface IncidentDetailModalProps {
@@ -56,11 +57,13 @@ export default function IncidentDetailModal({ issue, onClose, onDelete, currentU
 
                 {/* Image */}
                 {issue.image && (
-                    <div className="w-full h-48 rounded-xl overflow-hidden bg-gray-100">
-                        <img
-                            src={issue.image}
+                    <div className="relative w-full h-48 rounded-xl overflow-hidden bg-gray-100">
+                        <Image
+                            src={`/api/image-proxy?url=${encodeURIComponent(issue.image)}`}
                             alt={issue.title}
-                            className="w-full h-full object-cover"
+                            fill
+                            className="object-cover"
+                            unoptimized
                         />
                     </div>
                 )}
