@@ -12,7 +12,7 @@ const Settings = () => {
     <>
       <PageHeader
         title="Settings"
-        subtitle="Configure SmartRoad AI platform preferences."
+        subtitle="Configure Reporthole platform preferences."
         actions={
           <Button
             variant="contained"
@@ -75,7 +75,7 @@ const Settings = () => {
               spacing={2}
             >
               <Grid size={{ xs: 12, md: 4 }}>
-                <strong>Application:</strong> SmartRoad AI
+                <strong>Application:</strong> Reporthole
               </Grid>
 
               <Grid size={{ xs: 12, md: 4 }}>

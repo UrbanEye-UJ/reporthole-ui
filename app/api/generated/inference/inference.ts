@@ -15,8 +15,12 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  FrameAcceptedResponse,
   PredictBody,
-  PredictResponseDTO
+  PredictResponseDTO,
+  SubmitFrame400,
+  SubmitFrame503,
+  SubmitFrameBody
 } from '../openAPIDefinition.schemas';
 
 import { apiClient } from '../../../../lib/axios';
@@ -87,6 +91,73 @@ export const usePredict = <TError = PredictResponseDTO | PredictResponseDTO,
       > => {
 
       const mutationOptions = getPredictMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * Accepts the frame immediately (202) and runs ONNX inference on a background thread. Requires a device token.
+ * @summary Submit a dashcam frame for asynchronous inference
+ */
+export const submitFrame = (
+    submitFrameBody: SubmitFrameBody,
+ signal?: AbortSignal
+) => {
+      
+      const formData = new FormData();
+formData.append(`image`, submitFrameBody.image)
+
+      return apiClient<FrameAcceptedResponse>(
+      {url: `/inference/frames`, method: 'POST',
+      headers: {'Content-Type': 'multipart/form-data', },
+       data: formData, signal
+    },
+      );
+    }
+  
+
+
+export const getSubmitFrameMutationOptions = <TError = SubmitFrame400 | SubmitFrame503,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitFrame>>, TError,{data: SubmitFrameBody}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof submitFrame>>, TError,{data: SubmitFrameBody}, TContext> => {
+
+const mutationKey = ['submitFrame'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitFrame>>, {data: SubmitFrameBody}> = (props) => {
+          const {data} = props ?? {};
+
+          return  submitFrame(data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitFrameMutationResult = NonNullable<Awaited<ReturnType<typeof submitFrame>>>
+    export type SubmitFrameMutationBody = SubmitFrameBody
+    export type SubmitFrameMutationError = SubmitFrame400 | SubmitFrame503
+
+    /**
+ * @summary Submit a dashcam frame for asynchronous inference
+ */
+export const useSubmitFrame = <TError = SubmitFrame400 | SubmitFrame503,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitFrame>>, TError,{data: SubmitFrameBody}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof submitFrame>>,
+        TError,
+        {data: SubmitFrameBody},
+        TContext
+      > => {
+
+      const mutationOptions = getSubmitFrameMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

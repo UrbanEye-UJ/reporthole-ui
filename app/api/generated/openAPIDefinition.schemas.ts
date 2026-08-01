@@ -15,6 +15,22 @@ export interface PredictResponseDTO {
   detection?: DetectionDTO;
 }
 
+export type FrameAcceptedResponseStatus = typeof FrameAcceptedResponseStatus[keyof typeof FrameAcceptedResponseStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const FrameAcceptedResponseStatus = {
+  PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  DONE: 'DONE',
+  FAILED: 'FAILED',
+} as const;
+
+export interface FrameAcceptedResponse {
+  frameId?: string;
+  status?: FrameAcceptedResponseStatus;
+}
+
 export interface AppResponseIncidentResponseDTO {
   data?: IncidentResponseDTO;
   message?: string;
@@ -189,6 +205,11 @@ export interface ForgotPasswordRequest {
   email: string;
 }
 
+export interface AdminApplicationRequest {
+  /** @minLength 1 */
+  municipalityToken: string;
+}
+
 export interface UpdateProfileRequest {
   /** @minLength 1 */
   firstName: string;
@@ -241,6 +262,14 @@ export interface SseEmitter {
 export type PredictBody = {
   image: Blob;
 };
+
+export type SubmitFrameBody = {
+  image: Blob;
+};
+
+export type SubmitFrame400 = { [key: string]: unknown };
+
+export type SubmitFrame503 = { [key: string]: unknown };
 
 export type VerifyEmailParams = {
 token: string;

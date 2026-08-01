@@ -55,7 +55,7 @@ const Sidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
               whiteSpace: "nowrap",
             }}
           >
-            SmartRoad AI
+            Reporthole
           </Typography>
         )}
 
