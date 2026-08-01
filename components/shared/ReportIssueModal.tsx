@@ -138,7 +138,6 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
     const aiCameraRef = useRef<HTMLInputElement>(null);
     const aiGalleryRef = useRef<HTMLInputElement>(null);
 
-    // eslint-disable-next-line react-hooks/preserve-manual-memoization
     const reverseGeocode = useCallback(async (lat: number, lng: number) => {
         setGeocoding(true);
         try {
@@ -162,7 +161,6 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
         if (visible && !coords && navigator.geolocation) {
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setLocating(true);
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             setError(null);
             navigator.geolocation.getCurrentPosition(
                 (pos) => {

@@ -4,11 +4,39 @@ import CivilianDashboard from "@/app/(civilian)/civilian/dashboard/page";
 import AdminDashboard from "@/app/(admin)/admin/dashboard/page";
 import ContractorDashboard from "@/app/(contractor)/contractor/dashboard/page";
 
+// @mui/x-data-grid ships ESM-only internals that fail to load in jsdom.
+// Mock the sub-components that pull it in so AdminDashboard can render.
+jest.mock("@/app/(admin)/_components/dashboard/RecentIncidents", () => ({
+    __esModule: true,
+    default: () => null,
+}));
+
+jest.mock("@/app/(admin)/_components/dashboard/IncidentMap", () => ({
+    __esModule: true,
+    default: () => null,
+}));
+
+jest.mock("@/app/(admin)/_components/dashboard/RepairProgress", () => ({
+    __esModule: true,
+    default: () => null,
+}));
+
+jest.mock("@/app/(admin)/_components/dashboard/SeverityChart", () => ({
+    __esModule: true,
+    default: () => null,
+}));
+
+jest.mock("@/app/(admin)/_components/dashboard/AISummary", () => ({
+    __esModule: true,
+    default: () => null,
+}));
+
 const renderWithClient = (ui: React.ReactElement) =>
     render(<QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>);
 
 jest.mock("next/navigation", () => ({
     useRouter: () => ({ push: jest.fn() }),
+    usePathname: () => "/admin/dashboard",
 }));
 
 jest.mock("@/app/api/generated/incidents/incidents", () => ({
@@ -33,7 +61,7 @@ describe("Dashboard pages", () => {
 
     it("renders the Admin Dashboard", () => {
         renderWithClient(<AdminDashboard />);
-        expect(screen.getByText("Admin Dashboard")).toBeInTheDocument();
+        expect(screen.getByText("Operations Center")).toBeInTheDocument();
     });
 
     it("renders the Contractor Dashboard", () => {
