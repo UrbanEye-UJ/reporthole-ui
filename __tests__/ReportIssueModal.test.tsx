@@ -5,12 +5,14 @@ import ReportIssueModal from "@/components/shared/ReportIssueModal";
 const mockCreateMutate = jest.fn();
 const mockConfirmMutate = jest.fn();
 
+type MutationHandlers = { onSuccess: (result: unknown) => void; onError: (err: unknown) => void };
+
 jest.mock("@/app/api/generated/incidents/incidents", () => ({
-    useCreateIncident: ({ mutation }: { mutation: { onSuccess: Function; onError: Function } }) => ({
+    useCreateIncident: ({ mutation }: { mutation: MutationHandlers }) => ({
         mutate: (payload: unknown) => mockCreateMutate(payload, mutation),
         isPending: false,
     }),
-    useConfirmDuplicate: ({ mutation }: { mutation: { onSuccess: Function; onError: Function } }) => ({
+    useConfirmDuplicate: ({ mutation }: { mutation: MutationHandlers }) => ({
         mutate: (payload: unknown) => mockConfirmMutate(payload, mutation),
         isPending: false,
     }),
@@ -21,7 +23,11 @@ const mockGeolocation = { getCurrentPosition: jest.fn() };
 beforeAll(() => {
     Object.defineProperty(navigator, "geolocation", { value: mockGeolocation, configurable: true });
     (URL.createObjectURL as jest.Mock) = jest.fn(() => "blob:mock-preview");
-    global.fetch = jest.fn(() => Promise.resolve({ ok: true }) as any);
+    global.fetch = jest.fn(() => Promise.resolve({ ok: true } as unknown as Response));
+    // jsdom does not implement createImageBitmap or canvas drawing APIs
+    global.createImageBitmap = jest.fn(async () => ({ width: 100, height: 100, close: jest.fn() }));
+    HTMLCanvasElement.prototype.getContext = jest.fn(() => ({ drawImage: jest.fn() })) as typeof HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.toBlob = jest.fn((cb: BlobCallback) => cb(new Blob(["img"])));
 });
 
 beforeEach(() => {
@@ -186,7 +192,7 @@ describe("ReportIssueModal", () => {
         });
 
         it("shows coordinates in form step after successful geolocation", async () => {
-            mockGeolocation.getCurrentPosition.mockImplementation((success: Function) =>
+            mockGeolocation.getCurrentPosition.mockImplementation((success: (pos: GeolocationPosition) => void) =>
                 success({ coords: { latitude: -26.2041, longitude: 28.0473 } })
             );
             await act(async () => {
@@ -197,7 +203,7 @@ describe("ReportIssueModal", () => {
         });
 
         it("shows error when geolocation fails on open", async () => {
-            mockGeolocation.getCurrentPosition.mockImplementation((_: unknown, error: Function) =>
+            mockGeolocation.getCurrentPosition.mockImplementation((_: unknown, error: (err: GeolocationPositionError) => void) =>
                 error({ code: 1, message: "denied" })
             );
             await act(async () => {
@@ -212,7 +218,7 @@ describe("ReportIssueModal", () => {
 
     describe("submit flow — no duplicate", () => {
         it("shows success screen after successful submission", async () => {
-            mockCreateMutate.mockImplementation((_: unknown, { onSuccess }: { onSuccess: Function }) =>
+            mockCreateMutate.mockImplementation((_: unknown, { onSuccess }: { onSuccess: (result: unknown) => void }) =>
                 onSuccess({ data: { duplicate: false, incidentId: "abc-123" } })
             );
 
@@ -229,7 +235,7 @@ describe("ReportIssueModal", () => {
         });
 
         it("calls onClose when Done is clicked on success screen", async () => {
-            mockCreateMutate.mockImplementation((_: unknown, { onSuccess }: { onSuccess: Function }) =>
+            mockCreateMutate.mockImplementation((_: unknown, { onSuccess }: { onSuccess: (result: unknown) => void }) =>
                 onSuccess({ data: { duplicate: false, incidentId: "abc-123" } })
             );
 
@@ -247,7 +253,7 @@ describe("ReportIssueModal", () => {
         });
 
         it("shows error message when mutation fails", async () => {
-            mockCreateMutate.mockImplementation((_: unknown, { onError }: { onError: Function }) => onError(new Error("fail")));
+            mockCreateMutate.mockImplementation((_: unknown, { onError }: { onError: (err: unknown) => void }) => onError(new Error("fail")));
 
             renderModal({ visible: true });
             await fillForm();
@@ -280,7 +286,7 @@ describe("ReportIssueModal", () => {
         };
 
         beforeEach(() => {
-            mockCreateMutate.mockImplementation((_: unknown, { onSuccess }: { onSuccess: Function }) =>
+            mockCreateMutate.mockImplementation((_: unknown, { onSuccess }: { onSuccess: (result: unknown) => void }) =>
                 onSuccess({ data: duplicateData })
             );
         });
@@ -308,7 +314,7 @@ describe("ReportIssueModal", () => {
                 get: () => `reporthole_token=${jwtWithOwnId}`,
                 configurable: true,
             });
-            mockCreateMutate.mockImplementationOnce((_: unknown, { onSuccess }: { onSuccess: Function }) =>
+            mockCreateMutate.mockImplementationOnce((_: unknown, { onSuccess }: { onSuccess: (result: unknown) => void }) =>
                 onSuccess({ data: { ...duplicateData, userId: OWN_USER_ID } })
             );
 
@@ -327,7 +333,7 @@ describe("ReportIssueModal", () => {
         });
 
         it("shows own-report message when alreadyConfirmed is true (previous confirmer)", async () => {
-            mockCreateMutate.mockImplementationOnce((_: unknown, { onSuccess }: { onSuccess: Function }) =>
+            mockCreateMutate.mockImplementationOnce((_: unknown, { onSuccess }: { onSuccess: (result: unknown) => void }) =>
                 onSuccess({ data: { ...duplicateData, alreadyConfirmed: true } })
             );
 
@@ -344,7 +350,7 @@ describe("ReportIssueModal", () => {
         });
 
         it("calls confirm mutation and shows success when user confirms duplicate", async () => {
-            mockConfirmMutate.mockImplementation((_: unknown, { onSuccess }: { onSuccess: Function }) =>
+            mockConfirmMutate.mockImplementation((_: unknown, { onSuccess }: { onSuccess: (result: unknown) => void }) =>
                 onSuccess({ data: { reportCount: 3 } })
             );
 
@@ -371,10 +377,10 @@ describe("ReportIssueModal", () => {
 
         it("re-submits with forceCreate when user says it is a different issue", async () => {
             mockCreateMutate
-                .mockImplementationOnce((_: unknown, { onSuccess }: { onSuccess: Function }) =>
+                .mockImplementationOnce((_: unknown, { onSuccess }: { onSuccess: (result: unknown) => void }) =>
                     onSuccess({ data: duplicateData })
                 )
-                .mockImplementationOnce((_: unknown, { onSuccess }: { onSuccess: Function }) =>
+                .mockImplementationOnce((_: unknown, { onSuccess }: { onSuccess: (result: unknown) => void }) =>
                     onSuccess({ data: { duplicate: false, incidentId: "new-456" } })
                 );
 

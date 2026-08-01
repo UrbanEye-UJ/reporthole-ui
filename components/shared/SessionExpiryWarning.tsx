@@ -27,9 +27,19 @@ function clearSession() {
     document.cookie = "reporthole_role=; path=/; max-age=0";
 }
 
+function getInitialSecondsLeft(): number | null {
+    const exp = getTokenExpiry();
+    if (!exp) return null;
+    const msUntilExpiry = exp * 1000 - Date.now();
+    if (msUntilExpiry <= WARN_BEFORE_SECONDS * 1000) {
+        return Math.max(0, Math.round(msUntilExpiry / 1000));
+    }
+    return null;
+}
+
 export default function SessionExpiryWarning() {
     const router = useRouter();
-    const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+    const [secondsLeft, setSecondsLeft] = useState<number | null>(getInitialSecondsLeft);
     const [reason, setReason] = useState<Reason>("expiring");
     const warnTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -47,17 +57,14 @@ export default function SessionExpiryWarning() {
         return () => window.removeEventListener("session-invalid", handler);
     }, []);
 
-    // Schedule the natural-expiry warning based on JWT exp
+    // Schedule the natural-expiry warning for tokens not yet in the warn window
     useEffect(() => {
         const exp = getTokenExpiry();
         if (!exp) return;
 
         const msUntilWarn = exp * 1000 - Date.now() - WARN_BEFORE_SECONDS * 1000;
 
-        if (msUntilWarn <= 0) {
-            const remaining = Math.max(0, Math.round((exp * 1000 - Date.now()) / 1000));
-            show("expiring", remaining);
-        } else {
+        if (msUntilWarn > 0) {
             warnTimerRef.current = setTimeout(() => show("expiring", WARN_BEFORE_SECONDS), msUntilWarn);
         }
 

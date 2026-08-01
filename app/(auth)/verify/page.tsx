@@ -26,6 +26,7 @@ function VerifyEmailContent() {
     });
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (!token) { setStatus("invalid"); return; }
         verifyEmail({ params: { token } });
     // eslint-disable-next-line react-hooks/exhaustive-deps

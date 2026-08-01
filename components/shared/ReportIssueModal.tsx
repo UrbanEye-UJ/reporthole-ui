@@ -138,9 +138,28 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
     const aiCameraRef = useRef<HTMLInputElement>(null);
     const aiGalleryRef = useRef<HTMLInputElement>(null);
 
+    const reverseGeocode = useCallback(async (lat: number, lng: number) => {
+        setGeocoding(true);
+        try {
+            const res = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+                { headers: { "User-Agent": "Reporthole/1.0 (refentsengoako101@gmail.com)" } }
+            );
+            const data = await res.json();
+            const { road, suburb, city, town, village, county } = data.address ?? {};
+            const parts = [road, suburb, city ?? town ?? village ?? county].filter(Boolean);
+            setAddress(parts.join(", ") || data.display_name || null);
+        } catch {
+            setAddress(null);
+        } finally {
+            setGeocoding(false);
+        }
+    }, []);
+
     // Request geolocation whenever the modal becomes visible (not just on first open)
     useEffect(() => {
         if (visible && !coords && navigator.geolocation) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setLocating(true);
             setError(null);
             navigator.geolocation.getCurrentPosition(
@@ -158,7 +177,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                 }
             );
         }
-    }, [visible]);
+    }, [visible, reverseGeocode]);
 
     const createIncident = useCreateIncident({
         mutation: {
@@ -189,24 +208,6 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
             onError: () => setError("Something went wrong. Please try again."),
         },
     });
-
-    const reverseGeocode = useCallback(async (lat: number, lng: number) => {
-        setGeocoding(true);
-        try {
-            const res = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
-                { headers: { "User-Agent": "Reporthole/1.0 (refentsengoako101@gmail.com)" } }
-            );
-            const data = await res.json();
-            const { road, suburb, city, town, village, county } = data.address ?? {};
-            const parts = [road, suburb, city ?? town ?? village ?? county].filter(Boolean);
-            setAddress(parts.join(", ") || data.display_name || null);
-        } catch {
-            setAddress(null);
-        } finally {
-            setGeocoding(false);
-        }
-    }, []);
 
     const handleMapLocationChange = useCallback((lat: number, lng: number) => {
         setCoords({ latitude: lat, longitude: lng });
@@ -304,7 +305,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
             const compressed = await compressForInference(selected);
             const form = new FormData();
             form.append("image", compressed, "image.jpg");
-            const res = await fetch("/api/inference/predict", { method: "POST", body: form });
+            const res = await fetch("/api/ml/predict", { method: "POST", body: form });
             if (!res.ok) {
                 setAiError(
                     res.status === 413
@@ -422,7 +423,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                         {duplicate.imageUrl && (
                             <div className="relative w-full h-44 rounded-xl overflow-hidden bg-gray-100">
                                 <Image
-                                    src={duplicate.imageUrl}
+                                    src={`/api/image-proxy?url=${encodeURIComponent(duplicate.imageUrl ?? "")}`}
                                     alt="Reported incident"
                                     fill
                                     className="object-cover"

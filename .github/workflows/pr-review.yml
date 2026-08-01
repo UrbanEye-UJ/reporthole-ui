@@ -1,0 +1,145 @@
+name: PR Auto-Review
+
+# Posts an opening checklist on new PRs, runs frontend CI, then posts a result summary.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [develop]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+
+  opening-checklist:
+    name: Post Checklist
+    runs-on: ubuntu-latest
+    if: github.event.action == 'opened'
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: [
+                '## PR Review Checklist',
+                '',
+                'Automated CI will run lint, tests, and a production build. Human reviewer — please also check:',
+                '',
+                '### Code quality',
+                '- [ ] No `console.log` / debug statements left in',
+                '- [ ] No hardcoded secrets, credentials, or environment-specific URLs',
+                '- [ ] New components and hooks have doc comments (project rule)',
+                '- [ ] No TypeScript `any` or `Function` types introduced',
+                '',
+                '### Security',
+                '- [ ] No JWT or session token logged or exposed to the DOM',
+                '- [ ] User-supplied content rendered in the DOM is escaped (no `dangerouslySetInnerHTML`)',
+                '',
+                '### API & data layer',
+                '- [ ] All backend calls use orval-generated hooks — no manual `fetch`/`axios` for BE endpoints',
+                '- [ ] If the OpenAPI spec changed, `npm run generate:api` was re-run and generated files are committed',
+                '',
+                '### Tests',
+                '- [ ] New components have Jest + RTL unit tests',
+                '- [ ] Tests mock browser APIs that jsdom does not implement (e.g. `createImageBitmap`, Canvas)',
+                '- [ ] No `any` / `Function` types in test files',
+                '',
+                '### Next.js / SSR',
+                '- [ ] Browser APIs (`document`, `localStorage`, `window`) are guarded with `typeof window !== "undefined"` in lazy `useState` initializers',
+                '- [ ] Images use `next/image`, not `<img>`',
+                '',
+                '### Scope',
+                '- [ ] Branch targets `develop`, not `main`',
+                '- [ ] PR does not bundle unrelated changes',
+              ].join('\n')
+            });
+
+  frontend-lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ job.status }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint
+
+  frontend-test:
+    name: Tests
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ job.status }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm test -- --ci --passWithNoTests
+
+  frontend-build:
+    name: Build
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ job.status }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8080/api
+
+  post-review:
+    name: Post Review Summary
+    runs-on: ubuntu-latest
+    needs: [frontend-lint, frontend-test, frontend-build]
+    if: always()
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const results = {
+              'Lint':  '${{ needs.frontend-lint.result }}',
+              'Tests': '${{ needs.frontend-test.result }}',
+              'Build': '${{ needs.frontend-build.result }}',
+            };
+
+            const icon = (r) => r === 'success' ? '✅' : r === 'skipped' ? '⏭️' : '❌';
+
+            const rows = Object.entries(results)
+              .map(([name, r]) => `| ${name} | ${icon(r)} ${r} |`)
+              .join('\n');
+
+            const allPassed = Object.values(results).every(r => r === 'success' || r === 'skipped');
+
+            const body = [
+              '## Automated CI Summary',
+              '',
+              '| Check | Result |',
+              '|-------|--------|',
+              rows,
+              '',
+              allPassed
+                ? '**All checks passed.** This PR is ready for human review.'
+                : '**One or more checks failed.** Fix the issues above before this PR can be merged.',
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });

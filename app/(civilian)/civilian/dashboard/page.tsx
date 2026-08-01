@@ -15,6 +15,7 @@ import {
 } from "@/app/api/generated/incidents/incidents";
 import { Issue, Status } from "@/app/types/issue";
 import { IncidentResponseDTO, SearchMyIncidentsType } from "@/app/api/generated/openAPIDefinition.schemas";
+import { useCivilianTheme } from "../../_context/CivilianThemeContext";
 
 const getCookie = (name: string) =>
     document.cookie
@@ -44,17 +45,13 @@ const SEARCH_TYPES = Object.values(SearchMyIncidentsType);
 
 export default function CivilianDashboard() {
     const router = useRouter();
+    const { darkMode, toggle: toggleTheme } = useCivilianTheme();
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
-    const [role, setRole] = useState("");
-    const [userId, setUserId] = useState("");
+    const [role] = useState(() => typeof window !== "undefined" ? getCookie("reporthole_role") : "");
+    const [userId] = useState(() => typeof window !== "undefined" ? getCookie("reporthole_user_id") : "");
     const [searchKeyword, setSearchKeyword] = useState("");
     const [searchType, setSearchType] = useState<SearchMyIncidentsType | "">("");
-
-    useEffect(() => {
-        setRole(getCookie("reporthole_role"));
-        setUserId(getCookie("reporthole_user_id"));
-    }, []);
 
     const { data, refetch } = useGetMyIncidents({ query: { staleTime: 0, refetchOnWindowFocus: false } });
     const allIncidents: Issue[] = (data?.data ?? []).map(toIssue);
@@ -79,6 +76,7 @@ export default function CivilianDashboard() {
     useEffect(() => {
         if (selectedIssue && data?.data) {
             const updatedDto = data.data.find((d) => d.incidentId === selectedIssue.id);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             if (updatedDto) setSelectedIssue(toIssue(updatedDto));
         }
     }, [data]);
@@ -105,19 +103,39 @@ export default function CivilianDashboard() {
     };
 
     return (
-        <main className="min-h-screen bg-gray-100">
+        <main className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
             <div className="max-w-lg mx-auto px-4 py-6 flex flex-col gap-5">
 
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-xl font-bold text-blue-600">Reporthole</h1>
-                        <p className="text-sm text-gray-500 capitalize">{role.toLowerCase()}</p>
+                        <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">Reporthole</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">{role.toLowerCase()}</p>
                     </div>
                     <div className="flex items-center gap-3">
+                        {/* Theme toggle */}
+                        <button
+                            type="button"
+                            onClick={toggleTheme}
+                            aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+                            className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        >
+                            {darkMode ? (
+                                /* Sun icon */
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0z" />
+                                </svg>
+                            ) : (
+                                /* Moon icon */
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998z" />
+                                </svg>
+                            )}
+                        </button>
+
                         <Link
                             href="/profile"
-                            className="text-gray-500 hover:text-blue-600 transition-colors"
+                            className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                             aria-label="Profile"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -127,7 +145,7 @@ export default function CivilianDashboard() {
                         <button
                             type="button"
                             onClick={handleLogout}
-                            className="text-blue-600 hover:text-blue-800 transition-colors"
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
                             aria-label="Logout"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -160,7 +178,7 @@ export default function CivilianDashboard() {
                 {/* Search */}
                 <div className="flex flex-col gap-2">
                     <div className="relative">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803a7.5 7.5 0 0010.607 10.607z" />
                         </svg>
                         <input
@@ -168,13 +186,13 @@ export default function CivilianDashboard() {
                             placeholder="Search by description or location..."
                             value={searchKeyword}
                             onChange={(e) => setSearchKeyword(e.target.value)}
-                            className="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                         />
                     </div>
                     <select
                         value={searchType}
                         onChange={(e) => setSearchType(e.target.value as SearchMyIncidentsType | "")}
-                        className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                     >
                         <option value="">All issue types</option>
                         {SEARCH_TYPES.map((t) => (
@@ -186,21 +204,21 @@ export default function CivilianDashboard() {
                 {/* Recent Issues */}
                 <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-base font-semibold text-gray-800">
+                        <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">
                             {searchKeyword || searchType ? "Search Results" : "Recent Issues"}
                         </h2>
                         {(searchKeyword || searchType) && (
                             <button
                                 type="button"
                                 onClick={() => { setSearchKeyword(""); setSearchType(""); }}
-                                className="text-xs text-blue-600 hover:text-blue-800"
+                                className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                             >
                                 Clear
                             </button>
                         )}
                     </div>
                     {incidents.length === 0 ? (
-                        <p className="text-sm text-gray-400 text-center py-6">
+                        <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-6">
                             {searchKeyword || searchType ? "No incidents match your search." : "No incidents reported yet."}
                         </p>
                     ) : (
