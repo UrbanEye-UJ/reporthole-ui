@@ -27,25 +27,12 @@ const Panel = ({
       sx={{
         p: padding,
         height,
-        borderRadius: 4,
-
-        background: "rgba(17, 25, 40, 0.72)",
-
-        backdropFilter: "blur(18px)",
-        WebkitBackdropFilter: "blur(18px)",
-
-        border: "1px solid rgba(255,255,255,.08)",
-
-        transition: "all .25s ease",
-
         overflow: "hidden",
+        transition: "all .25s ease",
 
         "&:hover": {
           borderColor: "primary.main",
-
-          boxShadow:
-            "0 10px 30px rgba(59,130,246,.18)",
-
+          boxShadow: "0 8px 24px rgba(37,99,235,.15)",
           transform: "translateY(-2px)",
         },
       }}

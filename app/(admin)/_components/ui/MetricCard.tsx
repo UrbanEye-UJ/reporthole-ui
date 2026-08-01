@@ -36,20 +36,12 @@ const MetricCard = ({
       elevation={0}
       sx={{
         p: 3,
-        borderRadius: 4,
-
-        background: "rgba(17,25,40,.72)",
-        backdropFilter: "blur(18px)",
-        WebkitBackdropFilter: "blur(18px)",
-
-        border: "1px solid rgba(255,255,255,.08)",
-
         transition: ".25s",
 
         "&:hover": {
           transform: "translateY(-3px)",
           borderColor: "primary.main",
-          boxShadow: "0 10px 28px rgba(59,130,246,.18)",
+          boxShadow: "0 8px 24px rgba(37,99,235,.15)",
         },
       }}
     >
@@ -114,9 +106,9 @@ const MetricCard = ({
               alignItems: "center",
               justifyContent: "center",
 
-              borderRadius: "18px",
+              borderRadius: "14px",
 
-              bgcolor: "rgba(59,130,246,.12)",
+              bgcolor: "rgba(37,99,235,.10)",
 
               color,
 

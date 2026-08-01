@@ -38,21 +38,27 @@ const DataTable = ({
         border: "none",
 
         "& .MuiDataGrid-columnHeaders": {
-          background: "rgba(255,255,255,.05)",
-          borderBottom: "1px solid rgba(255,255,255,.08)",
+          background: (t) =>
+            t.palette.mode === "dark"
+              ? "rgba(255,255,255,.05)"
+              : "rgba(0,0,0,.03)",
+          borderBottom: (t) =>
+            `1px solid ${t.palette.divider}`,
           fontWeight: 700,
         },
 
         "& .MuiDataGrid-cell": {
-          borderBottom: "1px solid rgba(255,255,255,.05)",
+          borderBottom: (t) =>
+            `1px solid ${t.palette.divider}`,
         },
 
         "& .MuiDataGrid-row:hover": {
-          background: "rgba(59,130,246,.08)",
+          background: "rgba(37,99,235,.06)",
         },
 
         "& .MuiDataGrid-footerContainer": {
-          borderTop: "1px solid rgba(255,255,255,.08)",
+          borderTop: (t) =>
+            `1px solid ${t.palette.divider}`,
         },
 
         "& .MuiDataGrid-columnSeparator": {

@@ -94,7 +94,10 @@ const RepairProgress = () => {
                 label={`${repair.completed}%`}
                 sx={{
                   fontWeight: 700,
-                  bgcolor: "rgba(255,255,255,.06)",
+                  bgcolor: (t) =>
+                    t.palette.mode === "dark"
+                      ? "rgba(255,255,255,.06)"
+                      : "rgba(0,0,0,.06)",
                 }}
               />
             </Box>
@@ -107,7 +110,10 @@ const RepairProgress = () => {
                 height: 10,
                 borderRadius: 999,
 
-                backgroundColor: "rgba(255,255,255,.08)",
+                backgroundColor: (t: { palette: { mode: string } }) =>
+                  t.palette.mode === "dark"
+                    ? "rgba(255,255,255,.08)"
+                    : "rgba(0,0,0,.08)",
 
                 "& .MuiLinearProgress-bar": {
                   borderRadius: 999,

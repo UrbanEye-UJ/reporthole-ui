@@ -16,6 +16,9 @@ import NotificationsRoundedIcon from "@mui/icons-material/NotificationsRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
 import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
+import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
+
+import { useRouter } from "next/navigation";
 
 import { useAdminTheme } from "../styles/AdminThemeContext";
 
@@ -23,6 +26,14 @@ import { useAdminTheme } from "../styles/AdminThemeContext";
 // Expected shape: { firstName: string; lastName: string; role: string }
 const AdminTopbar = () => {
   const { mode, toggle } = useAdminTheme();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    document.cookie = "reporthole_token=; path=/; max-age=0";
+    document.cookie = "reporthole_role=; path=/; max-age=0";
+    document.cookie = "reporthole_user_id=; path=/; max-age=0";
+    router.push("/login");
+  };
 
   const isDark = mode === "dark";
 
@@ -30,6 +41,7 @@ const AdminTopbar = () => {
     <AppBar
       position="sticky"
       elevation={0}
+      color="inherit"
       sx={{
         gridColumn: 2,
         background: isDark
@@ -200,6 +212,29 @@ const AdminTopbar = () => {
           >
             A
           </Avatar>
+
+          {/* Logout */}
+          <Tooltip title="Log out">
+            <IconButton
+              onClick={handleLogout}
+              aria-label="Log out"
+              sx={{
+                bgcolor: isDark
+                  ? "rgba(255,255,255,.05)"
+                  : "rgba(0,0,0,.05)",
+
+                "&:hover": {
+                  bgcolor: "rgba(239,68,68,.12)",
+                  color: "error.main",
+                  transform: "scale(1.05)",
+                },
+
+                transition: ".25s",
+              }}
+            >
+              <LogoutRoundedIcon />
+            </IconButton>
+          </Tooltip>
         </Box>
       </Toolbar>
     </AppBar>

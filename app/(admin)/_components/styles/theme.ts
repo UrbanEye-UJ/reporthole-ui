@@ -10,6 +10,20 @@ import type { AdminThemeMode } from "./AdminThemeContext";
 /** Creates the MUI theme for the admin panel. Call with the current mode. */
 export function createAdminTheme(mode: AdminThemeMode) {
   const palette = mode === "dark" ? colors.dark : colors.light;
+  const isDark = mode === "dark";
+
+  // Lighter shadows for the light theme so cards don't look heavy on a white background
+  const cardShadow = isDark
+    ? shadows.card
+    : "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)";
+
+  const glassShadow = isDark
+    ? shadows.glass
+    : "0 1px 3px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)";
+
+  const hoverShadow = isDark
+    ? shadows.hover
+    : "0 4px 12px rgba(37,99,235,0.15)";
 
   return createTheme({
     palette: {
@@ -54,7 +68,9 @@ export function createAdminTheme(mode: AdminThemeMode) {
     },
 
     shape: {
-      borderRadius: radius.lg,
+      // Use MUI's default unit (4) so numeric sx values scale sensibly:
+      // borderRadius: 3 in sx = 12px (rounded-xl), borderRadius: 4 = 16px (rounded-2xl)
+      borderRadius: 4,
     },
 
     typography,
@@ -63,17 +79,18 @@ export function createAdminTheme(mode: AdminThemeMode) {
       MuiPaper: {
         styleOverrides: {
           root: {
+            borderRadius: "16px", // rounded-2xl — matches civilian card radius
             background: palette.surface.primary,
-            backdropFilter: "blur(18px)",
-            WebkitBackdropFilter: "blur(18px)",
+            backdropFilter: isDark ? "blur(18px)" : "none",
+            WebkitBackdropFilter: isDark ? "blur(18px)" : "none",
             border: `1px solid ${palette.border}`,
             backgroundImage: "none",
-            boxShadow: shadows.glass,
+            boxShadow: glassShadow,
             transition: "all .25s ease",
 
             "&:hover": {
               background: palette.surface.secondary,
-              boxShadow: shadows.hover,
+              boxShadow: hoverShadow,
               borderColor: palette.primary,
             },
           },
@@ -83,17 +100,18 @@ export function createAdminTheme(mode: AdminThemeMode) {
       MuiCard: {
         styleOverrides: {
           root: {
+            borderRadius: "16px",
             background: palette.surface.primary,
-            backdropFilter: "blur(18px)",
-            WebkitBackdropFilter: "blur(18px)",
+            backdropFilter: isDark ? "blur(18px)" : "none",
+            WebkitBackdropFilter: isDark ? "blur(18px)" : "none",
             backgroundImage: "none",
             border: `1px solid ${palette.border}`,
-            boxShadow: shadows.card,
+            boxShadow: cardShadow,
             transition: "all .25s ease",
 
             "&:hover": {
               background: palette.surface.secondary,
-              boxShadow: shadows.hover,
+              boxShadow: hoverShadow,
               transform: "translateY(-2px)",
             },
           },

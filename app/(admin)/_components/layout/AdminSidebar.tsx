@@ -121,19 +121,22 @@ const AdminSidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
 
                   color: isActive
                     ? "#ffffff"
-                    : "text.secondary",
+                    : "text.primary",
 
                   transition: "all 0.25s ease",
 
                   "&:hover": {
                     bgcolor: isActive
                       ? "primary.dark"
-                      : "rgba(255,255,255,.06)",
+                      : (t) =>
+                          t.palette.mode === "dark"
+                            ? "rgba(255,255,255,.06)"
+                            : "rgba(0,0,0,.05)",
 
                     transform: "translateX(4px)",
 
                     boxShadow:
-                      "0 6px 18px rgba(0,0,0,.18)",
+                      "0 6px 18px rgba(0,0,0,.10)",
                   },
                 }}
               >

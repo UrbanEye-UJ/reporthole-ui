@@ -1,9 +1,8 @@
 "use client";
 
-import { Button, Grid } from "@mui/material";
+import { Grid } from "@mui/material";
 
 import PeopleRoundedIcon from "@mui/icons-material/PeopleRounded";
-import PersonAddRoundedIcon from "@mui/icons-material/PersonAddRounded";
 
 import type { GridColDef } from "@mui/x-data-grid";
 
@@ -79,14 +78,6 @@ export default function CitizensPage() {
       <PageHeader
         title="Citizens"
         subtitle="Manage citizen engagement and road issue reporting."
-        actions={
-          <Button
-            variant="contained"
-            startIcon={<PersonAddRoundedIcon />}
-          >
-            Register Citizen
-          </Button>
-        }
       />
 
       <Grid container spacing={3}>

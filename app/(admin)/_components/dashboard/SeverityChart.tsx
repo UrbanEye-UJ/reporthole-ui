@@ -8,6 +8,8 @@ import {
   Tooltip,
 } from "recharts";
 
+import { useTheme } from "@mui/material";
+
 import Panel from "../ui/Panel";
 
 // TODO(api): replace with data from GET /admin/dashboard/severity-distribution
@@ -36,6 +38,9 @@ const data = [
 ];
 
 const SeverityChart = () => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+
   return (
     <Panel title="Incident Severity">
       <ResponsiveContainer
@@ -61,10 +66,10 @@ const SeverityChart = () => {
 
           <Tooltip
             contentStyle={{
-              background: "#111827",
-              border: "none",
+              background: isDark ? "#111827" : "#ffffff",
+              border: `1px solid ${isDark ? "rgba(255,255,255,.08)" : "#E5E7EB"}`,
               borderRadius: 12,
-              color: "#ffffff",
+              color: isDark ? "#ffffff" : "#1F2937",
             }}
           />
         </PieChart>

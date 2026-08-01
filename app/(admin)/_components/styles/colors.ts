@@ -35,33 +35,34 @@ export const colors = {
   },
 
   light: {
+    // Matches the civilian Tailwind palette exactly
     background: {
-      primary: "#F8FAFC",
-      secondary: "rgba(255,255,255,.80)",
-      tertiary: "#F1F5F9",
+      primary: "#F3F4F6",   // gray-100
+      secondary: "#FFFFFF",
+      tertiary: "#F9FAFB",  // gray-50
     },
 
     surface: {
-      primary: "rgba(255,255,255,.75)",
-      secondary: "#FFFFFF",
+      primary: "#FFFFFF",   // white cards (civilian bg-white)
+      secondary: "#F9FAFB", // gray-50 on hover
     },
 
-    border: "#E5E7EB",
+    border: "#E5E7EB",      // gray-200
 
     glass: {
-      background: "rgba(255,255,255,.75)",
-      hover: "rgba(236,72,153,.12)",
-      active: "rgba(236,72,153,.20)",
+      background: "#FFFFFF",
+      hover: "rgba(37,99,235,0.06)",   // blue-600 tint
+      active: "rgba(37,99,235,0.12)",
     },
 
     text: {
-      primary: "#0F172A",
-      secondary: "#475569",
-      disabled: "#94A3B8",
+      primary: "#1F2937",   // gray-800
+      secondary: "#6B7280", // gray-500
+      disabled: "#9CA3AF",  // gray-400
     },
 
-    primary: "#2563EB",
-    secondary: "#EC4899",
+    primary: "#2563EB",     // blue-600
+    secondary: "#3B82F6",   // blue-500
 
     success: "#22C55E",
     warning: "#F59E0B",
