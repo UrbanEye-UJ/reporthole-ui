@@ -10,7 +10,7 @@ import PageHeader from "../../_components/ui/PageHeader";
 import MetricCard from "../../_components/ui/MetricCard";
 import Panel from "../../_components/ui/Panel";
 import DataTable from "../../_components/tables/DataTable";
-import StatusBadge from "../../_components/ui/StatusBadge";
+import StatusBadge, { type Status } from "../../_components/ui/StatusBadge";
 
 // TODO(api): replace with data from GET /admin/users?role=CIVILIAN
 // Expected shape: { id: number; name: string; district: string; reports: number; status: string }[]
@@ -67,7 +67,7 @@ const columns: GridColDef[] = [
     headerName: "Latest Report",
     width: 170,
     renderCell: (params) => (
-      <StatusBadge status={params.value as any} />
+      <StatusBadge status={params.value as Status} />
     ),
   },
 ];

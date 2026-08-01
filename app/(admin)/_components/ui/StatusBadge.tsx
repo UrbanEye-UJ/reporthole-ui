@@ -2,7 +2,7 @@
 
 import { Chip } from "@mui/material";
 
-type Status =
+export type Status =
   | "Open"
   | "Assigned"
   | "In Progress"

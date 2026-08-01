@@ -4,7 +4,6 @@ import {
   createContext,
   useContext,
   useState,
-  useEffect,
   type ReactNode,
 } from "react";
 
@@ -19,12 +18,10 @@ const CivilianThemeContext = createContext<CivilianThemeContextValue>({
 });
 
 export function CivilianThemeProvider({ children }: { children: ReactNode }) {
-  const [darkMode, setDarkMode] = useState(false);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("civilian-theme");
-    if (saved === "dark") setDarkMode(true);
-  }, []);
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("civilian-theme") === "dark";
+  });
 
   const toggle = () => {
     setDarkMode((current) => {

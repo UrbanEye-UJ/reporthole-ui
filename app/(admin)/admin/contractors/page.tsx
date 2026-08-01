@@ -10,7 +10,7 @@ import MetricCard from "../../_components/ui/MetricCard";
 import Panel from "../../_components/ui/Panel";
 
 import DataTable from "../../_components/tables/DataTable";
-import StatusBadge from "../../_components/ui/StatusBadge";
+import StatusBadge, { type Status } from "../../_components/ui/StatusBadge";
 
 import type { GridColDef } from "@mui/x-data-grid";
 
@@ -71,7 +71,7 @@ const columns: GridColDef[] = [
     headerName: "Status",
     width: 160,
     renderCell: (params) => (
-      <StatusBadge status={params.value as any} />
+      <StatusBadge status={params.value as Status} />
     ),
   },
 ];

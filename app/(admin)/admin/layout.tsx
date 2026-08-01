@@ -5,7 +5,7 @@ import { ThemeProvider } from "@mui/material";
 // No <CssBaseline /> — dark body styles live on AdminShell's wrapper Box instead of <body>,
 // so they don't leak into the civilian UI on SPA navigation.
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import type { ReactNode } from "react";
 
 import { createAdminTheme } from "../_components/styles/theme";
@@ -31,12 +31,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     },
   }));
 
-  const [mode, setMode] = useState<AdminThemeMode>("dark");
-
-  useEffect(() => {
+  const [mode, setMode] = useState<AdminThemeMode>(() => {
+    if (typeof window === "undefined") return "dark";
     const saved = localStorage.getItem("admin-theme") as AdminThemeMode | null;
-    if (saved === "dark" || saved === "light") setMode(saved);
-  }, []);
+    return saved === "dark" || saved === "light" ? saved : "dark";
+  });
 
   const toggle = () => {
     setMode((current) => {
