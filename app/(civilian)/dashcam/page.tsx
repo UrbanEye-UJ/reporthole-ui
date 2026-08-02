@@ -201,7 +201,7 @@ export default function DashcamPage() {
         // Read as base64 for backend incident creation
         const base64 = await blobToBase64(blob);
 
-        // Send frame to ML service via the /api/ml/predict Route Handler
+        // Send frame to BE inference endpoint via Caddy (/api/inference/predict)
         let prediction: PredictResponse;
         try {
             const form = new FormData();

@@ -7,12 +7,12 @@ import {
     useCreateIncident,
     useConfirmDuplicate,
 } from "@/app/api/generated/incidents/incidents";
+import { usePredict } from "@/app/api/generated/inference/inference";
 import {
     DetectionDTO,
     IncidentRequestDTO,
     IncidentRequestDTOIncidentType,
     IncidentResponseDTO,
-    PredictResponseDTO,
 } from "@/app/api/generated/openAPIDefinition.schemas";
 
 const LocationPickerMap = dynamic(() => import("./LocationPickerMap"), { ssr: false });
@@ -102,7 +102,7 @@ function inferredLabelToIssueType(label: string): IncidentRequestDTOIncidentType
  * selected the user is taken directly to the relevant step.
  *
  * **AI-detect step:** User takes or uploads a photo. The image is sent to
- * POST /api/ml/predict and the returned label pre-fills the issue type and
+ * The image is sent to the BE inference endpoint via the generated usePredict hook and the returned label pre-fills the issue type and
  * description in the manual form. If detection fails or the user disagrees,
  * they can switch to the manual form.
  *
@@ -178,6 +178,8 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
             );
         }
     }, [visible, reverseGeocode]);
+
+    const { mutateAsync: runPredict } = usePredict();
 
     const createIncident = useCreateIncident({
         mutation: {
@@ -303,18 +305,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
 
         try {
             const compressed = await compressForInference(selected);
-            const form = new FormData();
-            form.append("image", compressed, "image.jpg");
-            const res = await fetch("/api/ml/predict", { method: "POST", body: form });
-            if (!res.ok) {
-                setAiError(
-                    res.status === 413
-                        ? "Image is too large to analyze. Please use a smaller photo."
-                        : "Could not analyze the image. You can still report manually."
-                );
-                return;
-            }
-            const data: PredictResponseDTO = await res.json();
+            const data = await runPredict({ data: { image: compressed } });
             if (!data.detected || !data.detection?.label || !data.detection?.confidence) {
                 setAiError("No road damage detected in this image. Try a clearer photo or report manually.");
                 return;
