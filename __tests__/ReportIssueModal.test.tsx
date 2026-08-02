@@ -4,6 +4,7 @@ import ReportIssueModal from "@/components/shared/ReportIssueModal";
 
 const mockCreateMutate = jest.fn();
 const mockConfirmMutate = jest.fn();
+const mockPredictMutateAsync = jest.fn();
 
 type MutationHandlers = { onSuccess: (result: unknown) => void; onError: (err: unknown) => void };
 
@@ -16,6 +17,10 @@ jest.mock("@/app/api/generated/incidents/incidents", () => ({
         mutate: (payload: unknown) => mockConfirmMutate(payload, mutation),
         isPending: false,
     }),
+}));
+
+jest.mock("@/app/api/generated/inference/inference", () => ({
+    usePredict: () => ({ mutateAsync: mockPredictMutateAsync }),
 }));
 
 const mockGeolocation = { getCurrentPosition: jest.fn() };
@@ -34,6 +39,7 @@ beforeEach(() => {
     mockGeolocation.getCurrentPosition.mockReset();
     mockCreateMutate.mockReset();
     mockConfirmMutate.mockReset();
+    mockPredictMutateAsync.mockReset();
     (global.fetch as jest.Mock).mockReset();
     (global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => ({}) });
 });
@@ -407,10 +413,7 @@ describe("ReportIssueModal", () => {
 
     describe("AI-detect flow", () => {
         it("shows loading overlay while analyzing", async () => {
-            // Keep fetch pending so the analyzing state persists
-            (global.fetch as jest.Mock).mockImplementation(
-                () => new Promise(() => {}) // never resolves
-            );
+            mockPredictMutateAsync.mockImplementation(() => new Promise(() => {}));
 
             renderModal({ visible: true });
             fireEvent.click(screen.getByText("Detect with AI"));
@@ -429,12 +432,9 @@ describe("ReportIssueModal", () => {
         });
 
         it("shows AI prediction result when inference succeeds", async () => {
-            (global.fetch as jest.Mock).mockResolvedValue({
-                ok: true,
-                json: async () => ({
-                    detected: true,
-                    detection: { label: "POTHOLE", confidence: 0.87, rawLabel: "Pothole_FP" },
-                }),
+            mockPredictMutateAsync.mockResolvedValue({
+                detected: true,
+                detection: { label: "POTHOLE", confidence: 0.87, rawLabel: "Pothole_FP" },
             });
 
             renderModal({ visible: true });
@@ -456,12 +456,9 @@ describe("ReportIssueModal", () => {
         });
 
         it("pre-fills form and switches to form step when user accepts AI prediction", async () => {
-            (global.fetch as jest.Mock).mockResolvedValue({
-                ok: true,
-                json: async () => ({
-                    detected: true,
-                    detection: { label: "POTHOLE", confidence: 0.87, rawLabel: "Pothole_FP" },
-                }),
+            mockPredictMutateAsync.mockResolvedValue({
+                detected: true,
+                detection: { label: "POTHOLE", confidence: 0.87, rawLabel: "Pothole_FP" },
             });
 
             renderModal({ visible: true });
@@ -486,12 +483,9 @@ describe("ReportIssueModal", () => {
         });
 
         it("goes to manual form when user rejects AI prediction", async () => {
-            (global.fetch as jest.Mock).mockResolvedValue({
-                ok: true,
-                json: async () => ({
-                    detected: true,
-                    detection: { label: "CRACK", confidence: 0.72, rawLabel: "Alligator_Crack_FP" },
-                }),
+            mockPredictMutateAsync.mockResolvedValue({
+                detected: true,
+                detection: { label: "CRACK", confidence: 0.72, rawLabel: "Alligator_Crack_FP" },
             });
 
             renderModal({ visible: true });
@@ -512,9 +506,9 @@ describe("ReportIssueModal", () => {
         });
 
         it("shows error message when inference returns not detected", async () => {
-            (global.fetch as jest.Mock).mockResolvedValue({
-                ok: true,
-                json: async () => ({ detected: false, detection: { label: null, confidence: null, rawLabel: null } }),
+            mockPredictMutateAsync.mockResolvedValue({
+                detected: false,
+                detection: { label: null, confidence: null, rawLabel: null },
             });
 
             renderModal({ visible: true });
@@ -535,7 +529,7 @@ describe("ReportIssueModal", () => {
         });
 
         it("shows error message when inference service is unreachable", async () => {
-            (global.fetch as jest.Mock).mockRejectedValue(new Error("Network error"));
+            mockPredictMutateAsync.mockRejectedValue(new Error("Network error"));
 
             renderModal({ visible: true });
             fireEvent.click(screen.getByText("Detect with AI"));
@@ -553,13 +547,10 @@ describe("ReportIssueModal", () => {
             });
         });
 
-        it("sends the image to /api/ml/predict", async () => {
-            (global.fetch as jest.Mock).mockResolvedValue({
-                ok: true,
-                json: async () => ({
-                    detected: true,
-                    detection: { label: "POTHOLE", confidence: 0.90, rawLabel: "Pothole_FP" },
-                }),
+        it("calls usePredict with the uploaded image", async () => {
+            mockPredictMutateAsync.mockResolvedValue({
+                detected: true,
+                detection: { label: "POTHOLE", confidence: 0.90, rawLabel: "Pothole_FP" },
             });
 
             renderModal({ visible: true });
@@ -575,11 +566,9 @@ describe("ReportIssueModal", () => {
 
             await waitFor(() => screen.getByText("AI Detected"));
 
-            const fetchCall = (global.fetch as jest.Mock).mock.calls.find(
-                ([url]: [string]) => url === "/api/ml/predict"
-            );
-            expect(fetchCall).toBeDefined();
-            expect(fetchCall[1].method).toBe("POST");
+            expect(mockPredictMutateAsync).toHaveBeenCalledWith({
+                data: { image: expect.any(Blob) },
+            });
         });
     });
 });
