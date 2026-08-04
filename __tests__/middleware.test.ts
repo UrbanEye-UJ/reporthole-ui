@@ -30,6 +30,16 @@ describe("proxy", () => {
             const response = proxy(makeRequest("/register"));
             expect(response.status).toBe(200);
         });
+
+        it("allows access to /forgot-password", () => {
+            const response = proxy(makeRequest("/forgot-password"));
+            expect(response.status).toBe(200);
+        });
+
+        it("allows access to /reset-password", () => {
+            const response = proxy(makeRequest("/reset-password"));
+            expect(response.status).toBe(200);
+        });
     });
 
     describe("authenticated CIVILIAN", () => {
