@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const PUBLIC_EXACT = new Set(["/"]);
-const PUBLIC_PREFIXES = ["/login", "/register","/verify"];
+const PUBLIC_PREFIXES = ["/login", "/register", "/verify", "/forgot-password", "/reset-password"];
 
 const ROLE_DASHBOARDS: Record<string, string> = {
     CIVILIAN: "/civilian/dashboard",
