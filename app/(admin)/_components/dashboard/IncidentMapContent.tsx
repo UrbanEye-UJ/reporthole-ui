@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+
 import "leaflet/dist/leaflet.css";
 
 import {
@@ -9,50 +11,47 @@ import {
   TileLayer,
 } from "react-leaflet";
 
-import L, { type LatLngTuple } from "leaflet";
+import L from "leaflet";
+import { useTheme } from "@mui/material/styles";
 
-interface Incident {
-  id: number;
-  title: string;
-  road: string;
-  status: string;
-  position: LatLngTuple;
-}
+import { useGetRecentIncidents, type AssignmentStatus } from "@/lib/hooks/useRecentIncidents";
 
-const markerIcon = new L.Icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
+import { formatIncidentType, STATUS_MAP } from "../tables/incidentColumns";
+import type { Status } from "../ui/StatusBadge";
 
-// TODO(api): replace with data from GET /admin/dashboard/incident-markers
-// Expected shape: { id: number; title: string; road: string; status: string; latitude: number; longitude: number }[]
-const incidents: Incident[] = [
-  {
-    id: 1,
-    title: "Large Pothole",
-    road: "N1 North",
-    status: "Open",
-    position: [-26.2041, 28.0473],
-  },
-  {
-    id: 2,
-    title: "Road Crack",
-    road: "R21",
-    status: "Assigned",
-    position: [-25.7461, 28.1881],
-  },
-  {
-    id: 3,
-    title: "Surface Collapse",
-    road: "N3",
-    status: "Critical",
-    position: [-26.145, 28.045],
-  },
-];
+const buildPinIcon = (color: string) =>
+  L.divIcon({
+    className: "incident-marker",
+    html: `<svg width="26" height="38" viewBox="0 0 26 38" xmlns="http://www.w3.org/2000/svg">
+      <path d="M13 0C5.8 0 0 5.8 0 13c0 9.7 13 25 13 25s13-15.3 13-25C26 5.8 20.2 0 13 0z" fill="${color}" stroke="rgba(0,0,0,0.35)" stroke-width="1"/>
+      <circle cx="13" cy="13" r="5.5" fill="#fff"/>
+    </svg>`,
+    iconSize: [26, 38],
+    iconAnchor: [13, 38],
+    popupAnchor: [0, -32],
+  });
 
 const IncidentMapContent = () => {
+  const theme = useTheme();
+  const { data } = useGetRecentIncidents(10);
+  const markers = (data?.data ?? []).filter(
+    (incident): incident is typeof incident & { incidentId: string; latitude: number; longitude: number } =>
+      incident.incidentId != null && incident.latitude != null && incident.longitude != null
+  );
+
+  const markerIcons = useMemo<Record<Status, L.DivIcon>>(
+    () => ({
+      Open: buildPinIcon(theme.palette.error.main),
+      Assigned: buildPinIcon(theme.palette.warning.main),
+      "In Progress": buildPinIcon(theme.palette.info.main),
+      Resolved: buildPinIcon(theme.palette.success.main),
+      Critical: buildPinIcon(theme.palette.error.main),
+      Offline: buildPinIcon(theme.palette.text.disabled),
+      Online: buildPinIcon(theme.palette.success.main),
+    }),
+    [theme]
+  );
+
   return (
     <MapContainer
       center={[-26.2041, 28.0473]}
@@ -69,25 +68,29 @@ const IncidentMapContent = () => {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      {incidents.map((incident) => (
-        <Marker
-          key={incident.id}
-          position={incident.position}
-          icon={markerIcon}
-        >
-          <Popup>
-            <strong>{incident.title}</strong>
+      {markers.map((incident) => {
+        const status: Status = STATUS_MAP[(incident.status ?? "REPORTED") as AssignmentStatus] ?? "Open";
 
-            <br />
+        return (
+          <Marker
+            key={incident.incidentId}
+            position={[incident.latitude, incident.longitude]}
+            icon={markerIcons[status]}
+          >
+            <Popup>
+              <strong>{formatIncidentType(incident.incidentType)}</strong>
 
-            {incident.road}
+              <br />
 
-            <br />
+              {incident.locationAddress || "Unknown location"}
 
-            Status: {incident.status}
-          </Popup>
-        </Marker>
-      ))}
+              <br />
+
+              Status: {status}
+            </Popup>
+          </Marker>
+        );
+      })}
     </MapContainer>
   );
 };
