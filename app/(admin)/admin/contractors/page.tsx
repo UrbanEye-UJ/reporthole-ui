@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo, useState } from "react";
+
 import { Button, Grid } from "@mui/material";
 
 import EngineeringRoundedIcon from "@mui/icons-material/EngineeringRounded";
@@ -10,73 +12,57 @@ import MetricCard from "../../_components/ui/MetricCard";
 import Panel from "../../_components/ui/Panel";
 
 import DataTable from "../../_components/tables/DataTable";
-import StatusBadge, { type Status } from "../../_components/ui/StatusBadge";
+import AddContractorModal from "../../_components/contractors/AddContractorModal";
+
+import { useGetContractors } from "@/lib/hooks/useContractors";
 
 import type { GridColDef } from "@mui/x-data-grid";
 
-// TODO(api): replace with data from GET /admin/contractors (paginated)
-// Expected shape: { id: number; contractor: string; district: string; activeJobs: number; completion: string; status: string }[]
-// Also needed: POST /admin/contractors, PUT /admin/contractors/{id}, DELETE /admin/contractors/{id},
-//              GET /admin/contractors/{id}/performance, PATCH /admin/contractors/{id}/availability
-const rows = [
-  {
-    id: 1,
-    contractor: "RoadFix SA",
-    district: "Johannesburg",
-    activeJobs: 18,
-    completion: "91%",
-    status: "In Progress",
-  },
-  {
-    id: 2,
-    contractor: "Metro Infrastructure",
-    district: "Pretoria",
-    activeJobs: 12,
-    completion: "82%",
-    status: "Assigned",
-  },
-  {
-    id: 3,
-    contractor: "Urban Civil Works",
-    district: "Ekurhuleni",
-    activeJobs: 9,
-    completion: "74%",
-    status: "Open",
-  },
-];
+// TODO(api): "Completed Repairs" and "Average SLA" need a dedicated backend aggregation
+// endpoint (counting RESOLVED assignments platform-wide) — left as placeholders for now.
 
 const columns: GridColDef[] = [
   {
-    field: "contractor",
+    field: "name",
     headerName: "Contractor",
     flex: 1,
   },
   {
-    field: "district",
-    headerName: "District",
+    field: "email",
+    headerName: "Email",
     flex: 1,
+  },
+  {
+    field: "phoneNumber",
+    headerName: "Phone",
+    width: 160,
   },
   {
     field: "activeJobs",
     headerName: "Active Jobs",
     width: 140,
   },
-  {
-    field: "completion",
-    headerName: "Completion",
-    width: 130,
-  },
-  {
-    field: "status",
-    headerName: "Status",
-    width: 160,
-    renderCell: (params) => (
-      <StatusBadge status={params.value as Status} />
-    ),
-  },
 ];
 
 export default function ContractorsPage() {
+  const [modalOpen, setModalOpen] = useState(false);
+  const { data, isLoading } = useGetContractors();
+
+  const contractors = useMemo(() => data?.data ?? [], [data]);
+  const rows = useMemo(
+    () =>
+      contractors.map((contractor) => ({
+        id: contractor.userId,
+        name: `${contractor.firstName} ${contractor.lastName}`,
+        email: contractor.email,
+        phoneNumber: contractor.phoneNumber,
+        activeJobs: contractor.activeJobs,
+      })),
+    [contractors]
+  );
+
+  const activeContracts = contractors.reduce((sum, c) => sum + c.activeJobs, 0);
+
   return (
     <>
       <PageHeader
@@ -86,6 +72,7 @@ export default function ContractorsPage() {
           <Button
             variant="contained"
             startIcon={<AddRoundedIcon />}
+            onClick={() => setModalOpen(true)}
           >
             Add Contractor
           </Button>
@@ -99,7 +86,7 @@ export default function ContractorsPage() {
         <Grid size={{ xs: 12, md: 3 }}>
           <MetricCard
             title="Registered Contractors"
-            value="28"
+            value={contractors.length}
             icon={<EngineeringRoundedIcon fontSize="large" />}
           />
         </Grid>
@@ -107,21 +94,21 @@ export default function ContractorsPage() {
         <Grid size={{ xs: 12, md: 3 }}>
           <MetricCard
             title="Active Contracts"
-            value="76"
+            value={activeContracts}
           />
         </Grid>
 
         <Grid size={{ xs: 12, md: 3 }}>
           <MetricCard
             title="Completed Repairs"
-            value="1,284"
+            value="—"
           />
         </Grid>
 
         <Grid size={{ xs: 12, md: 3 }}>
           <MetricCard
             title="Average SLA"
-            value="94%"
+            value="—"
           />
         </Grid>
 
@@ -130,11 +117,17 @@ export default function ContractorsPage() {
             <DataTable
               rows={rows}
               columns={columns}
+              loading={isLoading}
               height={520}
             />
           </Panel>
         </Grid>
       </Grid>
+
+      <AddContractorModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+      />
     </>
   );
 }

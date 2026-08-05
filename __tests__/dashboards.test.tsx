@@ -21,16 +21,6 @@ jest.mock("@/app/(admin)/_components/dashboard/RepairProgress", () => ({
     default: () => null,
 }));
 
-jest.mock("@/app/(admin)/_components/dashboard/SeverityChart", () => ({
-    __esModule: true,
-    default: () => null,
-}));
-
-jest.mock("@/app/(admin)/_components/dashboard/AISummary", () => ({
-    __esModule: true,
-    default: () => null,
-}));
-
 const renderWithClient = (ui: React.ReactElement) =>
     render(<QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>);
 
@@ -45,6 +35,18 @@ jest.mock("@/app/api/generated/incidents/incidents", () => ({
     useDeleteIncident: () => ({ mutate: jest.fn() }),
     useCreateIncident: () => ({ mutate: jest.fn(), isPending: false }),
     useConfirmDuplicate: () => ({ mutate: jest.fn(), isPending: false }),
+}));
+
+jest.mock("@/lib/hooks/useIncidentStats", () => ({
+    useGetIncidentStats: () => ({ data: undefined }),
+}));
+
+jest.mock("@/lib/hooks/useContractors", () => ({
+    useGetContractors: () => ({ data: undefined }),
+}));
+
+jest.mock("@/lib/hooks/useMyAssignments", () => ({
+    useGetMyAssignments: () => ({ data: undefined, isLoading: false }),
 }));
 
 // Stub EventSource
@@ -66,6 +68,7 @@ describe("Dashboard pages", () => {
 
     it("renders the Contractor Dashboard", () => {
         renderWithClient(<ContractorDashboard />);
-        expect(screen.getByText("Contractor Dashboard")).toBeInTheDocument();
+        expect(screen.getByText("Reporthole")).toBeInTheDocument();
+        expect(screen.getByText("No incidents assigned yet.")).toBeInTheDocument();
     });
 });
