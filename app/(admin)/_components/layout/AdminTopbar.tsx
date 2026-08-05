@@ -83,22 +83,6 @@ const AdminTopbar = () => {
               mt: 0.5,
             }}
           >
-            <Typography
-              variant="body2"
-              color="text.secondary"
-            >
-              Gauteng Province
-            </Typography>
-
-            <Chip
-              size="small"
-              label="● AI Online"
-              color="success"
-              sx={{
-                fontWeight: 600,
-                borderRadius: 10,
-              }}
-            />
           </Box>
         </Box>
 

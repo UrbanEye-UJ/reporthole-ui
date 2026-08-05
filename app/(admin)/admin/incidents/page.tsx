@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   Button,
   Stack,
 } from "@mui/material";
 
-import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import AssignmentIndRoundedIcon from "@mui/icons-material/AssignmentIndRounded";
 
 import PageHeader from "../../_components/ui/PageHeader";
 import Panel from "../../_components/ui/Panel";
@@ -16,75 +16,45 @@ import TableToolbar from "../../_components/tables/TableToolbar";
 import TableSearch from "../../_components/tables/TableSearch";
 import TableFilters from "../../_components/tables/TableFilters";
 import DataTable from "../../_components/tables/DataTable";
+import { incidentColumns, formatIncidentType, STATUS_MAP } from "../../_components/tables/incidentColumns";
+import AssignIncidentModal from "../../_components/incidents/AssignIncidentModal";
 
-import StatusBadge, { type Status } from "../../_components/ui/StatusBadge";
-
-import type { GridColDef } from "@mui/x-data-grid";
-
-// TODO(api): replace with data from GET /admin/incidents (paginated)
-// Expected shape: { id: number; road: string; district: string; severity: string; status: string }[]
-// Also needed: PATCH /admin/incidents/{id}/status, PATCH /admin/incidents/{id}/assign,
-//              PUT /admin/incidents/{id}, DELETE /admin/incidents/{id}
-const rows = [
-  {
-    id: 1,
-    road: "N1 North",
-    district: "Johannesburg",
-    severity: "Critical",
-    status: "Open",
-  },
-  {
-    id: 2,
-    road: "R21",
-    district: "Pretoria",
-    severity: "High",
-    status: "Assigned",
-  },
-  {
-    id: 3,
-    road: "N3",
-    district: "Ekurhuleni",
-    severity: "Medium",
-    status: "In Progress",
-  },
-  {
-    id: 4,
-    road: "M2",
-    district: "Johannesburg",
-    severity: "Low",
-    status: "Resolved",
-  },
-];
-
-const columns: GridColDef[] = [
-  {
-    field: "road",
-    headerName: "Road",
-    flex: 1,
-  },
-  {
-    field: "district",
-    headerName: "District",
-    flex: 1,
-  },
-  {
-    field: "severity",
-    headerName: "Severity",
-    width: 130,
-  },
-  {
-    field: "status",
-    headerName: "Status",
-    width: 160,
-    renderCell: (params) => (
-      <StatusBadge status={params.value as Status} />
-    ),
-  },
-];
+import { useGetRecentIncidents, type AssignmentStatus } from "@/lib/hooks/useRecentIncidents";
 
 export default function IncidentsPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+
+  const { data, isLoading } = useGetRecentIncidents(100);
+  const rows = useMemo(
+    () => (data?.data ?? []).map((incident) => ({ id: incident.incidentId, ...incident })),
+    [data]
+  );
+
+  const filteredRows = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    return rows.filter((row) => {
+      const matchesSearch =
+        !keyword ||
+        row.locationAddress?.toLowerCase().includes(keyword) ||
+        formatIncidentType(row.incidentType).toLowerCase().includes(keyword);
+      const rowStatus = STATUS_MAP[row.status as AssignmentStatus] ?? "Open";
+      const matchesStatus = status === "All" || rowStatus === status;
+      return matchesSearch && matchesStatus;
+    });
+  }, [rows, search, status]);
+
+  const incidentOptions = useMemo(
+    () =>
+      rows
+        .filter((row): row is typeof row & { incidentId: string } => !!row.incidentId)
+        .map((row) => ({
+          incidentId: row.incidentId,
+          label: `${formatIncidentType(row.incidentType)} — ${row.locationAddress || "Unknown location"}`,
+        })),
+    [rows]
+  );
 
   return (
     <>
@@ -96,7 +66,7 @@ export default function IncidentsPage() {
       <Panel>
         <TableToolbar
           title="Incident Register"
-          total={rows.length}
+          total={filteredRows.length}
           leftContent={
             <Stack
               direction="row"
@@ -125,19 +95,27 @@ export default function IncidentsPage() {
           rightContent={
             <Button
               variant="contained"
-              startIcon={<AddRoundedIcon />}
+              startIcon={<AssignmentIndRoundedIcon />}
+              onClick={() => setAssignModalOpen(true)}
             >
-              New Incident
+              Assign Incident
             </Button>
           }
         />
 
         <DataTable
-          rows={rows}
-          columns={columns}
+          rows={filteredRows}
+          columns={incidentColumns}
+          loading={isLoading}
           height={650}
         />
       </Panel>
+
+      <AssignIncidentModal
+        open={assignModalOpen}
+        onClose={() => setAssignModalOpen(false)}
+        incidents={incidentOptions}
+      />
     </>
   );
 }
