@@ -8,6 +8,7 @@ import PeopleRoundedIcon from "@mui/icons-material/PeopleRounded";
 import AnalyticsRoundedIcon from "@mui/icons-material/AnalyticsRounded";
 import DescriptionRoundedIcon from "@mui/icons-material/DescriptionRounded";
 import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
+import SmartToyRoundedIcon from "@mui/icons-material/SmartToyRounded";
 
 export interface NavigationItem {
   id: string;
@@ -53,6 +54,12 @@ export const navigation: NavigationItem[] = [
     label: "Analytics",
     path: "/admin/analytics",
     icon: AnalyticsRoundedIcon,
+  },
+  {
+    id: "ai-review",
+    label: "AI Review",
+    path: "/admin/ai-review",
+    icon: SmartToyRoundedIcon,
   },
   {
     id: "reports",

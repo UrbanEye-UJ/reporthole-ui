@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 import {
   Alert,
@@ -12,18 +12,20 @@ import {
   DialogTitle,
   Stack,
   TextField,
+  Typography,
 } from "@mui/material";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
-import { useGetContractors } from "@/lib/hooks/useContractors";
+import { useGetContractors } from "@/app/api/generated/admin-contractors/admin-contractors";
 import { useAssignIncident } from "@/lib/hooks/useAssignIncident";
 import { getErrorMessage } from "@/lib/getErrorMessage";
 
 export interface IncidentOption {
   incidentId: string;
   label: string;
+  issueType?: string;
 }
 
 interface AssignIncidentModalProps {
@@ -41,17 +43,33 @@ type FormValues = z.infer<typeof schema>;
 
 const AssignIncidentModal = ({ open, onClose, incidents }: AssignIncidentModalProps) => {
   const { data: contractorsData, isLoading: contractorsLoading } = useGetContractors();
-  const contractors = contractorsData?.data ?? [];
+  const contractors = useMemo(() => contractorsData?.data ?? [], [contractorsData]);
 
   const {
     control,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { incidentId: "", contractorId: "" },
   });
+
+  const selectedIncidentId = useWatch({ control, name: "incidentId" });
+  const selectedIssueType = incidents.find((i) => i.incidentId === selectedIncidentId)?.issueType;
+
+  const eligibleContractors = useMemo(
+    () =>
+      selectedIssueType
+        ? contractors.filter((c) => c.specialisations?.includes(selectedIssueType as never))
+        : contractors,
+    [contractors, selectedIssueType]
+  );
+
+  useEffect(() => {
+    setValue("contractorId", "");
+  }, [selectedIncidentId, setValue]);
 
   const { mutate, isPending, error, reset: resetMutation } = useAssignIncident();
 
@@ -118,11 +136,11 @@ const AssignIncidentModal = ({ open, onClose, incidents }: AssignIncidentModalPr
               control={control}
               render={({ field }) => (
                 <Autocomplete
-                  options={contractors}
+                  options={eligibleContractors}
                   loading={contractorsLoading}
                   getOptionLabel={(option) => `${option.firstName} ${option.lastName}`}
                   isOptionEqualToValue={(option, value) => option.userId === value.userId}
-                  value={contractors.find((contractor) => contractor.userId === field.value) ?? null}
+                  value={eligibleContractors.find((contractor) => contractor.userId === field.value) ?? null}
                   onChange={(_, selected) => field.onChange(selected?.userId ?? "")}
                   renderInput={(params) => (
                     <TextField
@@ -135,6 +153,15 @@ const AssignIncidentModal = ({ open, onClose, incidents }: AssignIncidentModalPr
                 />
               )}
             />
+
+            {selectedIssueType && eligibleContractors.length === 0 && (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+              >
+                No contractors are specialised in this issue type yet.
+              </Typography>
+            )}
           </Stack>
         </DialogContent>
 

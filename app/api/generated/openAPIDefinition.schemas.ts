@@ -61,6 +61,18 @@ export const IncidentResponseDTOSource = {
   DASHCAM: 'DASHCAM',
 } as const;
 
+export type IncidentResponseDTOStatus = typeof IncidentResponseDTOStatus[keyof typeof IncidentResponseDTOStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const IncidentResponseDTOStatus = {
+  REPORTED: 'REPORTED',
+  VERIFIED: 'VERIFIED',
+  ASSIGNED: 'ASSIGNED',
+  IN_PROGRESS: 'IN_PROGRESS',
+  RESOLVED: 'RESOLVED',
+} as const;
+
 export interface IncidentResponseDTO {
   incidentId?: string;
   incidentType?: IncidentResponseDTOIncidentType;
@@ -77,6 +89,46 @@ export interface IncidentResponseDTO {
   duplicate?: boolean;
   alreadyConfirmed?: boolean;
   existingIncidentId?: string;
+  status?: IncidentResponseDTOStatus;
+  workflowHistory?: WorkflowEntryDTO[];
+}
+
+export type WorkflowEntryDTOStatus = typeof WorkflowEntryDTOStatus[keyof typeof WorkflowEntryDTOStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WorkflowEntryDTOStatus = {
+  REPORTED: 'REPORTED',
+  VERIFIED: 'VERIFIED',
+  ASSIGNED: 'ASSIGNED',
+  IN_PROGRESS: 'IN_PROGRESS',
+  RESOLVED: 'RESOLVED',
+} as const;
+
+export interface WorkflowEntryDTO {
+  status?: WorkflowEntryDTOStatus;
+  notes?: string;
+  updatedDate?: string;
+  updatedBy?: string;
+}
+
+export interface ResolveIncidentRequest {
+  /** @minLength 1 */
+  note: string;
+  /** @minLength 1 */
+  photoBase64: string;
+}
+
+export interface ProgressUpdateRequest {
+  /**
+   * @minLength 0
+   * @maxLength 255
+   */
+  note: string;
+}
+
+export interface AssignIncidentRequest {
+  contractorId: string;
 }
 
 export type IncidentRequestDTOIncidentType = typeof IncidentRequestDTOIncidentType[keyof typeof IncidentRequestDTOIncidentType];
@@ -126,6 +178,54 @@ export interface DeviceTokenResponse {
   deviceToken?: string;
 }
 
+export interface CompleteContractorRegistrationRequest {
+  token: string;
+  /** @minLength 1 */
+  firstName: string;
+  /** @minLength 1 */
+  lastName: string;
+  /** @minLength 1 */
+  phoneNumber: string;
+  /**
+   * @minLength 1
+   * @pattern ^(?=.*[0-9])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$
+   */
+  password: string;
+}
+
+export interface AppResponseContractorResponse {
+  data?: ContractorResponse;
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export type ContractorResponseSpecialisationsItem = typeof ContractorResponseSpecialisationsItem[keyof typeof ContractorResponseSpecialisationsItem];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ContractorResponseSpecialisationsItem = {
+  POTHOLE: 'POTHOLE',
+  CRACK: 'CRACK',
+  FADED_MARKINGS: 'FADED_MARKINGS',
+  DAMAGED_SIGN: 'DAMAGED_SIGN',
+  BLOCKED_DRAIN: 'BLOCKED_DRAIN',
+  BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
+  ACCIDENT: 'ACCIDENT',
+} as const;
+
+export interface ContractorResponse {
+  userId?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+  activeJobs?: number;
+  completedJobs?: number;
+  createdAt?: string;
+  specialisations?: ContractorResponseSpecialisationsItem[];
+}
+
 export interface AppResponseVoid {
   data?: unknown;
   message?: string;
@@ -151,6 +251,7 @@ export const RegisterRequestRole = {
   CIVILIAN: 'CIVILIAN',
   CONTRACTOR: 'CONTRACTOR',
   ADMIN: 'ADMIN',
+  SECURITY_ADMIN: 'SECURITY_ADMIN',
 } as const;
 
 export interface RegisterRequest {
@@ -168,6 +269,7 @@ export interface RegisterRequest {
   password: string;
   /** @minLength 1 */
   phoneNumber: string;
+  token?: string;
 }
 
 export interface LoginRequest {
@@ -192,6 +294,7 @@ export const AuthResponseRole = {
   CIVILIAN: 'CIVILIAN',
   CONTRACTOR: 'CONTRACTOR',
   ADMIN: 'ADMIN',
+  SECURITY_ADMIN: 'SECURITY_ADMIN',
 } as const;
 
 export interface AuthResponse {
@@ -203,6 +306,139 @@ export interface AuthResponse {
 export interface ForgotPasswordRequest {
   /** @minLength 1 */
   email: string;
+}
+
+export interface AccountActionRequest {
+  /**
+   * @minLength 0
+   * @maxLength 500
+   */
+  reason: string;
+}
+
+export type GrantRoleRequestRole = typeof GrantRoleRequestRole[keyof typeof GrantRoleRequestRole];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GrantRoleRequestRole = {
+  CIVILIAN: 'CIVILIAN',
+  CONTRACTOR: 'CONTRACTOR',
+  ADMIN: 'ADMIN',
+  SECURITY_ADMIN: 'SECURITY_ADMIN',
+} as const;
+
+export interface GrantRoleRequest {
+  role: GrantRoleRequestRole;
+  /**
+   * @minLength 0
+   * @maxLength 500
+   */
+  reason: string;
+}
+
+export interface CreateMunicipalityRequest {
+  /**
+   * @minLength 0
+   * @maxLength 120
+   */
+  name: string;
+  /**
+   * @minLength 0
+   * @maxLength 60
+   */
+  province?: string;
+}
+
+export interface AppResponseMunicipalityResponse {
+  data?: MunicipalityResponse;
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export interface MunicipalityResponse {
+  id?: string;
+  name?: string;
+  province?: string;
+  tokenCount?: number;
+  createdAt?: string;
+}
+
+export interface IssueTokenRequest {
+  expiresInDays?: number;
+  /**
+   * @minLength 0
+   * @maxLength 500
+   */
+  note?: string;
+  /** Optional email address to send the issued token to. */
+  recipientEmail?: string;
+}
+
+export interface AppResponseMunicipalityTokenResponse {
+  data?: MunicipalityTokenResponse;
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export type MunicipalityTokenResponseStatus = typeof MunicipalityTokenResponseStatus[keyof typeof MunicipalityTokenResponseStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MunicipalityTokenResponseStatus = {
+  ACTIVE: 'ACTIVE',
+  EXPIRED: 'EXPIRED',
+  REVOKED: 'REVOKED',
+} as const;
+
+export interface MunicipalityTokenResponse {
+  id?: string;
+  token?: string;
+  municipalityId?: string;
+  municipalityName?: string;
+  issuedByName?: string;
+  issuedAt?: string;
+  expiresAt?: string;
+  revokedAt?: string;
+  status?: MunicipalityTokenResponseStatus;
+}
+
+export interface RevealEmailRequest {
+  /** @minLength 1 */
+  password: string;
+}
+
+export interface AppResponseRevealEmailResponse {
+  data?: RevealEmailResponse;
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export interface RevealEmailResponse {
+  email?: string;
+}
+
+export type InviteContractorRequestSpecialisationsItem = typeof InviteContractorRequestSpecialisationsItem[keyof typeof InviteContractorRequestSpecialisationsItem];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InviteContractorRequestSpecialisationsItem = {
+  POTHOLE: 'POTHOLE',
+  CRACK: 'CRACK',
+  FADED_MARKINGS: 'FADED_MARKINGS',
+  DAMAGED_SIGN: 'DAMAGED_SIGN',
+  BLOCKED_DRAIN: 'BLOCKED_DRAIN',
+  BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
+  ACCIDENT: 'ACCIDENT',
+} as const;
+
+export interface InviteContractorRequest {
+  /** @minLength 1 */
+  email: string;
+  /** @minItems 1 */
+  specialisations: InviteContractorRequestSpecialisationsItem[];
 }
 
 export interface AdminApplicationRequest {
@@ -234,6 +470,7 @@ export const UserProfileResponseRole = {
   CIVILIAN: 'CIVILIAN',
   CONTRACTOR: 'CONTRACTOR',
   ADMIN: 'ADMIN',
+  SECURITY_ADMIN: 'SECURITY_ADMIN',
 } as const;
 
 export interface UserProfileResponse {
@@ -244,6 +481,18 @@ export interface UserProfileResponse {
   phoneNumber?: string;
   role?: UserProfileResponseRole;
   createdAt?: string;
+}
+
+export interface AppResponseIncidentStatsDTO {
+  data?: IncidentStatsDTO;
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export interface IncidentStatsDTO {
+  totalIncidents?: number;
+  resolvedIncidents?: number;
 }
 
 export interface AppResponseListIncidentResponseDTO {
@@ -257,6 +506,128 @@ export type SseEmitterTimeout = number | null;
 
 export interface SseEmitter {
   timeout?: SseEmitterTimeout;
+}
+
+export interface AppResponseListSecurityUserResponse {
+  data?: SecurityUserResponse[];
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export type SecurityUserResponseRole = typeof SecurityUserResponseRole[keyof typeof SecurityUserResponseRole];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SecurityUserResponseRole = {
+  CIVILIAN: 'CIVILIAN',
+  CONTRACTOR: 'CONTRACTOR',
+  ADMIN: 'ADMIN',
+  SECURITY_ADMIN: 'SECURITY_ADMIN',
+} as const;
+
+export type SecurityUserResponseStatus = typeof SecurityUserResponseStatus[keyof typeof SecurityUserResponseStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SecurityUserResponseStatus = {
+  PENDING_VERIFICATION: 'PENDING_VERIFICATION',
+  ACTIVE: 'ACTIVE',
+  LOCKED: 'LOCKED',
+  SUSPENDED: 'SUSPENDED',
+  DELETED: 'DELETED',
+} as const;
+
+export interface SecurityUserResponse {
+  userId?: string;
+  name?: string;
+  email?: string;
+  role?: SecurityUserResponseRole;
+  status?: SecurityUserResponseStatus;
+  createdAt?: string;
+}
+
+export interface AppResponseListAuditEntryResponse {
+  data?: AuditEntryResponse[];
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export type AuditEntryResponseAction = typeof AuditEntryResponseAction[keyof typeof AuditEntryResponseAction];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AuditEntryResponseAction = {
+  ROLE_GRANTED: 'ROLE_GRANTED',
+  ROLE_REVOKED: 'ROLE_REVOKED',
+  ACCOUNT_SUSPENDED: 'ACCOUNT_SUSPENDED',
+  ACCOUNT_REACTIVATED: 'ACCOUNT_REACTIVATED',
+  SESSIONS_REVOKED: 'SESSIONS_REVOKED',
+  USER_LOGIN: 'USER_LOGIN',
+} as const;
+
+export interface AuditEntryResponse {
+  auditId?: string;
+  action?: AuditEntryResponseAction;
+  actorId?: string;
+  actorName?: string;
+  targetId?: string;
+  targetName?: string;
+  fromValue?: string;
+  toValue?: string;
+  reason?: string;
+  createdAt?: string;
+}
+
+export interface AppResponseListMunicipalityResponse {
+  data?: MunicipalityResponse[];
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export interface AppResponseListMunicipalityTokenResponse {
+  data?: MunicipalityTokenResponse[];
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export interface AppResponseListContractorResponse {
+  data?: ContractorResponse[];
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export type AdminApplicationResponseStatus = typeof AdminApplicationResponseStatus[keyof typeof AdminApplicationResponseStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AdminApplicationResponseStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+} as const;
+
+export interface AdminApplicationResponse {
+  applicationId?: string;
+  userId?: string;
+  applicantFirstName?: string;
+  applicantLastName?: string;
+  applicantEmail?: string;
+  municipalityToken?: string;
+  municipalityName?: string;
+  submittedAt?: string;
+  status?: AdminApplicationResponseStatus;
+}
+
+export interface AppResponseListAdminApplicationResponse {
+  data?: AdminApplicationResponse[];
+  message?: string;
+  status?: number;
+  timestamp?: string;
 }
 
 export type PredictBody = {
@@ -273,6 +644,30 @@ export type SubmitFrame503 = { [key: string]: unknown };
 
 export type VerifyEmailParams = {
 token: string;
+};
+
+export type ListApplicationsParams = {
+status?: ListApplicationsStatus;
+};
+
+export type ListApplicationsStatus = typeof ListApplicationsStatus[keyof typeof ListApplicationsStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListApplicationsStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+} as const;
+
+export type GetRecentIncidentsParams = {
+limit?: number;
+};
+
+export type GetNearbyIncidentsParams = {
+latitude: number;
+longitude: number;
+radiusMeters?: number;
 };
 
 export type SearchMyIncidentsParams = {
@@ -293,4 +688,12 @@ export const SearchMyIncidentsType = {
   BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
   ACCIDENT: 'ACCIDENT',
 } as const;
+
+export type ListAuditParams = {
+userId?: string;
+};
+
+export type ListTokensParams = {
+municipalityId?: string;
+};
 

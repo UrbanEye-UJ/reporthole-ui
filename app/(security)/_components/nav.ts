@@ -1,0 +1,43 @@
+import type { SvgIconComponent } from "@mui/icons-material";
+import HowToRegRoundedIcon from "@mui/icons-material/HowToRegRounded";
+import FactCheckRoundedIcon from "@mui/icons-material/FactCheckRounded";
+import ManageAccountsRoundedIcon from "@mui/icons-material/ManageAccountsRounded";
+import AccountBalanceRoundedIcon from "@mui/icons-material/AccountBalanceRounded";
+
+export interface SecurityNavItem {
+  id: string;
+  label: string;
+  path: string;
+  icon: SvgIconComponent;
+}
+
+/**
+ * Sidebar entries for the security-admin surface. Every screen here maps to a
+ * capability the backend restricts to `SECURITY_ADMIN`.
+ */
+export const securityNavigation: SecurityNavItem[] = [
+  {
+    id: "applications",
+    label: "Admin Applications",
+    path: "/security/applications",
+    icon: HowToRegRoundedIcon,
+  },
+  {
+    id: "municipalities",
+    label: "Municipalities",
+    path: "/security/municipalities",
+    icon: AccountBalanceRoundedIcon,
+  },
+  {
+    id: "audit",
+    label: "Audit Trail",
+    path: "/security/audit",
+    icon: FactCheckRoundedIcon,
+  },
+  {
+    id: "account",
+    label: "Manage Accounts",
+    path: "/security/account",
+    icon: ManageAccountsRoundedIcon,
+  },
+];

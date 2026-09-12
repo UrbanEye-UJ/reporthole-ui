@@ -14,7 +14,7 @@ import RecentIncidents from "../../_components/dashboard/RecentIncidents";
 import RepairProgress from "../../_components/dashboard/RepairProgress";
 
 import { useGetIncidentStats } from "@/lib/hooks/useIncidentStats";
-import { useGetContractors } from "@/lib/hooks/useContractors";
+import { useGetContractors } from "@/app/api/generated/admin-contractors/admin-contractors";
 
 export default function DashboardPage() {
   const { data: statsData } = useGetIncidentStats();

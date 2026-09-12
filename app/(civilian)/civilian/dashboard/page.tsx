@@ -12,6 +12,8 @@ import {
     useGetMyIncidents,
     useDeleteIncident,
     useSearchMyIncidents,
+    useReportStillUnresolved,
+    useGetNearbyIncidents,
 } from "@/app/api/generated/incidents/incidents";
 import { Issue, Status } from "@/app/types/issue";
 import { IncidentResponseDTO, SearchMyIncidentsType } from "@/app/api/generated/openAPIDefinition.schemas";
@@ -22,6 +24,16 @@ const getCookie = (name: string) =>
         .split("; ")
         .find((row) => row.startsWith(`${name}=`))
         ?.split("=")[1] ?? "";
+
+/** Maps the backend's 5-state AssignmentStatus onto the FE's simpler Status type; VERIFIED reads as "reported" to a civilian since nothing actionable has changed for them yet. */
+function mapStatus(status?: IncidentResponseDTO["status"]): Status {
+    switch (status) {
+        case "ASSIGNED": return "assigned";
+        case "IN_PROGRESS": return "in_progress";
+        case "RESOLVED": return "resolved";
+        default: return "reported";
+    }
+}
 
 function toIssue(dto: IncidentResponseDTO): Issue {
     return {
@@ -35,7 +47,7 @@ function toIssue(dto: IncidentResponseDTO): Issue {
                 : "Unknown location"),
         locationAddress: dto.locationAddress,
         date: dto.incidentDate ? new Date(dto.incidentDate).toLocaleDateString("en-ZA", { day: "numeric", month: "short" }) : "",
-        status: (dto.incidentType ? "reported" : "reported") as Status,
+        status: mapStatus(dto.status),
         image: dto.imageUrl ?? "",
         reporterCount: dto.reporterCount ?? 1,
     };
@@ -53,7 +65,15 @@ export default function CivilianDashboard() {
     const [searchKeyword, setSearchKeyword] = useState("");
     const [searchType, setSearchType] = useState<SearchMyIncidentsType | "">("");
 
+    const [nearbyCoords, setNearbyCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+
     const { data, refetch } = useGetMyIncidents({ query: { staleTime: 0, refetchOnWindowFocus: false } });
+
+    const { data: nearbyData } = useGetNearbyIncidents(
+        { latitude: nearbyCoords?.latitude ?? 0, longitude: nearbyCoords?.longitude ?? 0, radiusMeters: 1000 },
+        { query: { enabled: !!nearbyCoords, staleTime: 60_000 } }
+    );
+    const nearbyIncidents: IncidentResponseDTO[] = nearbyData?.data ?? [];
     const allIncidents: Issue[] = (data?.data ?? []).map(toIssue);
 
     const hasSearch = !!(searchKeyword.trim() || searchType);
@@ -64,6 +84,15 @@ export default function CivilianDashboard() {
     const incidents: Issue[] = hasSearch ? (searchData?.data ?? []).map(toIssue) : allIncidents;
 
     const { mutate: deleteIncident } = useDeleteIncident({
+        mutation: {
+            onSuccess: () => {
+                setSelectedIssue(null);
+                refetch();
+            },
+        },
+    });
+
+    const { mutate: reportStillUnresolved } = useReportStillUnresolved({
         mutation: {
             onSuccess: () => {
                 setSelectedIssue(null);
@@ -90,6 +119,16 @@ export default function CivilianDashboard() {
         es.addEventListener("incident-updated", () => { refetch(); });
         es.onerror = () => { es.close(); refetch(); };
         return () => { es.close(); };
+    }, []);
+
+    // Silently fetch the user's location for the nearby section.
+    // No error shown — if location is denied, the section simply stays hidden.
+    useEffect(() => {
+        if (!navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(
+            (pos) => setNearbyCoords({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+            () => { /* denied or unavailable — hide nearby section */ }
+        );
     }, []);
 
     const resolved = allIncidents.filter((i) => i.status === "resolved").length;
@@ -175,6 +214,78 @@ export default function CivilianDashboard() {
                     <StatusCard label="Resolved" value={String(resolved)} />
                 </div>
 
+                {/* Nearby Reports */}
+                {nearbyIncidents.length > 0 && (
+                    <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">
+                                Reported Nearby
+                            </h2>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">within 1 km</span>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            {nearbyIncidents.slice(0, 5).map((dto) => {
+                                const imageUrl = dto.imageUrl
+                                    ? `/api/image-proxy?url=${encodeURIComponent(dto.imageUrl)}`
+                                    : "";
+                                const location = dto.locationAddress
+                                    ?? (dto.latitude != null && dto.longitude != null
+                                        ? `${dto.latitude.toFixed(4)}, ${dto.longitude.toFixed(4)}`
+                                        : "Unknown location");
+                                const date = dto.incidentDate
+                                    ? new Date(dto.incidentDate).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })
+                                    : "";
+                                return (
+                                    <button
+                                        key={dto.incidentId}
+                                        type="button"
+                                        className="w-full text-left flex gap-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 rounded-xl p-3 transition-colors hover:bg-blue-100 dark:hover:bg-blue-900/40 active:bg-blue-200"
+                                        onClick={() => setSelectedIssue(toIssue(dto))}
+                                    >
+                                        <div className="relative w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700">
+                                            {imageUrl ? (
+                                                // eslint-disable-next-line @next/next/no-img-element
+                                                <img
+                                                    src={imageUrl}
+                                                    alt="Nearby incident"
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                                                />
+                                            ) : null}
+                                            {/* Fallback icon shown when no URL or image fails */}
+                                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col justify-center flex-1 min-w-0">
+                                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                                                {dto.incidentType?.replace(/_/g, " ") ?? "Unknown"}
+                                            </p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{location}</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className="text-xs text-gray-400 dark:text-gray-500">{date}</span>
+                                                {(dto.reporterCount ?? 0) > 1 && (
+                                                    <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                                                        {dto.reporterCount} reports
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        {nearbyIncidents.length > 5 && (
+                            <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
+                                +{nearbyIncidents.length - 5} more nearby
+                            </p>
+                        )}
+                    </div>
+                )}
+
                 {/* Search */}
                 <div className="flex flex-col gap-2">
                     <div className="relative">
@@ -249,6 +360,7 @@ export default function CivilianDashboard() {
                 onClose={() => setSelectedIssue(null)}
                 currentUserId={userId}
                 onDelete={(id) => deleteIncident({ id })}
+                onStillUnresolved={(id) => reportStillUnresolved({ id })}
             />
 
             <SessionExpiryWarning />

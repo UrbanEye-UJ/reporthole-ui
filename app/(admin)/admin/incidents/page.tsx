@@ -18,13 +18,15 @@ import TableFilters from "../../_components/tables/TableFilters";
 import DataTable from "../../_components/tables/DataTable";
 import { incidentColumns, formatIncidentType, STATUS_MAP } from "../../_components/tables/incidentColumns";
 import AssignIncidentModal from "../../_components/incidents/AssignIncidentModal";
+import IncidentDetailDrawer from "../../_components/incidents/IncidentDetailDrawer";
 
-import { useGetRecentIncidents, type AssignmentStatus } from "@/lib/hooks/useRecentIncidents";
+import { useGetRecentIncidents, type AssignmentStatus, type IncidentWithStatus } from "@/lib/hooks/useRecentIncidents";
 
 export default function IncidentsPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
   const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [detailIncident, setDetailIncident] = useState<IncidentWithStatus | null>(null);
 
   const { data, isLoading } = useGetRecentIncidents(100);
   const rows = useMemo(
@@ -52,6 +54,7 @@ export default function IncidentsPage() {
         .map((row) => ({
           incidentId: row.incidentId,
           label: `${formatIncidentType(row.incidentType)} — ${row.locationAddress || "Unknown location"}`,
+          issueType: row.incidentType,
         })),
     [rows]
   );
@@ -108,6 +111,7 @@ export default function IncidentsPage() {
           columns={incidentColumns}
           loading={isLoading}
           height={650}
+          onRowClick={(params) => setDetailIncident(params.row as IncidentWithStatus)}
         />
       </Panel>
 
@@ -115,6 +119,11 @@ export default function IncidentsPage() {
         open={assignModalOpen}
         onClose={() => setAssignModalOpen(false)}
         incidents={incidentOptions}
+      />
+
+      <IncidentDetailDrawer
+        incident={detailIncident}
+        onClose={() => setDetailIncident(null)}
       />
     </>
   );

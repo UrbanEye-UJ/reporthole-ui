@@ -3,7 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
     output: "standalone",
     images: { unoptimized: true },
-    allowedDevOrigins: ["192.168.1.105"],
+    // Comma-separated local IPs for mobile dev testing (e.g. ALLOWED_DEV_ORIGINS=192.168.1.100).
+    // Only relevant in dev — ignored entirely in production builds.
+    allowedDevOrigins: process.env.ALLOWED_DEV_ORIGINS?.split(",").map((s) => s.trim()).filter(Boolean) ?? [],
 
     /**
      * Proxy all /api/** requests to the Spring Boot backend.

@@ -10,6 +10,8 @@ interface IncidentDetailModalProps {
     /** Called after the incident is successfully deleted. Provided only when the current user is the original reporter. */
     onDelete?: (id: string) => void;
     currentUserId?: string;
+    /** Called when the user reports a RESOLVED incident as still broken. Reopens it for reassignment. */
+    onStillUnresolved?: (id: string) => void;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -26,7 +28,7 @@ const STATUS_COLORS: Record<string, string> = {
     resolved: "bg-green-100 text-green-800",
 };
 
-export default function IncidentDetailModal({ issue, onClose, onDelete, currentUserId }: IncidentDetailModalProps) {
+export default function IncidentDetailModal({ issue, onClose, onDelete, currentUserId, onStillUnresolved }: IncidentDetailModalProps) {
     const [confirmDelete, setConfirmDelete] = useState(false);
 
     if (!issue) return null;
@@ -109,6 +111,15 @@ export default function IncidentDetailModal({ issue, onClose, onDelete, currentU
                 </div>
 
                 <div className="flex flex-col gap-2 mt-1">
+                    {issue.status === "resolved" && onStillUnresolved && (
+                        <button
+                            type="button"
+                            onClick={() => onStillUnresolved(issue.id)}
+                            className="w-full bg-orange-50 hover:bg-orange-100 transition-colors text-orange-700 font-semibold py-3 rounded-xl text-sm"
+                        >
+                            Still broken? Report it
+                        </button>
+                    )}
                     {isOwner && onDelete && (
                         <button
                             type="button"

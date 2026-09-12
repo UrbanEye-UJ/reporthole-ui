@@ -8,7 +8,7 @@
  *  2. Captures a frame every 2 seconds via a hidden <canvas>.
  *  3. Posts each frame to /api/inference/predict (Spring Boot ONNX endpoint).
  *  4. Applies confidence-based routing:
- *       ≥ 0.80  → AUTO_LOG  — incident created immediately
+ *       ≥ 0.75  → AUTO_LOG  — incident created immediately
  *       ≥ 0.65  → ESCALATE  — user must tap "Confirm" in the event log
  *       < 0.65  → DISCARD   — logged silently, no incident created
  *  5. Incident creation uses Authorization: Bearer <device-token> (not a JWT).
@@ -24,7 +24,7 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { useGenerateToken } from "@/app/api/generated/devices/devices";
 
 const DISCARD_THRESHOLD = 0.65;
-const AUTO_LOG_THRESHOLD = 0.80;
+const AUTO_LOG_THRESHOLD = 0.75;
 const CAPTURE_INTERVAL_MS = 2000;
 const DEVICE_TOKEN_KEY = "dashcam_device_token";
 

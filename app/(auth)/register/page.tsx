@@ -7,6 +7,7 @@ import AuthCard from "@/components/shared/Authcard";
 import LogoPin from "@/components/shared/Logopin";
 import InputField from "@/components/shared/Inputfield";
 import { useSave } from "@/app/api/generated/authentication/authentication";
+import { getErrorMessage } from "@/lib/getErrorMessage";
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -17,6 +18,7 @@ export default function RegisterPage() {
     const [phoneNumber, setPhoneNumber] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [token, setToken] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -29,7 +31,9 @@ export default function RegisterPage() {
                 setIsSubmitting(false);
                 const status = (err as { response?: { status?: number } }).response?.status;
                 if (status === 400) {
-                    setError("An account with this email already exists.");
+                    // Surface the backend reason — covers "User already exists" and
+                    // "Invalid or expired municipality token".
+                    setError(getErrorMessage(err, "An account with this email already exists."));
                 } else {
                     setError("Something went wrong. Please try again later.");
                 }
@@ -66,6 +70,7 @@ export default function RegisterPage() {
                 password,
                 role: "CIVILIAN",
                 phoneNumber,
+                token: token.trim() || undefined,
             },
         });
     };
@@ -173,6 +178,22 @@ export default function RegisterPage() {
                         </svg>
                     }
                 />
+
+                <InputField
+                    label="Token (optional)"
+                    placeholder="Enter your invite token"
+                    type="text"
+                    value={token}
+                    onChange={(e) => setToken(e.target.value)}
+                    icon={
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                            <path fillRule="evenodd" d="M12 2.25c-2.485 0-4.5 2.015-4.5 4.5v.75h9v-.75c0-2.485-2.015-4.5-4.5-4.5zM3 9.75A.75.75 0 013.75 9h16.5a.75.75 0 01.75.75v9A2.25 2.25 0 0118.75 21H5.25A2.25 2.25 0 013 18.75v-9z" clipRule="evenodd" />
+                        </svg>
+                    }
+                />
+                <p className="text-xs text-gray-400 -mt-1">
+                    Have an invite token? Enter it here to register as an admin or contractor.
+                </p>
 
                 {error && (
                     <p className="text-sm text-red-500 text-center">{error}</p>

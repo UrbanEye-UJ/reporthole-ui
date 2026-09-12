@@ -90,13 +90,13 @@ export default function SessionExpiryWarning() {
     useEffect(() => {
         if (secondsLeft === 0) {
             clearSession();
-            router.push("/login");
+            router.push("/");
         }
     }, [secondsLeft]);
 
     const handleContinue = () => {
         clearSession();
-        router.push("/login");
+        router.push("/");
     };
 
     if (secondsLeft === null) return null;
@@ -117,7 +117,7 @@ export default function SessionExpiryWarning() {
                     </h2>
                     <p className="text-sm text-gray-500">
                         {isInvalid
-                            ? "Your session is no longer valid. You will be redirected to the login page in "
+                            ? "Your session is no longer valid. You will be redirected in "
                             : "You will be logged out in "}
                         <span className="font-semibold text-red-500">
                             {secondsLeft} second{secondsLeft !== 1 ? "s" : ""}
@@ -139,7 +139,7 @@ export default function SessionExpiryWarning() {
                     onClick={handleContinue}
                     className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
                 >
-                    Continue to login
+                    Go to home
                 </button>
             </div>
         </div>

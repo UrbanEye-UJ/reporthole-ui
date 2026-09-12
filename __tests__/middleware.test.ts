@@ -40,6 +40,11 @@ describe("proxy", () => {
             const response = proxy(makeRequest("/reset-password"));
             expect(response.status).toBe(200);
         });
+
+        it("allows access to /offline (the service worker's offline fallback page)", () => {
+            const response = proxy(makeRequest("/offline"));
+            expect(response.status).toBe(200);
+        });
     });
 
     describe("authenticated CIVILIAN", () => {
@@ -101,6 +106,34 @@ describe("proxy", () => {
         it("blocks access to /admin/dashboard and redirects to contractor dashboard", () => {
             const response = proxy(makeRequest("/admin/dashboard", cookies));
             expect(redirectUrl(response)).toContain("/contractor/dashboard");
+        });
+    });
+
+    describe("authenticated SECURITY_ADMIN", () => {
+        const cookies = { reporthole_token: "tok", reporthole_role: "SECURITY_ADMIN" };
+
+        it("redirects to the security applications queue when accessing /login", () => {
+            const response = proxy(makeRequest("/login", cookies));
+            expect(redirectUrl(response)).toContain("/security/applications");
+        });
+
+        it("allows access to /security/audit", () => {
+            const response = proxy(makeRequest("/security/audit", cookies));
+            expect(response.status).toBe(200);
+        });
+
+        it("blocks access to /admin/dashboard and redirects to the security surface", () => {
+            const response = proxy(makeRequest("/admin/dashboard", cookies));
+            expect(redirectUrl(response)).toContain("/security/applications");
+        });
+    });
+
+    describe("authenticated ADMIN is kept out of the security surface", () => {
+        const cookies = { reporthole_token: "tok", reporthole_role: "ADMIN" };
+
+        it("blocks access to /security/audit and redirects to admin dashboard", () => {
+            const response = proxy(makeRequest("/security/audit", cookies));
+            expect(redirectUrl(response)).toContain("/admin/dashboard");
         });
     });
 });

@@ -5,18 +5,29 @@
  * OpenAPI spec version: v0
  */
 import {
-  useMutation
+  useMutation,
+  useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
   MutationFunction,
   QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
-  UseMutationResult
+  UseMutationResult,
+  UseQueryOptions,
+  UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
   AdminApplicationRequest,
-  AppResponseVoid
+  AppResponseListAdminApplicationResponse,
+  AppResponseVoid,
+  ListApplicationsParams
 } from '../openAPIDefinition.schemas';
 
 import { apiClient } from '../../../../lib/axios';
@@ -25,7 +36,100 @@ import { apiClient } from '../../../../lib/axios';
 
 
 /**
- * Allows an authenticated CIVILIAN to submit a municipality token as evidence of affiliation. A notification email is sent to the project inbox. A developer manually promotes the user via scripts/promote-to-admin.sql after verification.
+ * Returns admin-access records for the reviewing security admin. Without a filter it returns every record — PENDING, APPROVED and REJECTED — newest first. Pass ?status=PENDING|APPROVED|REJECTED to filter. Security admin only.
+ * @summary List admin applications
+ */
+export const listApplications = (
+    params?: ListApplicationsParams,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseListAdminApplicationResponse>(
+      {url: `/admin/applications`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+  
+
+
+
+export const getListApplicationsQueryKey = (params?: ListApplicationsParams,) => {
+    return [
+    `/admin/applications`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getListApplicationsQueryOptions = <TData = Awaited<ReturnType<typeof listApplications>>, TError = AppResponseListAdminApplicationResponse | AppResponseListAdminApplicationResponse>(params?: ListApplicationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listApplications>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListApplicationsQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listApplications>>> = ({ signal }) => listApplications(params, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listApplications>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListApplicationsQueryResult = NonNullable<Awaited<ReturnType<typeof listApplications>>>
+export type ListApplicationsQueryError = AppResponseListAdminApplicationResponse | AppResponseListAdminApplicationResponse
+
+
+export function useListApplications<TData = Awaited<ReturnType<typeof listApplications>>, TError = AppResponseListAdminApplicationResponse | AppResponseListAdminApplicationResponse>(
+ params: undefined |  ListApplicationsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listApplications>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listApplications>>,
+          TError,
+          Awaited<ReturnType<typeof listApplications>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListApplications<TData = Awaited<ReturnType<typeof listApplications>>, TError = AppResponseListAdminApplicationResponse | AppResponseListAdminApplicationResponse>(
+ params?: ListApplicationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listApplications>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listApplications>>,
+          TError,
+          Awaited<ReturnType<typeof listApplications>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListApplications<TData = Awaited<ReturnType<typeof listApplications>>, TError = AppResponseListAdminApplicationResponse | AppResponseListAdminApplicationResponse>(
+ params?: ListApplicationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listApplications>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List admin applications
+ */
+
+export function useListApplications<TData = Awaited<ReturnType<typeof listApplications>>, TError = AppResponseListAdminApplicationResponse | AppResponseListAdminApplicationResponse>(
+ params?: ListApplicationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listApplications>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListApplicationsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
+ * Allows an authenticated CIVILIAN to submit a municipality token as evidence of affiliation. A notification email is sent to the project inbox, and the application appears in the ADMIN review queue at GET /admin/applications.
  * @summary Apply for admin access
  */
 export const apply = (
@@ -86,6 +190,132 @@ export const useApply = <TError = AppResponseVoid | AppResponseVoid | AppRespons
       > => {
 
       const mutationOptions = getApplyMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * Marks the application REJECTED without changing the applicant's role. Sends a decision email to the applicant. Security admin only.
+ * @summary Reject an admin application
+ */
+export const reject = (
+    id: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseVoid>(
+      {url: `/admin/applications/${id}/reject`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getRejectMutationOptions = <TError = AppResponseVoid | AppResponseVoid | AppResponseVoid,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reject>>, TError,{id: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof reject>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['reject'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reject>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  reject(id,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RejectMutationResult = NonNullable<Awaited<ReturnType<typeof reject>>>
+    
+    export type RejectMutationError = AppResponseVoid | AppResponseVoid | AppResponseVoid
+
+    /**
+ * @summary Reject an admin application
+ */
+export const useReject = <TError = AppResponseVoid | AppResponseVoid | AppResponseVoid,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reject>>, TError,{id: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reject>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+
+      const mutationOptions = getRejectMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * Promotes the applicant to ADMIN and marks the application APPROVED. Sends a decision email to the applicant. Security admin only.
+ * @summary Approve an admin application
+ */
+export const approve = (
+    id: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseVoid>(
+      {url: `/admin/applications/${id}/approve`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getApproveMutationOptions = <TError = AppResponseVoid | AppResponseVoid | AppResponseVoid,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approve>>, TError,{id: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof approve>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['approve'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approve>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  approve(id,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveMutationResult = NonNullable<Awaited<ReturnType<typeof approve>>>
+    
+    export type ApproveMutationError = AppResponseVoid | AppResponseVoid | AppResponseVoid
+
+    /**
+ * @summary Approve an admin application
+ */
+export const useApprove = <TError = AppResponseVoid | AppResponseVoid | AppResponseVoid,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approve>>, TError,{id: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof approve>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+
+      const mutationOptions = getApproveMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

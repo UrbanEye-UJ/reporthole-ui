@@ -199,22 +199,6 @@ export default function ProfilePage() {
                     )}
                 </div>
 
-                {/* Apply for Admin */}
-                {!editing && profile?.role === "CIVILIAN" && (
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 flex flex-col gap-3 transition-colors duration-300">
-                        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Become an Admin</h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                            Have a municipality token? Apply for admin access to manage road incidents across Gauteng.
-                        </p>
-                        <Link
-                            href="/apply-for-admin"
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm transition-colors text-center block"
-                        >
-                            Apply for Admin
-                        </Link>
-                    </div>
-                )}
-
                 {/* Danger zone */}
                 {!editing && (
                     <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 flex flex-col gap-3 transition-colors duration-300">
