@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AuthCard from "@/components/shared/Authcard";
 import LogoPin from "@/components/shared/Logopin";
 import InputField from "@/components/shared/Inputfield";
 import { useLogin } from "@/app/api/generated/authentication/authentication";
 
-export default function LoginPage() {
+function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const contractorRegistered = searchParams.get("contractor") === "registered";
@@ -152,5 +152,13 @@ export default function LoginPage() {
                 </Link>
             </p>
         </AuthCard>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={null}>
+            <LoginForm />
+        </Suspense>
     );
 }

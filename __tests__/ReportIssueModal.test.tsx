@@ -527,6 +527,55 @@ describe("ReportIssueModal", () => {
             expect(descriptionField.value).toContain("87%");
         });
 
+        it("auto-accepts and skips the confirmation prompt when confidence is above 90%", async () => {
+            mockPredictMutateAsync.mockResolvedValue({
+                detected: true,
+                detection: { label: "POTHOLE", confidence: 0.95, rawLabel: "Pothole_FP" },
+            });
+
+            renderModal({ visible: true });
+            fireEvent.click(screen.getByText("Detect with AI"));
+
+            const aiGalleryInput = Array.from(document.querySelectorAll("input[type='file']")).find(
+                (el) => !(el as HTMLInputElement).hasAttribute("capture")
+            ) as HTMLInputElement;
+
+            await act(async () => {
+                fireEvent.change(aiGalleryInput, { target: { files: [new File(["img"], "road.jpg", { type: "image/jpeg" })] } });
+            });
+
+            // Should land directly on the pre-filled form — no confirmation prompt shown.
+            await waitFor(() => {
+                expect(screen.getByPlaceholderText("Describe the issue...")).toBeInTheDocument();
+            });
+            expect(screen.queryByText("Yes, that looks right")).not.toBeInTheDocument();
+            expect(screen.queryByText("No, I'll select the type manually")).not.toBeInTheDocument();
+            const descriptionField = screen.getByPlaceholderText("Describe the issue...") as HTMLTextAreaElement;
+            expect(descriptionField.value).toContain("95%");
+        });
+
+        it("still shows the confirmation prompt at exactly 90% confidence", async () => {
+            mockPredictMutateAsync.mockResolvedValue({
+                detected: true,
+                detection: { label: "POTHOLE", confidence: 0.90, rawLabel: "Pothole_FP" },
+            });
+
+            renderModal({ visible: true });
+            fireEvent.click(screen.getByText("Detect with AI"));
+
+            const aiGalleryInput = Array.from(document.querySelectorAll("input[type='file']")).find(
+                (el) => !(el as HTMLInputElement).hasAttribute("capture")
+            ) as HTMLInputElement;
+
+            await act(async () => {
+                fireEvent.change(aiGalleryInput, { target: { files: [new File(["img"], "road.jpg", { type: "image/jpeg" })] } });
+            });
+
+            await waitFor(() => {
+                expect(screen.getByText("Yes, that looks right")).toBeInTheDocument();
+            });
+        });
+
         it("goes to manual form when user rejects AI prediction", async () => {
             mockPredictMutateAsync.mockResolvedValue({
                 detected: true,

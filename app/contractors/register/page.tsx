@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AuthCard from "@/components/shared/Authcard";
 import LogoPin from "@/components/shared/Logopin";
@@ -11,7 +11,7 @@ import { getErrorMessage } from "@/lib/getErrorMessage";
 
 const PASSWORD_REGEX = /^(?=.*[0-9])(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
 
-export default function ContractorRegisterPage() {
+function ContractorRegisterForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const token = searchParams.get("token") ?? "";
@@ -177,5 +177,13 @@ export default function ContractorRegisterPage() {
                 </Link>
             </p>
         </AuthCard>
+    );
+}
+
+export default function ContractorRegisterPage() {
+    return (
+        <Suspense fallback={null}>
+            <ContractorRegisterForm />
+        </Suspense>
     );
 }

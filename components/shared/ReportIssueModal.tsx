@@ -20,6 +20,13 @@ const LocationPickerMap = dynamic(() => import("./LocationPickerMap"), { ssr: fa
 
 const ISSUE_TYPES = Object.values(IncidentRequestDTOIncidentType);
 
+/**
+ * AI detections above this confidence skip the "Yes, that looks right?" confirmation
+ * prompt entirely and go straight to the pre-filled form — the model is confident
+ * enough that asking the user to double-check adds friction without adding value.
+ */
+const AI_AUTO_ACCEPT_THRESHOLD = 0.90;
+
 function getCurrentUserId(): string | null {
     try {
         const token = document.cookie.split("; ").find((r) => r.startsWith("reporthole_token="))?.split("=")[1];
@@ -301,13 +308,27 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
      * Immediately sends the image to the inference endpoint and
      * updates aiResult with the prediction.
      */
+    /**
+     * Pre-fills the form from a detection and jumps straight to the form step.
+     * Shared by the auto-accept path (confidence above the threshold) and the
+     * manual "Yes, that looks right" button.
+     */
+    const applyPrediction = useCallback((detection: DetectionDTO, imageFile: File, previewUrl: string) => {
+        const issueType = inferredLabelToIssueType(detection.label ?? "");
+        setType(issueType);
+        setDescription(`AI detected: ${(detection.label ?? "").replace(/_/g, " ")} at ${Math.round((detection.confidence ?? 0) * 100)}% confidence.`);
+        setFile(imageFile);
+        setPreview(previewUrl);
+        setStep("form");
+    }, []);
+
     const handleAiFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
         const selected = e.target.files?.[0];
         if (!selected) return;
 
-        const objectUrl = URL.createObjectURL(selected);
+        const previewUrl = URL.createObjectURL(selected);
         setAiFile(selected);
-        setAiPreview(objectUrl);
+        setAiPreview(previewUrl);
         setAiResult(null);
         setAiError(null);
         setAiAnalyzing(true);
@@ -319,13 +340,20 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                 setAiError("No road damage detected in this image. Try a clearer photo or report manually.");
                 return;
             }
-            setAiResult(data.detection);
+
+            const detection = data.detection;
+            if ((detection.confidence ?? 0) > AI_AUTO_ACCEPT_THRESHOLD) {
+                // High-confidence detection — skip the confirmation prompt entirely.
+                applyPrediction(detection, selected, previewUrl);
+            } else {
+                setAiResult(detection);
+            }
         } catch {
             setAiError("Could not reach the analysis service. You can still report manually.");
         } finally {
             setAiAnalyzing(false);
         }
-    }, []);
+    }, [runPredict, applyPrediction]);
 
     /**
      * Accepts the AI prediction and pre-fills the form.
@@ -333,13 +361,8 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
      */
     const acceptAiPrediction = useCallback(() => {
         if (!aiResult || !aiFile || !aiPreview) return;
-        const issueType = inferredLabelToIssueType(aiResult.label ?? "");
-        setType(issueType);
-        setDescription(`AI detected: ${(aiResult.label ?? "").replace(/_/g, " ")} at ${Math.round((aiResult.confidence ?? 0) * 100)}% confidence.`);
-        setFile(aiFile);
-        setPreview(aiPreview);
-        setStep("form");
-    }, [aiResult, aiFile, aiPreview]);
+        applyPrediction(aiResult, aiFile, aiPreview);
+    }, [aiResult, aiFile, aiPreview, applyPrediction]);
 
     /** Discards the AI result and goes to the manual form. */
     const rejectAiPrediction = useCallback(() => {
