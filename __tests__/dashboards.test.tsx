@@ -35,13 +35,15 @@ jest.mock("@/app/api/generated/incidents/incidents", () => ({
     useDeleteIncident: () => ({ mutate: jest.fn() }),
     useCreateIncident: () => ({ mutate: jest.fn(), isPending: false }),
     useConfirmDuplicate: () => ({ mutate: jest.fn(), isPending: false }),
+    useReportStillUnresolved: () => ({ mutate: jest.fn() }),
+    useGetNearbyIncidents: () => ({ data: undefined }),
 }));
 
 jest.mock("@/lib/hooks/useIncidentStats", () => ({
     useGetIncidentStats: () => ({ data: undefined }),
 }));
 
-jest.mock("@/lib/hooks/useContractors", () => ({
+jest.mock("@/app/api/generated/admin-contractors/admin-contractors", () => ({
     useGetContractors: () => ({ data: undefined }),
 }));
 

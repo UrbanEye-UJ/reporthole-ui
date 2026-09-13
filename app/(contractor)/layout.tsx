@@ -1,21 +1,26 @@
-"use client";
-
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import {
-  ContractorThemeProvider,
-  useContractorTheme,
-} from "./_context/ContractorThemeContext";
+import ContractorProviders from "./_providers";
 
-/** Applies the .dark class to the subtree when dark mode is active. */
-function DarkWrapper({ children }: { children: ReactNode }) {
-  const { darkMode } = useContractorTheme();
-  return <div className={darkMode ? "dark" : ""}>{children}</div>;
-}
+export const metadata: Metadata = {
+  title: "Reporthole",
+  description: "Manage and resolve assigned road infrastructure repairs.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Reporthole",
+  },
+  icons: {
+    // iOS ignores the web manifest's icons — it only reads this link tag.
+    apple: "/icons/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#2563EB",
+};
 
 export default function ContractorLayout({ children }: { children: ReactNode }) {
-  return (
-    <ContractorThemeProvider>
-      <DarkWrapper>{children}</DarkWrapper>
-    </ContractorThemeProvider>
-  );
+  return <ContractorProviders>{children}</ContractorProviders>;
 }

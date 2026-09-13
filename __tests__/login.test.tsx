@@ -5,6 +5,7 @@ const mockPush = jest.fn();
 
 jest.mock("next/navigation", () => ({
     useRouter: () => ({ push: mockPush }),
+    useSearchParams: () => ({ get: () => null }),
 }));
 
 let capturedOptions: unknown;

@@ -2,18 +2,22 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const PUBLIC_EXACT = new Set(["/"]);
-const PUBLIC_PREFIXES = ["/login", "/register", "/verify", "/forgot-password", "/reset-password"];
+// /offline is the service worker's fallback page (see app/sw.ts) — reachable regardless of
+// auth state, since it's shown whenever a navigation fails offline, session or not.
+const PUBLIC_PREFIXES = ["/login", "/register", "/verify", "/forgot-password", "/reset-password", "/offline", "/contractors/register"];
 
 const ROLE_DASHBOARDS: Record<string, string> = {
     CIVILIAN: "/civilian/dashboard",
     ADMIN: "/admin/dashboard",
     CONTRACTOR: "/contractor/dashboard",
+    SECURITY_ADMIN: "/security/applications",
 };
 
 const ROLE_PREFIXES: Record<string, string> = {
     CIVILIAN: "/civilian",
     ADMIN: "/admin",
     CONTRACTOR: "/contractor",
+    SECURITY_ADMIN: "/security",
 };
 
 export function proxy(request: NextRequest) {
@@ -25,9 +29,9 @@ export function proxy(request: NextRequest) {
         PUBLIC_EXACT.has(pathname) ||
         PUBLIC_PREFIXES.some((route) => pathname.startsWith(route));
 
-    // No token → send to login
+    // No token → send to landing
     if (!token && !isPublicRoute) {
-        return NextResponse.redirect(new URL("/login", request.url));
+        return NextResponse.redirect(new URL("/", request.url));
     }
 
     // Has token but on a public route → send to their dashboard
@@ -54,5 +58,8 @@ export function proxy(request: NextRequest) {
 export const middleware = proxy;
 
 export const config = {
-    matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+    // manifest.webmanifest, sw.js, and icons/ are the PWA assets (see serwist.config.mjs and
+    // app/(civilian|contractor)/layout.tsx) — they must be reachable without a session cookie,
+    // since the browser fetches them itself before the user is necessarily authenticated.
+    matcher: ["/((?!api|_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|icons/).*)"],
 };

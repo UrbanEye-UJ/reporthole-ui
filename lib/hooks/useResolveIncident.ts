@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/axios";
 import type { IncidentWithStatus } from "@/lib/hooks/useRecentIncidents";
 import { MY_ASSIGNMENTS_QUERY_KEY } from "@/lib/hooks/useMyAssignments";
-import { CONTRACTORS_QUERY_KEY } from "@/lib/hooks/useContractors";
+import { getGetContractorsQueryKey } from "@/app/api/generated/admin-contractors/admin-contractors";
 import { INCIDENT_STATS_QUERY_KEY } from "@/lib/hooks/useIncidentStats";
 
 interface ResolveIncidentRequest {
@@ -38,7 +38,7 @@ export const useResolveIncident = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: MY_ASSIGNMENTS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ["/incidents/recent"] });
-      queryClient.invalidateQueries({ queryKey: CONTRACTORS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: getGetContractorsQueryKey() });
       queryClient.invalidateQueries({ queryKey: INCIDENT_STATS_QUERY_KEY });
     },
   });

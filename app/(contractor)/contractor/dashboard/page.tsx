@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import StatusCard from "@/components/shared/StatusCard";
+import ProgressUpdateModal from "@/components/contractor/ProgressUpdateModal";
 import ResolveIncidentModal from "@/components/contractor/ResolveIncidentModal";
 import RejectAssignmentModal from "@/components/contractor/RejectAssignmentModal";
 import { useGetMyAssignments } from "@/lib/hooks/useMyAssignments";
@@ -43,6 +44,7 @@ export default function ContractorDashboard() {
   const { darkMode, toggle: toggleTheme } = useContractorTheme();
   const [role] = useState(() => (typeof window !== "undefined" ? getCookie("reporthole_role") : ""));
   const [resolveTarget, setResolveTarget] = useState<IncidentWithStatus | null>(null);
+  const [progressTarget, setProgressTarget] = useState<IncidentWithStatus | null>(null);
   const [rejectTarget, setRejectTarget] = useState<IncidentWithStatus | null>(null);
 
   const { data, isLoading } = useGetMyAssignments();
@@ -199,13 +201,22 @@ export default function ContractorDashboard() {
                       </>
                     )}
                     {isInProgress && (
-                      <button
-                        type="button"
-                        onClick={() => setResolveTarget(incident)}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
-                      >
-                        Mark Resolved
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setProgressTarget(incident)}
+                          className="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold py-2.5 rounded-xl text-sm transition-colors"
+                        >
+                          Add Update
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setResolveTarget(incident)}
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
+                        >
+                          Mark Resolved
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -214,6 +225,13 @@ export default function ContractorDashboard() {
           )}
         </div>
       </div>
+
+      <ProgressUpdateModal
+        visible={!!progressTarget}
+        onClose={() => setProgressTarget(null)}
+        incidentId={progressTarget?.incidentId ?? ""}
+        incidentLabel={`${formatType(progressTarget?.incidentType)} — ${progressTarget?.locationAddress || "Unknown location"}`}
+      />
 
       <ResolveIncidentModal
         visible={!!resolveTarget}

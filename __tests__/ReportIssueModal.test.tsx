@@ -5,6 +5,7 @@ import ReportIssueModal from "@/components/shared/ReportIssueModal";
 const mockCreateMutate = jest.fn();
 const mockConfirmMutate = jest.fn();
 const mockPredictMutateAsync = jest.fn();
+const mockUseGetNearbyIncidents = jest.fn(() => ({ data: undefined as { data: unknown[] } | undefined }));
 
 type MutationHandlers = { onSuccess: (result: unknown) => void; onError: (err: unknown) => void };
 
@@ -17,6 +18,7 @@ jest.mock("@/app/api/generated/incidents/incidents", () => ({
         mutate: (payload: unknown) => mockConfirmMutate(payload, mutation),
         isPending: false,
     }),
+    useGetNearbyIncidents: () => mockUseGetNearbyIncidents(),
 }));
 
 jest.mock("@/app/api/generated/inference/inference", () => ({
@@ -40,6 +42,8 @@ beforeEach(() => {
     mockCreateMutate.mockReset();
     mockConfirmMutate.mockReset();
     mockPredictMutateAsync.mockReset();
+    mockUseGetNearbyIncidents.mockReset();
+    mockUseGetNearbyIncidents.mockReturnValue({ data: undefined });
     (global.fetch as jest.Mock).mockReset();
     (global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => ({}) });
 });
@@ -219,6 +223,47 @@ describe("ReportIssueModal", () => {
             expect(
                 screen.getByText(/Could not get your location/i)
             ).toBeInTheDocument();
+        });
+    });
+
+    describe("nearby incidents nudge", () => {
+        beforeEach(() => {
+            mockGeolocation.getCurrentPosition.mockImplementation((success: (pos: GeolocationPosition) => void) =>
+                success({ coords: { latitude: -26.2041, longitude: 28.0473 } })
+            );
+        });
+
+        it("shows a nudge when nearby incidents are returned", async () => {
+            mockUseGetNearbyIncidents.mockReturnValue({
+                data: { data: [{ incidentId: "1", incidentType: "POTHOLE", locationAddress: "Main Road" }] },
+            });
+            await act(async () => {
+                renderModal({ visible: true });
+            });
+            fireEvent.click(screen.getByText("Report Manually"));
+            expect(screen.getByText("1 issue already reported nearby")).toBeInTheDocument();
+            expect(screen.getByText(/POTHOLE — Main Road/)).toBeInTheDocument();
+        });
+
+        it("does not show a nudge when there are no nearby incidents", async () => {
+            mockUseGetNearbyIncidents.mockReturnValue({ data: { data: [] } });
+            await act(async () => {
+                renderModal({ visible: true });
+            });
+            fireEvent.click(screen.getByText("Report Manually"));
+            expect(screen.queryByText(/already reported nearby/)).not.toBeInTheDocument();
+        });
+
+        it("dismisses the nudge when Dismiss is clicked", async () => {
+            mockUseGetNearbyIncidents.mockReturnValue({
+                data: { data: [{ incidentId: "1", incidentType: "POTHOLE", locationAddress: "Main Road" }] },
+            });
+            await act(async () => {
+                renderModal({ visible: true });
+            });
+            fireEvent.click(screen.getByText("Report Manually"));
+            fireEvent.click(screen.getByText("Dismiss"));
+            expect(screen.queryByText("1 issue already reported nearby")).not.toBeInTheDocument();
         });
     });
 

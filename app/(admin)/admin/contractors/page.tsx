@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 
-import { Button, Grid } from "@mui/material";
+import { Button, Chip, Grid, Stack, Tooltip } from "@mui/material";
 
 import EngineeringRoundedIcon from "@mui/icons-material/EngineeringRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 
 import PageHeader from "../../_components/ui/PageHeader";
 import MetricCard from "../../_components/ui/MetricCard";
@@ -13,39 +14,19 @@ import Panel from "../../_components/ui/Panel";
 
 import DataTable from "../../_components/tables/DataTable";
 import AddContractorModal from "../../_components/contractors/AddContractorModal";
+import RevealEmailDialog from "../../_components/contractors/RevealEmailDialog";
+import { formatSpecialisation } from "../../_components/tables/incidentColumns";
 
-import { useGetContractors } from "@/lib/hooks/useContractors";
+import { useGetContractors } from "@/app/api/generated/admin-contractors/admin-contractors";
 
 import type { GridColDef } from "@mui/x-data-grid";
 
 // TODO(api): "Completed Repairs" and "Average SLA" need a dedicated backend aggregation
 // endpoint (counting RESOLVED assignments platform-wide) — left as placeholders for now.
 
-const columns: GridColDef[] = [
-  {
-    field: "name",
-    headerName: "Contractor",
-    flex: 1,
-  },
-  {
-    field: "email",
-    headerName: "Email",
-    flex: 1,
-  },
-  {
-    field: "phoneNumber",
-    headerName: "Phone",
-    width: 160,
-  },
-  {
-    field: "activeJobs",
-    headerName: "Active Jobs",
-    width: 140,
-  },
-];
-
 export default function ContractorsPage() {
   const [modalOpen, setModalOpen] = useState(false);
+  const [revealTarget, setRevealTarget] = useState<{ id: string; name: string } | null>(null);
   const { data, isLoading } = useGetContractors();
 
   const contractors = useMemo(() => data?.data ?? [], [data]);
@@ -56,12 +37,74 @@ export default function ContractorsPage() {
         name: `${contractor.firstName} ${contractor.lastName}`,
         email: contractor.email,
         phoneNumber: contractor.phoneNumber,
-        activeJobs: contractor.activeJobs,
+        activeJobs: contractor.activeJobs ?? 0,
+        specialisations: contractor.specialisations ?? [],
       })),
     [contractors]
   );
 
-  const activeContracts = contractors.reduce((sum, c) => sum + c.activeJobs, 0);
+  const columns: GridColDef[] = [
+    {
+      field: "name",
+      headerName: "Contractor",
+      flex: 1,
+    },
+    {
+      field: "email",
+      headerName: "Email",
+      flex: 1,
+    },
+    {
+      field: "phoneNumber",
+      headerName: "Phone",
+      width: 160,
+    },
+    {
+      field: "activeJobs",
+      headerName: "Active Jobs",
+      width: 140,
+    },
+    {
+      field: "specialisations",
+      headerName: "Specialisations",
+      flex: 1,
+      sortable: false,
+      renderCell: (params) => (
+        <Stack
+          direction="row"
+          spacing={0.5}
+          sx={{ flexWrap: "wrap", py: 1 }}
+        >
+          {(params.row.specialisations as string[]).map((s) => (
+            <Tooltip key={s} title={formatSpecialisation(s)} placement="top">
+              <Chip
+                label={formatSpecialisation(s)}
+                size="small"
+              />
+            </Tooltip>
+          ))}
+        </Stack>
+      ),
+    },
+    {
+      field: "actions",
+      headerName: "",
+      width: 100,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <Button
+          size="small"
+          startIcon={<VisibilityRoundedIcon />}
+          onClick={() => setRevealTarget({ id: params.row.id, name: params.row.name })}
+        >
+          View
+        </Button>
+      ),
+    },
+  ];
+
+  const activeContracts = contractors.reduce((sum, c) => sum + (c.activeJobs ?? 0), 0);
 
   return (
     <>
@@ -127,6 +170,13 @@ export default function ContractorsPage() {
       <AddContractorModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
+      />
+
+      <RevealEmailDialog
+        open={!!revealTarget}
+        onClose={() => setRevealTarget(null)}
+        contractorId={revealTarget?.id ?? null}
+        contractorName={revealTarget?.name ?? ""}
       />
     </>
   );

@@ -14,6 +14,9 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // orval-generated files — do not lint
     "app/api/generated/**",
+    // serwist-generated service worker (see serwist.config.mjs) — build artifact, not checked in
+    "public/sw.js",
+    "public/sw.js.map",
   ]),
 ]);
 

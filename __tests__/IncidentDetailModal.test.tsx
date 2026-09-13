@@ -95,4 +95,44 @@ describe("IncidentDetailModal", () => {
         render(<IncidentDetailModal issue={issueWithoutCount} onClose={jest.fn()} />);
         expect(screen.getByText("1 person reported this")).toBeInTheDocument();
     });
+
+    it("shows the still-unresolved button when status is resolved and a handler is provided", () => {
+        render(
+            <IncidentDetailModal
+                issue={{ ...issue, status: "resolved" }}
+                onClose={jest.fn()}
+                onStillUnresolved={jest.fn()}
+            />
+        );
+        expect(screen.getByText("Still broken? Report it")).toBeInTheDocument();
+    });
+
+    it("does not show the still-unresolved button when status is not resolved", () => {
+        render(
+            <IncidentDetailModal
+                issue={{ ...issue, status: "reported" }}
+                onClose={jest.fn()}
+                onStillUnresolved={jest.fn()}
+            />
+        );
+        expect(screen.queryByText("Still broken? Report it")).not.toBeInTheDocument();
+    });
+
+    it("does not show the still-unresolved button when no handler is provided", () => {
+        render(<IncidentDetailModal issue={{ ...issue, status: "resolved" }} onClose={jest.fn()} />);
+        expect(screen.queryByText("Still broken? Report it")).not.toBeInTheDocument();
+    });
+
+    it("calls onStillUnresolved with the issue id when clicked", () => {
+        const onStillUnresolved = jest.fn();
+        render(
+            <IncidentDetailModal
+                issue={{ ...issue, status: "resolved" }}
+                onClose={jest.fn()}
+                onStillUnresolved={onStillUnresolved}
+            />
+        );
+        fireEvent.click(screen.getByText("Still broken? Report it"));
+        expect(onStillUnresolved).toHaveBeenCalledWith("abc-123");
+    });
 });

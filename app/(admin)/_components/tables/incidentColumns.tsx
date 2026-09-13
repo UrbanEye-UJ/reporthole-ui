@@ -17,6 +17,20 @@ export const formatIncidentType = (type?: string) =>
         .join(" ")
     : "Unknown";
 
+/** Maps IssueType enum values to real-world contractor trade descriptions. */
+const SPECIALISATION_LABELS: Record<string, string> = {
+  POTHOLE:              "Road Surfacing & Pothole Repair",
+  CRACK:                "Pavement Rehabilitation",
+  FADED_MARKINGS:       "Road Marking & Line Painting",
+  DAMAGED_SIGN:         "Traffic Signage",
+  BLOCKED_DRAIN:        "Stormwater & Drainage",
+  BROKEN_TRAFFIC_LIGHT: "Traffic Signals & Electrical",
+  ACCIDENT:             "Incident Management & Clearance",
+};
+
+export const formatSpecialisation = (type?: string): string =>
+  type ? (SPECIALISATION_LABELS[type] ?? formatIncidentType(type)) : "Unknown";
+
 // AssignmentStatus (backend workflow) -> Status (badge vocabulary already used across the admin UI).
 // REPORTED and VERIFIED both read as "Open" since neither has been assigned to a contractor yet.
 export const STATUS_MAP: Record<AssignmentStatus, Status> = {

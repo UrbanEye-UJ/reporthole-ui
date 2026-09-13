@@ -1,70 +1,51 @@
 "use client";
 
-import {
-  Grid,
-  Button,
-} from "@mui/material";
-
-import AddRoadRoundedIcon from "@mui/icons-material/AddRoadRounded";
+import { Grid } from "@mui/material";
 
 import PageHeader from "../../_components/ui/PageHeader";
 import Panel from "../../_components/ui/Panel";
 import MetricCard from "../../_components/ui/MetricCard";
 import GautengMap from "../../_components/map/GautengMap";
 
-// TODO(api): KPI values from GET /admin/infrastructure/stats (if endpoint created)
-// Map markers from GET /admin/infrastructure/assets
-// Expected asset shape: { id: number; name: string; type: string; latitude: number; longitude: number }
-export default function InfrastructurePage() {
+import { useGetIncidentStats } from "@/lib/hooks/useIncidentStats";
+
+/**
+ * District Overview — shows the geographic spread of incidents across Gauteng
+ * alongside real platform-wide counts pulled from /incidents/stats.
+ */
+export default function DistrictOverviewPage() {
+  const { data: statsData } = useGetIncidentStats();
+  const stats = statsData?.data;
+
+  const total = stats?.totalIncidents ?? "—";
+  const resolved = stats?.resolvedIncidents ?? "—";
+  const open =
+    stats != null
+      ? stats.totalIncidents - stats.resolvedIncidents
+      : "—";
+
   return (
     <>
       <PageHeader
-        title="Infrastructure"
-        subtitle="Monitor and manage road assets across Gauteng."
-        actions={
-          <Button
-            variant="contained"
-            startIcon={<AddRoadRoundedIcon />}
-          >
-            Add Road Asset
-          </Button>
-        }
+        title="District Overview"
+        subtitle="Geographic distribution of reported incidents across Gauteng."
       />
 
-      <Grid
-        container
-        spacing={3}
-      >
-        <Grid size={{ xs: 12, md: 3 }}>
-          <MetricCard
-            title="Road Segments"
-            value="3,248"
-          />
+      <Grid container spacing={3}>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <MetricCard title="Total Incidents" value={total} />
         </Grid>
 
-        <Grid size={{ xs: 12, md: 3 }}>
-          <MetricCard
-            title="Bridges"
-            value="142"
-          />
+        <Grid size={{ xs: 12, md: 4 }}>
+          <MetricCard title="Open / Unresolved" value={open} />
         </Grid>
 
-        <Grid size={{ xs: 12, md: 3 }}>
-          <MetricCard
-            title="Traffic Signals"
-            value="586"
-          />
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 3 }}>
-          <MetricCard
-            title="Maintenance Zones"
-            value="37"
-          />
+        <Grid size={{ xs: 12, md: 4 }}>
+          <MetricCard title="Resolved" value={resolved} />
         </Grid>
 
         <Grid size={{ xs: 12 }}>
-          <Panel title="Infrastructure Map">
+          <Panel title="Incident Map — Gauteng">
             <GautengMap />
           </Panel>
         </Grid>

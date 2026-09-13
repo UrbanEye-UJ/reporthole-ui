@@ -12,7 +12,7 @@ import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 
 import Panel from "../ui/Panel";
 
-import { useGetContractors } from "@/lib/hooks/useContractors";
+import { useGetContractors } from "@/app/api/generated/admin-contractors/admin-contractors";
 
 const getColor = (value: number) => {
   if (value >= 85) return "success.main";
@@ -37,8 +37,10 @@ const RepairProgress = () => {
 
       <Stack spacing={3}>
         {contractors.map((contractor) => {
-          const totalJobs = contractor.completedJobs + contractor.activeJobs;
-          const completedPercent = totalJobs > 0 ? Math.round((contractor.completedJobs / totalJobs) * 100) : 0;
+          const completedJobs = contractor.completedJobs ?? 0;
+          const activeJobs = contractor.activeJobs ?? 0;
+          const totalJobs = completedJobs + activeJobs;
+          const completedPercent = totalJobs > 0 ? Math.round((completedJobs / totalJobs) * 100) : 0;
 
           return (
             <Box
@@ -74,7 +76,7 @@ const RepairProgress = () => {
                     variant="body2"
                     color="text.secondary"
                   >
-                    {contractor.completedJobs} completed • {contractor.activeJobs} pending
+                    {completedJobs} completed • {activeJobs} pending
                   </Typography>
                 </Box>
 

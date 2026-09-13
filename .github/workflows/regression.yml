@@ -1,0 +1,37 @@
+name: Regression Tests
+
+# Manual trigger only — run from the Actions tab ("Run workflow") or `gh workflow run
+# regression.yml` whenever you want a full frontend regression pass without opening a PR.
+# Separate from build.yml (the pull_request gate) so it never affects that automated check.
+# Steps mirror build.yml: lint, Jest, and a production build to catch type/compile regressions too.
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Frontend test suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test -- --ci --passWithNoTests
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8080/api

@@ -6,6 +6,7 @@ import Image from "next/image";
 import {
     useCreateIncident,
     useConfirmDuplicate,
+    useGetNearbyIncidents,
 } from "@/app/api/generated/incidents/incidents";
 import { usePredict } from "@/app/api/generated/inference/inference";
 import {
@@ -131,6 +132,13 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
     const [locating, setLocating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [duplicate, setDuplicate] = useState<IncidentResponseDTO | null>(null);
+    const [nearbyDismissed, setNearbyDismissed] = useState(false);
+
+    const { data: nearbyData } = useGetNearbyIncidents(
+        { latitude: coords?.latitude ?? 0, longitude: coords?.longitude ?? 0 },
+        { query: { enabled: !!coords } }
+    );
+    const nearbyIncidents = nearbyData?.data ?? [];
 
     // AI-detect state
     const [aiFile, setAiFile] = useState<File | null>(null);
@@ -203,7 +211,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                 if (status === 404 || status === 401) {
                     document.cookie = "reporthole_token=; path=/; max-age=0";
                     document.cookie = "reporthole_role=; path=/; max-age=0";
-                    window.location.href = "/login";
+                    window.location.href = "/";
                 } else {
                     setError("Something went wrong. Please try again.");
                 }
@@ -795,7 +803,47 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                             )}
                         </div>
 
+                        {coords && nearbyIncidents.length > 0 && !nearbyDismissed && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex flex-col gap-2">
+                                <div className="flex items-start justify-between gap-2">
+                                    <p className="text-xs font-semibold text-amber-800">
+                                        {nearbyIncidents.length === 1
+                                            ? "1 issue already reported nearby"
+                                            : `${nearbyIncidents.length} issues already reported nearby`}
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={() => setNearbyDismissed(true)}
+                                        className="text-xs text-amber-500 hover:text-amber-700 flex-shrink-0"
+                                    >
+                                        Dismiss
+                                    </button>
+                                </div>
+                                <ul className="flex flex-col gap-1">
+                                    {nearbyIncidents.slice(0, 3).map((incident) => (
+                                        <li key={incident.incidentId} className="text-xs text-amber-700">
+                                            {incident.incidentType?.replace(/_/g, " ")} — {incident.locationAddress ?? "nearby"}
+                                        </li>
+                                    ))}
+                                </ul>
+                                <p className="text-xs text-amber-600">
+                                    If yours is a different incident, go ahead and submit — the system will ask you to confirm if it detects a duplicate.
+                                </p>
+                            </div>
+                        )}
+
                         {error && <p className="text-xs text-red-500 text-center">{error}</p>}
+
+                        {(!description || !preview) && (
+                            <p className="text-xs text-gray-400 text-center">
+                                {[
+                                    !preview && "a photo",
+                                    !description && "a description",
+                                ]
+                                    .filter(Boolean)
+                                    .join(" and ")} still needed
+                            </p>
+                        )}
 
                         <button
                             type="button"
