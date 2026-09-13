@@ -5,6 +5,7 @@ import ReportIssueModal from "@/components/shared/ReportIssueModal";
 const mockCreateMutate = jest.fn();
 const mockConfirmMutate = jest.fn();
 const mockPredictMutateAsync = jest.fn();
+const mockUseGetNearbyIncidents = jest.fn(() => ({ data: undefined as { data: unknown[] } | undefined }));
 
 type MutationHandlers = { onSuccess: (result: unknown) => void; onError: (err: unknown) => void };
 
@@ -17,6 +18,7 @@ jest.mock("@/app/api/generated/incidents/incidents", () => ({
         mutate: (payload: unknown) => mockConfirmMutate(payload, mutation),
         isPending: false,
     }),
+    useGetNearbyIncidents: () => mockUseGetNearbyIncidents(),
 }));
 
 jest.mock("@/app/api/generated/inference/inference", () => ({
@@ -40,6 +42,8 @@ beforeEach(() => {
     mockCreateMutate.mockReset();
     mockConfirmMutate.mockReset();
     mockPredictMutateAsync.mockReset();
+    mockUseGetNearbyIncidents.mockReset();
+    mockUseGetNearbyIncidents.mockReturnValue({ data: undefined });
     (global.fetch as jest.Mock).mockReset();
     (global.fetch as jest.Mock).mockResolvedValue({ ok: true, json: async () => ({}) });
 });
@@ -219,6 +223,47 @@ describe("ReportIssueModal", () => {
             expect(
                 screen.getByText(/Could not get your location/i)
             ).toBeInTheDocument();
+        });
+    });
+
+    describe("nearby incidents nudge", () => {
+        beforeEach(() => {
+            mockGeolocation.getCurrentPosition.mockImplementation((success: (pos: GeolocationPosition) => void) =>
+                success({ coords: { latitude: -26.2041, longitude: 28.0473 } })
+            );
+        });
+
+        it("shows a nudge when nearby incidents are returned", async () => {
+            mockUseGetNearbyIncidents.mockReturnValue({
+                data: { data: [{ incidentId: "1", incidentType: "POTHOLE", locationAddress: "Main Road" }] },
+            });
+            await act(async () => {
+                renderModal({ visible: true });
+            });
+            fireEvent.click(screen.getByText("Report Manually"));
+            expect(screen.getByText("1 issue already reported nearby")).toBeInTheDocument();
+            expect(screen.getByText(/POTHOLE — Main Road/)).toBeInTheDocument();
+        });
+
+        it("does not show a nudge when there are no nearby incidents", async () => {
+            mockUseGetNearbyIncidents.mockReturnValue({ data: { data: [] } });
+            await act(async () => {
+                renderModal({ visible: true });
+            });
+            fireEvent.click(screen.getByText("Report Manually"));
+            expect(screen.queryByText(/already reported nearby/)).not.toBeInTheDocument();
+        });
+
+        it("dismisses the nudge when Dismiss is clicked", async () => {
+            mockUseGetNearbyIncidents.mockReturnValue({
+                data: { data: [{ incidentId: "1", incidentType: "POTHOLE", locationAddress: "Main Road" }] },
+            });
+            await act(async () => {
+                renderModal({ visible: true });
+            });
+            fireEvent.click(screen.getByText("Report Manually"));
+            fireEvent.click(screen.getByText("Dismiss"));
+            expect(screen.queryByText("1 issue already reported nearby")).not.toBeInTheDocument();
         });
     });
 
@@ -480,6 +525,55 @@ describe("ReportIssueModal", () => {
             const descriptionField = screen.getByPlaceholderText("Describe the issue...") as HTMLTextAreaElement;
             expect(descriptionField.value).toContain("AI detected");
             expect(descriptionField.value).toContain("87%");
+        });
+
+        it("auto-accepts and skips the confirmation prompt when confidence is above 90%", async () => {
+            mockPredictMutateAsync.mockResolvedValue({
+                detected: true,
+                detection: { label: "POTHOLE", confidence: 0.95, rawLabel: "Pothole_FP" },
+            });
+
+            renderModal({ visible: true });
+            fireEvent.click(screen.getByText("Detect with AI"));
+
+            const aiGalleryInput = Array.from(document.querySelectorAll("input[type='file']")).find(
+                (el) => !(el as HTMLInputElement).hasAttribute("capture")
+            ) as HTMLInputElement;
+
+            await act(async () => {
+                fireEvent.change(aiGalleryInput, { target: { files: [new File(["img"], "road.jpg", { type: "image/jpeg" })] } });
+            });
+
+            // Should land directly on the pre-filled form — no confirmation prompt shown.
+            await waitFor(() => {
+                expect(screen.getByPlaceholderText("Describe the issue...")).toBeInTheDocument();
+            });
+            expect(screen.queryByText("Yes, that looks right")).not.toBeInTheDocument();
+            expect(screen.queryByText("No, I'll select the type manually")).not.toBeInTheDocument();
+            const descriptionField = screen.getByPlaceholderText("Describe the issue...") as HTMLTextAreaElement;
+            expect(descriptionField.value).toContain("95%");
+        });
+
+        it("still shows the confirmation prompt at exactly 90% confidence", async () => {
+            mockPredictMutateAsync.mockResolvedValue({
+                detected: true,
+                detection: { label: "POTHOLE", confidence: 0.90, rawLabel: "Pothole_FP" },
+            });
+
+            renderModal({ visible: true });
+            fireEvent.click(screen.getByText("Detect with AI"));
+
+            const aiGalleryInput = Array.from(document.querySelectorAll("input[type='file']")).find(
+                (el) => !(el as HTMLInputElement).hasAttribute("capture")
+            ) as HTMLInputElement;
+
+            await act(async () => {
+                fireEvent.change(aiGalleryInput, { target: { files: [new File(["img"], "road.jpg", { type: "image/jpeg" })] } });
+            });
+
+            await waitFor(() => {
+                expect(screen.getByText("Yes, that looks right")).toBeInTheDocument();
+            });
         });
 
         it("goes to manual form when user rejects AI prediction", async () => {

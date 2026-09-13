@@ -3,6 +3,7 @@
 import {
   DataGrid,
   type GridColDef,
+  type GridRowParams,
   type GridRowsProp,
 } from "@mui/x-data-grid";
 
@@ -11,6 +12,7 @@ interface DataTableProps {
   columns: GridColDef[];
   loading?: boolean;
   height?: number;
+  onRowClick?: (params: GridRowParams) => void;
 }
 
 const DataTable = ({
@@ -18,6 +20,7 @@ const DataTable = ({
   columns,
   loading = false,
   height = 600,
+  onRowClick,
 }: DataTableProps) => {
   return (
     <DataGrid
@@ -25,6 +28,7 @@ const DataTable = ({
       columns={columns}
       loading={loading}
       disableRowSelectionOnClick
+      onRowClick={onRowClick}
       pageSizeOptions={[10, 25, 50, 100]}
       initialState={{
         pagination: {
@@ -36,6 +40,10 @@ const DataTable = ({
       }}
       sx={{
         border: "none",
+
+        "& .MuiDataGrid-row": {
+          cursor: onRowClick ? "pointer" : "default",
+        },
 
         "& .MuiDataGrid-columnHeaders": {
           background: (t) =>

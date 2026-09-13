@@ -6,6 +6,7 @@ import Image from "next/image";
 import {
     useCreateIncident,
     useConfirmDuplicate,
+    useGetNearbyIncidents,
 } from "@/app/api/generated/incidents/incidents";
 import { usePredict } from "@/app/api/generated/inference/inference";
 import {
@@ -18,6 +19,13 @@ import {
 const LocationPickerMap = dynamic(() => import("./LocationPickerMap"), { ssr: false });
 
 const ISSUE_TYPES = Object.values(IncidentRequestDTOIncidentType);
+
+/**
+ * AI detections above this confidence skip the "Yes, that looks right?" confirmation
+ * prompt entirely and go straight to the pre-filled form — the model is confident
+ * enough that asking the user to double-check adds friction without adding value.
+ */
+const AI_AUTO_ACCEPT_THRESHOLD = 0.90;
 
 function getCurrentUserId(): string | null {
     try {
@@ -124,6 +132,13 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
     const [locating, setLocating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [duplicate, setDuplicate] = useState<IncidentResponseDTO | null>(null);
+    const [nearbyDismissed, setNearbyDismissed] = useState(false);
+
+    const { data: nearbyData } = useGetNearbyIncidents(
+        { latitude: coords?.latitude ?? 0, longitude: coords?.longitude ?? 0 },
+        { query: { enabled: !!coords } }
+    );
+    const nearbyIncidents = nearbyData?.data ?? [];
 
     // AI-detect state
     const [aiFile, setAiFile] = useState<File | null>(null);
@@ -196,7 +211,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                 if (status === 404 || status === 401) {
                     document.cookie = "reporthole_token=; path=/; max-age=0";
                     document.cookie = "reporthole_role=; path=/; max-age=0";
-                    window.location.href = "/login";
+                    window.location.href = "/";
                 } else {
                     setError("Something went wrong. Please try again.");
                 }
@@ -293,12 +308,27 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
      * Immediately sends the image to the inference endpoint and
      * updates aiResult with the prediction.
      */
+    /**
+     * Pre-fills the form from a detection and jumps straight to the form step.
+     * Shared by the auto-accept path (confidence above the threshold) and the
+     * manual "Yes, that looks right" button.
+     */
+    const applyPrediction = useCallback((detection: DetectionDTO, imageFile: File, previewUrl: string) => {
+        const issueType = inferredLabelToIssueType(detection.label ?? "");
+        setType(issueType);
+        setDescription(`AI detected: ${(detection.label ?? "").replace(/_/g, " ")} at ${Math.round((detection.confidence ?? 0) * 100)}% confidence.`);
+        setFile(imageFile);
+        setPreview(previewUrl);
+        setStep("form");
+    }, []);
+
     const handleAiFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
         const selected = e.target.files?.[0];
         if (!selected) return;
 
+        const previewUrl = URL.createObjectURL(selected);
         setAiFile(selected);
-        setAiPreview(URL.createObjectURL(selected));
+        setAiPreview(previewUrl);
         setAiResult(null);
         setAiError(null);
         setAiAnalyzing(true);
@@ -310,13 +340,20 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                 setAiError("No road damage detected in this image. Try a clearer photo or report manually.");
                 return;
             }
-            setAiResult(data.detection);
+
+            const detection = data.detection;
+            if ((detection.confidence ?? 0) > AI_AUTO_ACCEPT_THRESHOLD) {
+                // High-confidence detection — skip the confirmation prompt entirely.
+                applyPrediction(detection, selected, previewUrl);
+            } else {
+                setAiResult(detection);
+            }
         } catch {
             setAiError("Could not reach the analysis service. You can still report manually.");
         } finally {
             setAiAnalyzing(false);
         }
-    }, []);
+    }, [runPredict, applyPrediction]);
 
     /**
      * Accepts the AI prediction and pre-fills the form.
@@ -324,13 +361,8 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
      */
     const acceptAiPrediction = useCallback(() => {
         if (!aiResult || !aiFile || !aiPreview) return;
-        const issueType = inferredLabelToIssueType(aiResult.label ?? "");
-        setType(issueType);
-        setDescription(`AI detected: ${(aiResult.label ?? "").replace(/_/g, " ")} at ${Math.round((aiResult.confidence ?? 0) * 100)}% confidence.`);
-        setFile(aiFile);
-        setPreview(aiPreview);
-        setStep("form");
-    }, [aiResult, aiFile, aiPreview]);
+        applyPrediction(aiResult, aiFile, aiPreview);
+    }, [aiResult, aiFile, aiPreview, applyPrediction]);
 
     /** Discards the AI result and goes to the manual form. */
     const rejectAiPrediction = useCallback(() => {
@@ -383,7 +415,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                         </div>
                         <p className="text-base font-semibold text-gray-900">Report Submitted</p>
                         <p className="text-sm text-gray-500 text-center">Your issue has been logged and will be reviewed shortly.</p>
-                        <button type="button" onClick={handleClose} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl text-sm transition-colors">
+                        <button type="button" onClick={handleClose} className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3.5 rounded-xl text-sm transition-colors">
                             Done
                         </button>
                     </div>
@@ -452,7 +484,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                             type="button"
                             onClick={() => confirmDuplicate.mutate({ id: duplicate.existingIncidentId! })}
                             disabled={submitting}
-                            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3.5 rounded-xl text-sm transition-colors"
+                            className="w-full bg-gray-900 hover:bg-gray-800 disabled:opacity-50 text-white font-semibold py-3.5 rounded-xl text-sm transition-colors"
                         >
                             {submitting ? "Confirming..." : "Yes, same issue"}
                         </button>
@@ -483,9 +515,9 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                         <button
                             type="button"
                             onClick={() => setStep("ai-detect")}
-                            className="flex items-start gap-4 p-4 border-2 border-blue-200 bg-blue-50 hover:border-blue-400 hover:bg-blue-100 rounded-2xl transition-colors text-left"
+                            className="flex items-start gap-4 p-4 border-2 border-gray-900 bg-gray-50 hover:bg-gray-100 dark:border-white dark:bg-[#111111] dark:hover:bg-[#1a1a1a] rounded-2xl transition-colors text-left"
                         >
-                            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <div className="w-10 h-10 rounded-xl bg-gray-900 dark:bg-white flex items-center justify-center flex-shrink-0 mt-0.5">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
@@ -579,15 +611,15 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                         {!aiAnalyzing && aiResult && (() => {
                             const confident = (aiResult.confidence ?? 0) >= 0.80;
                             return (
-                            <div className={`${confident ? "bg-blue-50 border-blue-200" : "bg-red-50 border-red-200"} border rounded-xl p-4 flex flex-col gap-3`}>
+                            <div className={`${confident ? "bg-gray-50 border-gray-200" : "bg-red-50 border-red-200"} border rounded-xl p-4 flex flex-col gap-3`}>
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className={`text-xs font-medium uppercase tracking-wide ${confident ? "text-blue-500" : "text-red-500"}`}>AI Detected</p>
+                                        <p className={`text-xs font-medium uppercase tracking-wide ${confident ? "text-gray-500" : "text-red-500"}`}>AI Detected</p>
                                         <p className="text-base font-bold text-gray-900 mt-0.5">{(aiResult.label ?? "").replace(/_/g, " ")}</p>
                                         <p className="text-xs text-gray-500">{Math.round((aiResult.confidence ?? 0) * 100)}% confidence</p>
                                     </div>
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${confident ? "bg-blue-100" : "bg-red-100"}`}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 ${confident ? "text-blue-600" : "text-red-600"}`} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${confident ? "bg-gray-100" : "bg-red-100"}`}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 ${confident ? "text-gray-700" : "text-red-600"}`} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
                                         </svg>
                                     </div>
@@ -595,7 +627,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                                 <button
                                     type="button"
                                     onClick={acceptAiPrediction}
-                                    className={`w-full text-white font-semibold py-3 rounded-xl text-sm transition-colors ${confident ? "bg-blue-600 hover:bg-blue-700" : "bg-red-600 hover:bg-red-700"}`}
+                                    className={`w-full font-semibold py-3 rounded-xl text-sm transition-colors ${confident ? "bg-gray-900 hover:bg-gray-800 text-white" : "bg-red-600 hover:bg-red-700 text-white"}`}
                                 >
                                     Yes, that looks right
                                 </button>
@@ -771,13 +803,53 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                             )}
                         </div>
 
+                        {coords && nearbyIncidents.length > 0 && !nearbyDismissed && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex flex-col gap-2">
+                                <div className="flex items-start justify-between gap-2">
+                                    <p className="text-xs font-semibold text-amber-800">
+                                        {nearbyIncidents.length === 1
+                                            ? "1 issue already reported nearby"
+                                            : `${nearbyIncidents.length} issues already reported nearby`}
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={() => setNearbyDismissed(true)}
+                                        className="text-xs text-amber-500 hover:text-amber-700 flex-shrink-0"
+                                    >
+                                        Dismiss
+                                    </button>
+                                </div>
+                                <ul className="flex flex-col gap-1">
+                                    {nearbyIncidents.slice(0, 3).map((incident) => (
+                                        <li key={incident.incidentId} className="text-xs text-amber-700">
+                                            {incident.incidentType?.replace(/_/g, " ")} — {incident.locationAddress ?? "nearby"}
+                                        </li>
+                                    ))}
+                                </ul>
+                                <p className="text-xs text-amber-600">
+                                    If yours is a different incident, go ahead and submit — the system will ask you to confirm if it detects a duplicate.
+                                </p>
+                            </div>
+                        )}
+
                         {error && <p className="text-xs text-red-500 text-center">{error}</p>}
+
+                        {(!description || !preview) && (
+                            <p className="text-xs text-gray-400 text-center">
+                                {[
+                                    !preview && "a photo",
+                                    !description && "a description",
+                                ]
+                                    .filter(Boolean)
+                                    .join(" and ")} still needed
+                            </p>
+                        )}
 
                         <button
                             type="button"
                             onClick={() => submitIncident()}
                             disabled={submitting || !description || !preview}
-                            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl text-sm transition-colors"
+                            className="w-full bg-gray-900 hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl text-sm transition-colors"
                         >
                             {submitting ? "Submitting..." : "Submit"}
                         </button>

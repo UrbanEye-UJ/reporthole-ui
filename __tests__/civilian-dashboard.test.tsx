@@ -37,6 +37,8 @@ jest.mock("@/app/api/generated/incidents/incidents", () => ({
     useDeleteIncident: () => ({ mutate: jest.fn() }),
     useCreateIncident: () => ({ mutate: jest.fn(), isPending: false }),
     useConfirmDuplicate: () => ({ mutate: jest.fn(), isPending: false }),
+    useReportStillUnresolved: () => ({ mutate: jest.fn() }),
+    useGetNearbyIncidents: () => ({ data: undefined }),
 }));
 
 const setCookie = (value: string) => {

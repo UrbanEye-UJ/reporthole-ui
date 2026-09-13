@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -8,13 +8,56 @@ import {
     useUpdateProfile,
     useDeleteAccount,
 } from "@/app/api/generated/user-profile/user-profile";
+import { useSend } from "@/app/api/generated/messages/messages";
 import { useCivilianTheme } from "../_context/CivilianThemeContext";
+import { apiClient } from "@/lib/axios";
 
 type EditState = {
     firstName: string;
     lastName: string;
     phoneNumber: string;
 };
+
+/** Mask a full name: "John Doe" → "J*** D***" */
+function maskName(name: string): string {
+    return name
+        .split(" ")
+        .filter(Boolean)
+        .map((w) => `${w[0]}${"*".repeat(Math.max(w.length - 1, 2))}`)
+        .join(" ");
+}
+
+/** Mask an email: "john@example.com" → "j***@example.com" */
+function maskEmail(email: string): string {
+    const [local, domain] = email.split("@");
+    if (!domain) return "***";
+    return `${local[0]}***@${domain}`;
+}
+
+/** Mask a phone: "0603802390" → "0603*****" */
+function maskPhone(phone: string): string {
+    if (phone.length <= 4) return "****";
+    return `${phone.slice(0, 4)}${"*".repeat(phone.length - 4)}`;
+}
+
+/** Eye-open SVG icon */
+function EyeIcon() {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
+        </svg>
+    );
+}
+
+/** Eye-closed (slash) SVG icon */
+function EyeSlashIcon() {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+        </svg>
+    );
+}
 
 export default function ProfilePage() {
     const router = useRouter();
@@ -24,19 +67,21 @@ export default function ProfilePage() {
     const [editValues, setEditValues] = useState<EditState>({ firstName: "", lastName: "", phoneNumber: "" });
     const [saveError, setSaveError] = useState<string | null>(null);
 
+    // Sensitive-field reveal state — once verified the values are visible for this session
+    const [revealed, setRevealed] = useState(false);
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [passwordInput, setPasswordInput] = useState("");
+    const [verifyError, setVerifyError] = useState<string | null>(null);
+    const [verifying, setVerifying] = useState(false);
+
+    // "Send us a message" section
+    const [messageOpen, setMessageOpen] = useState(false);
+    const [messageSubject, setMessageSubject] = useState("");
+    const [messageContent, setMessageContent] = useState("");
+    const [messageSent, setMessageSent] = useState(false);
+
     const { data, refetch, isLoading } = useGetProfile({ query: { staleTime: 0 } });
     const profile = data?.data;
-
-    useEffect(() => {
-        if (profile) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setEditValues({
-                firstName: profile.firstName ?? "",
-                lastName: profile.lastName ?? "",
-                phoneNumber: profile.phoneNumber ?? "",
-            });
-        }
-    }, [profile]);
 
     const { mutate: updateProfile, isPending: isSaving } = useUpdateProfile({
         mutation: {
@@ -61,6 +106,16 @@ export default function ProfilePage() {
         },
     });
 
+    const { mutate: sendMessage, isPending: isSending } = useSend({
+        mutation: {
+            onSuccess: () => {
+                setMessageSent(true);
+                setMessageSubject("");
+                setMessageContent("");
+            },
+        },
+    });
+
     const handleSave = () => {
         const { firstName, lastName, phoneNumber } = editValues;
         if (!firstName.trim() || !lastName.trim() || !phoneNumber.trim()) {
@@ -71,26 +126,43 @@ export default function ProfilePage() {
     };
 
     const handleDelete = () => {
-        if (!confirmDelete) {
-            setConfirmDelete(true);
-            return;
-        }
+        if (!confirmDelete) { setConfirmDelete(true); return; }
         deleteAccount();
     };
+
+    const handleRevealSubmit = useCallback(async () => {
+        if (!passwordInput.trim()) { setVerifyError("Please enter your password."); return; }
+        setVerifying(true);
+        setVerifyError(null);
+        try {
+            await apiClient({ url: "/users/verify-password", method: "POST", data: { password: passwordInput } });
+            setRevealed(true);
+            setShowPasswordModal(false);
+            setPasswordInput("");
+        } catch {
+            setVerifyError("Incorrect password. Please try again.");
+        } finally {
+            setVerifying(false);
+        }
+    }, [passwordInput]);
 
     const formatDate = (iso?: string) =>
         iso ? new Date(iso).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" }) : "—";
 
+    const fullName = `${profile?.firstName ?? ""} ${profile?.lastName ?? ""}`.trim() || "—";
+    const email = profile?.email ?? "—";
+    const phone = profile?.phoneNumber ?? "—";
+
     if (isLoading) {
         return (
-            <main className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center transition-colors duration-300">
+            <main className="min-h-screen bg-gray-100 dark:bg-[#0F0F0F] flex items-center justify-center transition-colors duration-300">
                 <p className="text-sm text-gray-400 dark:text-gray-500">Loading profile…</p>
             </main>
         );
     }
 
     return (
-        <main className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
+        <main className="min-h-screen bg-gray-100 dark:bg-[#0F0F0F] transition-colors duration-300">
             <div className="max-w-lg mx-auto px-4 py-6 flex flex-col gap-5">
 
                 {/* Header */}
@@ -98,7 +170,7 @@ export default function ProfilePage() {
                     <div className="flex items-center gap-3">
                         <Link
                             href="/civilian/dashboard"
-                            className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                            className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                             aria-label="Back"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -108,12 +180,11 @@ export default function ProfilePage() {
                         <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">My Profile</h1>
                     </div>
 
-                    {/* Theme toggle */}
                     <button
                         type="button"
                         onClick={toggleTheme}
                         aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-                        className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                     >
                         {darkMode ? (
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -128,53 +199,32 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Profile card */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 flex flex-col gap-4 transition-colors duration-300">
+                <div className="bg-white dark:bg-[#161616] rounded-2xl p-5 flex flex-col gap-4 transition-colors duration-300">
                     {editing ? (
                         <>
                             <div className="flex flex-col gap-3">
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">First name</label>
-                                    <input
-                                        type="text"
-                                        value={editValues.firstName}
-                                        onChange={(e) => setEditValues((v) => ({ ...v, firstName: e.target.value }))}
-                                        className="border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-800 dark:text-gray-100 outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                                    />
-                                </div>
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Last name</label>
-                                    <input
-                                        type="text"
-                                        value={editValues.lastName}
-                                        onChange={(e) => setEditValues((v) => ({ ...v, lastName: e.target.value }))}
-                                        className="border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-800 dark:text-gray-100 outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                                    />
-                                </div>
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Phone number</label>
-                                    <input
-                                        type="tel"
-                                        value={editValues.phoneNumber}
-                                        onChange={(e) => setEditValues((v) => ({ ...v, phoneNumber: e.target.value }))}
-                                        className="border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-800 dark:text-gray-100 outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                                    />
-                                </div>
+                                {(["firstName", "lastName", "phoneNumber"] as const).map((field) => (
+                                    <div key={field} className="flex flex-col gap-1">
+                                        <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                            {field === "firstName" ? "First name" : field === "lastName" ? "Last name" : "Phone number"}
+                                        </label>
+                                        <input
+                                            type={field === "phoneNumber" ? "tel" : "text"}
+                                            value={editValues[field]}
+                                            onChange={(e) => setEditValues((v) => ({ ...v, [field]: e.target.value }))}
+                                            className="border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-800 dark:text-gray-100 outline-none focus:ring-2 focus:ring-gray-400 transition-colors"
+                                        />
+                                    </div>
+                                ))}
                             </div>
                             {saveError && <p className="text-xs text-red-500">{saveError}</p>}
                             <div className="flex gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => { setEditing(false); setSaveError(null); }}
-                                    className="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold py-3 rounded-xl text-sm transition-colors"
-                                >
+                                <button type="button" onClick={() => { setEditing(false); setSaveError(null); }}
+                                    className="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold py-3 rounded-xl text-sm transition-colors">
                                     Cancel
                                 </button>
-                                <button
-                                    type="button"
-                                    onClick={handleSave}
-                                    disabled={isSaving}
-                                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
-                                >
+                                <button type="button" onClick={handleSave} disabled={isSaving}
+                                    className="flex-1 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 disabled:opacity-50 text-white font-semibold py-3 rounded-xl text-sm transition-colors">
                                     {isSaving ? "Saving…" : "Save"}
                                 </button>
                             </div>
@@ -182,16 +232,53 @@ export default function ProfilePage() {
                     ) : (
                         <>
                             <div className="flex flex-col gap-3">
-                                <ProfileRow label="Name" value={`${profile?.firstName ?? ""} ${profile?.lastName ?? ""}`.trim() || "—"} />
-                                <ProfileRow label="Email" value={profile?.email ?? "—"} />
-                                <ProfileRow label="Phone" value={profile?.phoneNumber ?? "—"} />
+                                {/* Sensitive fields — masked until password verified */}
+                                <SensitiveRow
+                                    label="Name"
+                                    value={fullName}
+                                    masked={maskName(fullName)}
+                                    revealed={revealed}
+                                    onReveal={() => setShowPasswordModal(true)}
+                                    onHide={() => setRevealed(false)}
+                                />
+                                <SensitiveRow
+                                    label="Email"
+                                    value={email}
+                                    masked={maskEmail(email)}
+                                    revealed={revealed}
+                                    onReveal={() => setShowPasswordModal(true)}
+                                    onHide={() => setRevealed(false)}
+                                />
+                                <SensitiveRow
+                                    label="Phone"
+                                    value={phone}
+                                    masked={maskPhone(phone)}
+                                    revealed={revealed}
+                                    onReveal={() => setShowPasswordModal(true)}
+                                    onHide={() => setRevealed(false)}
+                                />
+                                {/* Non-sensitive fields — always visible */}
                                 <ProfileRow label="Role" value={profile?.role ?? "—"} />
                                 <ProfileRow label="Member since" value={formatDate(profile?.createdAt)} />
                             </div>
+
+                            {!revealed && (
+                                <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
+                                    Tap the eye icon next to a field to reveal sensitive information.
+                                </p>
+                            )}
+
                             <button
                                 type="button"
-                                onClick={() => setEditing(true)}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
+                                onClick={() => {
+                                    setEditValues({
+                                        firstName: profile?.firstName ?? "",
+                                        lastName: profile?.lastName ?? "",
+                                        phoneNumber: profile?.phoneNumber ?? "",
+                                    });
+                                    setEditing(true);
+                                }}
+                                className="w-full bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
                             >
                                 Edit profile
                             </button>
@@ -199,62 +286,161 @@ export default function ProfilePage() {
                     )}
                 </div>
 
-                {/* Apply for Admin */}
-                {!editing && profile?.role === "CIVILIAN" && (
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 flex flex-col gap-3 transition-colors duration-300">
-                        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Become an Admin</h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                            Have a municipality token? Apply for admin access to manage road incidents across Gauteng.
-                        </p>
-                        <Link
-                            href="/apply-for-admin"
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm transition-colors text-center block"
+                {/* Send us a message */}
+                {!editing && (
+                    <div className="flex flex-col gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#161616] p-4">
+                        <button
+                            type="button"
+                            className="flex items-center justify-between w-full"
+                            onClick={() => { setMessageOpen(!messageOpen); setMessageSent(false); }}
                         >
-                            Apply for Admin
-                        </Link>
+                            <span className="text-base font-semibold text-gray-800 dark:text-gray-100">
+                                Send us a message
+                            </span>
+                            <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 text-gray-400 transition-transform ${messageOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                            </svg>
+                        </button>
+                        {messageOpen && (
+                            messageSent ? (
+                                <p className="text-sm text-green-600 dark:text-green-400 text-center py-2">
+                                    Message sent! We&apos;ll look into it.
+                                </p>
+                            ) : (
+                                <form
+                                    onSubmit={(e) => {
+                                        e.preventDefault();
+                                        if (!messageContent.trim()) return;
+                                        sendMessage({ data: { subject: messageSubject, content: messageContent } });
+                                    }}
+                                    className="flex flex-col gap-3"
+                                >
+                                    <input
+                                        type="text"
+                                        placeholder="Subject (optional)"
+                                        value={messageSubject}
+                                        onChange={(e) => setMessageSubject(e.target.value)}
+                                        className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-gray-400"
+                                    />
+                                    <textarea
+                                        rows={4}
+                                        placeholder="Write your message or complaint here…"
+                                        value={messageContent}
+                                        onChange={(e) => setMessageContent(e.target.value)}
+                                        required
+                                        className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-gray-400 resize-none"
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={isSending || !messageContent.trim()}
+                                        className="w-full bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 disabled:opacity-50 transition-colors text-white font-semibold py-2.5 rounded-xl text-sm"
+                                    >
+                                        {isSending ? "Sending…" : "Send Message"}
+                                    </button>
+                                </form>
+                            )
+                        )}
                     </div>
                 )}
 
                 {/* Danger zone */}
                 {!editing && (
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 flex flex-col gap-3 transition-colors duration-300">
+                    <div className="bg-white dark:bg-[#161616] rounded-2xl p-5 flex flex-col gap-3 transition-colors duration-300">
                         <h2 className="text-sm font-semibold text-red-600 dark:text-red-400">Danger zone</h2>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                             Deleting your account is permanent. Your incidents will remain in the system but you will no longer be able to log in.
                         </p>
-                        <button
-                            type="button"
-                            onClick={handleDelete}
-                            disabled={isDeleting}
+                        <button type="button" onClick={handleDelete} disabled={isDeleting}
                             className={`w-full font-semibold py-3 rounded-xl text-sm transition-colors ${
                                 confirmDelete
                                     ? "bg-red-600 hover:bg-red-700 text-white"
                                     : "bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400"
-                            } disabled:opacity-50`}
-                        >
+                            } disabled:opacity-50`}>
                             {isDeleting ? "Deleting…" : confirmDelete ? "Tap again to confirm" : "Delete account"}
                         </button>
                         {confirmDelete && (
-                            <button
-                                type="button"
-                                onClick={() => setConfirmDelete(false)}
-                                className="w-full text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                            >
+                            <button type="button" onClick={() => setConfirmDelete(false)}
+                                className="w-full text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                                 Cancel
                             </button>
                         )}
                     </div>
                 )}
             </div>
+
+            {/* Password confirmation modal */}
+            {showPasswordModal && (
+                <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4"
+                    onClick={() => { setShowPasswordModal(false); setPasswordInput(""); setVerifyError(null); }}>
+                    <div className="bg-white dark:bg-[#161616] rounded-2xl w-full max-w-sm p-6 flex flex-col gap-4"
+                        onClick={(e) => e.stopPropagation()}>
+                        <div>
+                            <h2 className="text-base font-bold text-gray-900 dark:text-gray-100">Confirm your identity</h2>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                Enter your password to reveal sensitive profile information.
+                            </p>
+                        </div>
+                        <input
+                            type="password"
+                            value={passwordInput}
+                            onChange={(e) => setPasswordInput(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleRevealSubmit()}
+                            placeholder="Your password"
+                            autoFocus
+                            className="bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 outline-none focus:ring-2 focus:ring-gray-400"
+                        />
+                        {verifyError && <p className="text-xs text-red-500">{verifyError}</p>}
+                        <button type="button" onClick={handleRevealSubmit} disabled={verifying || !passwordInput.trim()}
+                            className="w-full bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 disabled:opacity-50 text-white font-semibold py-3 rounded-xl text-sm transition-colors">
+                            {verifying ? "Verifying…" : "Reveal"}
+                        </button>
+                        <button type="button"
+                            onClick={() => { setShowPasswordModal(false); setPasswordInput(""); setVerifyError(null); }}
+                            className="text-sm text-gray-400 text-center hover:text-gray-600 dark:hover:text-gray-300">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
         </main>
     );
 }
 
 function ProfileRow({ label, value }: { label: string; value: string }) {
     return (
-        <div className="flex justify-between items-start gap-4">
+        <div className="flex justify-between items-center gap-4">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400 shrink-0">{label}</span>
             <span className="text-sm text-gray-800 dark:text-gray-100 text-right">{value}</span>
+        </div>
+    );
+}
+
+interface SensitiveRowProps {
+    label: string;
+    value: string;
+    masked: string;
+    revealed: boolean;
+    onReveal: () => void;
+    onHide: () => void;
+}
+
+function SensitiveRow({ label, value, masked, revealed, onReveal, onHide }: SensitiveRowProps) {
+    return (
+        <div className="flex justify-between items-center gap-4">
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 shrink-0">{label}</span>
+            <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-800 dark:text-gray-100 text-right">
+                    {revealed ? value : masked}
+                </span>
+                <button
+                    type="button"
+                    onClick={revealed ? onHide : onReveal}
+                    aria-label={revealed ? `Hide ${label}` : `Show ${label}`}
+                    className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors shrink-0"
+                >
+                    {revealed ? <EyeSlashIcon /> : <EyeIcon />}
+                </button>
+            </div>
         </div>
     );
 }

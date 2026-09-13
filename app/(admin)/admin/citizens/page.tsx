@@ -1,6 +1,8 @@
 "use client";
 
-import { Grid } from "@mui/material";
+import { useMemo } from "react";
+
+import { Chip, Grid } from "@mui/material";
 
 import PeopleRoundedIcon from "@mui/icons-material/PeopleRounded";
 
@@ -10,111 +12,107 @@ import PageHeader from "../../_components/ui/PageHeader";
 import MetricCard from "../../_components/ui/MetricCard";
 import Panel from "../../_components/ui/Panel";
 import DataTable from "../../_components/tables/DataTable";
-import StatusBadge, { type Status } from "../../_components/ui/StatusBadge";
 
-// TODO(api): replace with data from GET /admin/users?role=CIVILIAN
-// Expected shape: { id: number; name: string; district: string; reports: number; status: string }[]
-// where status reflects the latest report status for that user
-const rows = [
-  {
-    id: 1,
-    name: "John Mokoena",
-    district: "Johannesburg",
-    reports: 14,
-    status: "Resolved",
-  },
-  {
-    id: 2,
-    name: "Sarah Nkosi",
-    district: "Pretoria",
-    reports: 8,
-    status: "In Progress",
-  },
-  {
-    id: 3,
-    name: "David Molefe",
-    district: "Ekurhuleni",
-    reports: 5,
-    status: "Assigned",
-  },
-  {
-    id: 4,
-    name: "Lebo Khumalo",
-    district: "Soweto",
-    reports: 11,
-    status: "Open",
-  },
-];
+import { useGetCivilians } from "@/app/api/generated/admin-users/admin-users";
+import type { CivilianSummaryResponseStatus } from "@/app/api/generated/openAPIDefinition.schemas";
 
-const columns: GridColDef[] = [
-  {
-    field: "name",
-    headerName: "Citizen",
-    flex: 1,
-  },
-  {
-    field: "district",
-    headerName: "District",
-    flex: 1,
-  },
-  {
-    field: "reports",
-    headerName: "Reports Submitted",
-    width: 170,
-  },
-  {
-    field: "status",
-    headerName: "Latest Report",
-    width: 170,
-    renderCell: (params) => (
-      <StatusBadge status={params.value as Status} />
-    ),
-  },
-];
+export default function CiviliansPage() {
+  const { data, isLoading } = useGetCivilians();
 
-export default function CitizensPage() {
+  const civilians = useMemo(() => data?.data ?? [], [data]);
+
+  const rows = useMemo(
+    () =>
+      civilians.map((u) => ({
+        id: u.userId,
+        maskedName: u.maskedName ?? "—",
+        maskedEmail: u.maskedEmail ?? "—",
+        incidentCount: u.incidentCount ?? 0,
+        status: u.status,
+        memberSince: u.createdAt,
+      })),
+    [civilians]
+  );
+
+  const columns: GridColDef[] = [
+    {
+      field: "maskedName",
+      headerName: "Civilian",
+      flex: 1,
+    },
+    {
+      field: "maskedEmail",
+      headerName: "Email",
+      flex: 1,
+    },
+    {
+      field: "incidentCount",
+      headerName: "Reports",
+      width: 110,
+      type: "number",
+    },
+    {
+      field: "memberSince",
+      headerName: "Joined",
+      width: 160,
+      valueFormatter: (value: string) =>
+        value
+          ? new Date(value).toLocaleDateString("en-ZA", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })
+          : "—",
+    },
+    {
+      field: "status",
+      headerName: "Account Status",
+      width: 170,
+      renderCell: (params) => {
+        const s = params.value as CivilianSummaryResponseStatus;
+        if (s === "SUSPENDED") return <Chip label="Suspended" color="error" size="small" />;
+        if (s === "PENDING_VERIFICATION") return <Chip label="Pending" color="warning" size="small" />;
+        return <Chip label="Active" color="success" size="small" variant="outlined" />;
+      },
+    },
+  ];
+
   return (
     <>
       <PageHeader
-        title="Citizens"
-        subtitle="Manage citizen engagement and road issue reporting."
+        title="Civilians"
+        subtitle="Registered civilian reporters — names and emails are partially masked."
       />
 
       <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 3 }}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <MetricCard
-            title="Registered Citizens"
-            value="12,548"
+            title="Registered Civilians"
+            value={civilians.length || "—"}
             icon={<PeopleRoundedIcon fontSize="large" />}
           />
         </Grid>
 
-        <Grid size={{ xs: 12, md: 3 }}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <MetricCard
-            title="Reports Submitted"
-            value="4,386"
+            title="Active"
+            value={civilians.filter((u) => u.status === "ACTIVE").length || "—"}
           />
         </Grid>
 
-        <Grid size={{ xs: 12, md: 3 }}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <MetricCard
-            title="Active Reporters"
-            value="932"
-          />
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 3 }}>
-          <MetricCard
-            title="Average Rating"
-            value="4.8 ★"
+            title="Pending Verification"
+            value={civilians.filter((u) => u.status === "PENDING_VERIFICATION").length || "—"}
           />
         </Grid>
 
         <Grid size={{ xs: 12 }}>
-          <Panel title="Citizen Directory">
+          <Panel title="Civilian Directory">
             <DataTable
               rows={rows}
               columns={columns}
+              loading={isLoading}
               height={520}
             />
           </Panel>

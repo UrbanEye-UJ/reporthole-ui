@@ -1,112 +1,133 @@
 "use client";
 
-import { Button, Grid } from "@mui/material";
+import { useMemo } from "react";
 
-import FileDownloadRoundedIcon from "@mui/icons-material/FileDownloadRounded";
-import AssessmentRoundedIcon from "@mui/icons-material/AssessmentRounded";
+import { Chip, Grid, Typography, Box, Divider, Stack } from "@mui/material";
 
-import type { GridColDef } from "@mui/x-data-grid";
+import MailRoundedIcon from "@mui/icons-material/MailRounded";
+import InboxRoundedIcon from "@mui/icons-material/InboxRounded";
+import MarkEmailReadRoundedIcon from "@mui/icons-material/MarkEmailReadRounded";
+import MarkEmailUnreadRoundedIcon from "@mui/icons-material/MarkEmailUnreadRounded";
 
 import PageHeader from "../../_components/ui/PageHeader";
 import MetricCard from "../../_components/ui/MetricCard";
 import Panel from "../../_components/ui/Panel";
-import DataTable from "../../_components/tables/DataTable";
 
-// TODO(api): replace with data from GET /admin/reports
-// Expected shape: { id: number; report: string; generated: string; format: string }[]
-// Also needed: POST /admin/reports/generate to trigger report creation
-const rows = [
-  {
-    id: 1,
-    report: "Monthly Incident Report",
-    generated: "01 Aug 2026",
-    format: "PDF",
-  },
-  {
-    id: 2,
-    report: "Contractor Performance",
-    generated: "31 Jul 2026",
-    format: "Excel",
-  },
-  {
-    id: 3,
-    report: "Infrastructure Summary",
-    generated: "30 Jul 2026",
-    format: "CSV",
-  },
-];
+import { useGetAdminMessages } from "@/app/api/generated/messages/messages";
 
-const columns: GridColDef[] = [
-  {
-    field: "report",
-    headerName: "Report",
-    flex: 1,
-  },
-  {
-    field: "generated",
-    headerName: "Generated",
-    width: 170,
-  },
-  {
-    field: "format",
-    headerName: "Format",
-    width: 120,
-  },
-];
+/** Formats an ISO datetime string into a human-readable local date/time. */
+function formatDate(iso?: string): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("en-ZA", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
-export default function ReportsPage() {
+export default function MessagesPage() {
+  const { data, isLoading } = useGetAdminMessages();
+
+  const messages = useMemo(() => data?.data ?? [], [data]);
+  const unread = useMemo(() => messages.filter((m) => !m.read).length, [messages]);
+
   return (
     <>
       <PageHeader
-        title="Reports"
-        subtitle="Generate operational and analytical reports."
-        actions={
-          <Button
-            variant="contained"
-            startIcon={<FileDownloadRoundedIcon />}
-          >
-            Generate Report
-          </Button>
-        }
+        title="Messages"
+        subtitle="Complaints and feedback submitted by civilians, contractors, and other users."
       />
 
       <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 3 }}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <MetricCard
-            title="Reports Generated"
-            value="128"
-            icon={<AssessmentRoundedIcon />}
+            title="Total Messages"
+            value={isLoading ? "…" : messages.length || "0"}
+            icon={<MailRoundedIcon />}
           />
         </Grid>
 
-        <Grid size={{ xs: 12, md: 3 }}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <MetricCard
-            title="Scheduled Reports"
-            value="18"
+            title="Unread"
+            value={isLoading ? "…" : unread || "0"}
+            icon={<MarkEmailUnreadRoundedIcon />}
           />
         </Grid>
 
-        <Grid size={{ xs: 12, md: 3 }}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <MetricCard
-            title="PDF Exports"
-            value="84"
-          />
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 3 }}>
-          <MetricCard
-            title="Excel Exports"
-            value="44"
+            title="Read"
+            value={isLoading ? "…" : (messages.length - unread) || "0"}
+            icon={<MarkEmailReadRoundedIcon />}
           />
         </Grid>
 
         <Grid size={{ xs: 12 }}>
-          <Panel title="Recent Reports">
-            <DataTable
-              rows={rows}
-              columns={columns}
-              height={500}
-            />
+          <Panel title="Inbox">
+            {isLoading ? (
+              <Typography variant="body2" color="text.secondary" sx={{ p: 4 }}>
+                Loading messages…
+              </Typography>
+            ) : messages.length === 0 ? (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  py: 10,
+                  gap: 1.5,
+                  color: "text.disabled",
+                }}
+              >
+                <InboxRoundedIcon sx={{ fontSize: 56, opacity: 0.4 }} />
+                <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                  No messages yet
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 380, textAlign: "center" }}>
+                  Civilians and contractors can send messages from their dashboards. Check back here for new messages.
+                </Typography>
+                <Typography variant="caption" color="text.disabled" sx={{ textAlign: "center" }}>
+                  Or check{" "}
+                  <a href="mailto:reporthole.team@gmail.com" style={{ color: "inherit" }}>
+                    reporthole.team@gmail.com
+                  </a>{" "}
+                  for direct emails.
+                </Typography>
+              </Box>
+            ) : (
+              <Stack divider={<Divider />}>
+                {messages.map((msg) => (
+                  <Box key={msg.id} sx={{ p: 2, opacity: msg.read ? 0.7 : 1 }}>
+                    <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "flex-start", mb: 0.5 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: msg.read ? 400 : 700 }}>
+                        {msg.senderName ?? "Unknown Sender"}
+                      </Typography>
+                      <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                        {!msg.read && <Chip label="New" size="small" color="primary" />}
+                        <Typography variant="caption" color="text.secondary">
+                          {formatDate(msg.createdAt)}
+                        </Typography>
+                      </Stack>
+                    </Stack>
+                    {msg.subject && (
+                      <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                        {msg.subject}
+                      </Typography>
+                    )}
+                    <Typography variant="body2" color="text.secondary">
+                      {msg.content}
+                    </Typography>
+                    <Typography variant="caption" color="text.disabled" sx={{ mt: 0.5, display: "block" }}>
+                      {msg.senderEmail}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
+            )}
           </Panel>
         </Grid>
       </Grid>

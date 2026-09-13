@@ -69,7 +69,7 @@ export const responseErrorInterceptor = (error: unknown): Promise<never> => {
             console.warn("[API] Session invalid — showing expiry warning");
             window.dispatchEvent(new CustomEvent("session-invalid"));
         } else {
-            router.navigate("/login");
+            router.navigate("/");
         }
     }
 

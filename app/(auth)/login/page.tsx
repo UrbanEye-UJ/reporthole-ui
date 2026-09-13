@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import AuthCard from "@/components/shared/Authcard";
 import LogoPin from "@/components/shared/Logopin";
 import InputField from "@/components/shared/Inputfield";
 import { useLogin } from "@/app/api/generated/authentication/authentication";
 
-export default function LoginPage() {
+function LoginForm() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const contractorRegistered = searchParams.get("contractor") === "registered";
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -69,6 +71,12 @@ export default function LoginPage() {
     return (
         <AuthCard>
             <LogoPin />
+
+            {contractorRegistered && (
+                <div className="w-full rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-center">
+                    <p className="text-sm text-green-700 font-medium">Account created! Sign in with your new credentials.</p>
+                </div>
+            )}
 
             <div className="text-center">
                 <h1 className="text-3xl font-bold text-gray-900">Welcome Back</h1>
@@ -132,7 +140,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={handleLogin}
                 disabled={isSubmitting}
-                className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-white font-semibold rounded-xl py-3.5 text-sm"
+                className="w-full bg-gray-900 hover:bg-gray-800 active:bg-gray-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-white font-semibold rounded-xl py-3.5 text-sm"
             >
                 {isSubmitting ? "Logging in..." : "Login"}
             </button>
@@ -144,5 +152,13 @@ export default function LoginPage() {
                 </Link>
             </p>
         </AuthCard>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={null}>
+            <LoginForm />
+        </Suspense>
     );
 }

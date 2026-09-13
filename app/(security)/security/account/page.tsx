@@ -1,0 +1,294 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
+import {
+  Alert,
+  Button,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  MenuItem,
+  Snackbar,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
+
+import { PageHeader, Panel } from "../../_components/ui";
+import DataTable from "../../_components/DataTable";
+
+import {
+  useForceLogout,
+  useGrantRole,
+  useListUsers,
+  useReactivate,
+  useRevokeRole,
+  useSuspend,
+  getListUsersQueryKey,
+} from "@/app/api/generated/security-admin/security-admin";
+import {
+  GrantRoleRequestRole,
+  type SecurityUserResponse,
+} from "@/app/api/generated/openAPIDefinition.schemas";
+import { getErrorMessage } from "@/lib/getErrorMessage";
+import { useQueryClient } from "@tanstack/react-query";
+
+import type { GridColDef } from "@mui/x-data-grid";
+
+type Step = "menu" | "grant" | "revoke" | "suspend" | "reactivate" | "forceLogout";
+
+const ACTION_LABELS: Record<Exclude<Step, "menu">, string> = {
+  grant: "Grant / change role",
+  revoke: "Revoke role (to CIVILIAN)",
+  suspend: "Suspend account",
+  reactivate: "Reactivate account",
+  forceLogout: "Force logout (revoke sessions)",
+};
+
+const STATUS_COLOR: Record<string, "success" | "error" | "warning" | "default"> = {
+  ACTIVE: "success",
+  SUSPENDED: "error",
+  LOCKED: "warning",
+  PENDING_VERIFICATION: "warning",
+  DELETED: "default",
+};
+
+/**
+ * Pick an account from the list, then grant/revoke a role, suspend/reactivate, or
+ * force every session to sign in again. Every action needs a reason and is written
+ * to the access-control audit trail. The Audit Trail screen deep-links here with
+ * ?userId= to pre-select a row.
+ */
+export default function SecurityAccountPage() {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useListUsers();
+  const users = useMemo(() => data?.data ?? [], [data]);
+
+  // Deep link from the Audit Trail: ?userId=<uuid>. Read once, then it's just state
+  // driven by the "Manage" buttons — the dialog opens when this id resolves to a
+  // loaded user, so no effect is needed to wait for the list.
+  const [selectedId, setSelectedId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return new URLSearchParams(window.location.search).get("userId");
+  });
+  const [step, setStep] = useState<Step>("menu");
+  const [reason, setReason] = useState("");
+  const [role, setRole] = useState<GrantRoleRequestRole>(GrantRoleRequestRole.ADMIN);
+  const [toast, setToast] = useState<{ severity: "success" | "error"; text: string } | null>(null);
+
+  const selected: SecurityUserResponse | null = useMemo(
+    () => users.find((u) => u.userId === selectedId) ?? null,
+    [users, selectedId]
+  );
+
+  const openManage = (id: string) => {
+    setSelectedId(id);
+    setStep("menu");
+    setReason("");
+  };
+
+  const close = () => {
+    setSelectedId(null);
+    setStep("menu");
+    setReason("");
+  };
+
+  const onError = (error: unknown) =>
+    setToast({ severity: "error", text: getErrorMessage(error) });
+  const onSuccess = (text: string) => () => {
+    setToast({ severity: "success", text });
+    queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() });
+    close();
+  };
+
+  const grant = useGrantRole({ mutation: { onSuccess: onSuccess("Role granted."), onError } });
+  const revoke = useRevokeRole({ mutation: { onSuccess: onSuccess("Role revoked."), onError } });
+  const suspend = useSuspend({ mutation: { onSuccess: onSuccess("Account suspended."), onError } });
+  const reactivate = useReactivate({ mutation: { onSuccess: onSuccess("Account reactivated."), onError } });
+  const forceLogout = useForceLogout({ mutation: { onSuccess: onSuccess("Sessions revoked."), onError } });
+
+  const pending =
+    grant.isPending || revoke.isPending || suspend.isPending || reactivate.isPending || forceLogout.isPending;
+
+  const submit = () => {
+    if (!selected?.userId) return;
+    const id = selected.userId;
+    const r = reason.trim();
+    if (!r) return;
+    switch (step) {
+      case "grant":
+        grant.mutate({ userId: id, data: { role, reason: r } });
+        break;
+      case "revoke":
+        revoke.mutate({ userId: id, data: { reason: r } });
+        break;
+      case "suspend":
+        suspend.mutate({ userId: id, data: { reason: r } });
+        break;
+      case "reactivate":
+        reactivate.mutate({ userId: id, data: { reason: r } });
+        break;
+      case "forceLogout":
+        forceLogout.mutate({ userId: id, data: { reason: r } });
+        break;
+    }
+  };
+
+  const rows = users.map((u) => ({
+    id: u.userId ?? "",
+    name: u.name ?? "",
+    email: u.email ?? "",
+    role: u.role ?? "",
+    status: u.status ?? "",
+  }));
+
+  const columns: GridColDef[] = [
+    { field: "name", headerName: "Name", flex: 1, minWidth: 150 },
+    {
+      field: "email",
+      headerName: "Email",
+      flex: 1,
+      minWidth: 200,
+      renderCell: (params) => (
+        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {String(params.value)}
+          {String(params.value).endsWith("@reporthole-test.local") && (
+            <Chip size="small" label="test" sx={{ fontSize: 10, height: 18 }} />
+          )}
+        </span>
+      ),
+    },
+    { field: "role", headerName: "Role", width: 150 },
+    {
+      field: "status",
+      headerName: "Status",
+      width: 150,
+      renderCell: (params) => (
+        <Chip
+          size="small"
+          variant="outlined"
+          label={String(params.value)}
+          color={STATUS_COLOR[String(params.value)] ?? "default"}
+        />
+      ),
+    },
+    { field: "id", headerName: "User ID", width: 300 },
+    {
+      field: "manage",
+      headerName: "",
+      width: 110,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <Button size="small" onClick={() => openManage(params.row.id)}>
+          Manage
+        </Button>
+      ),
+    },
+  ];
+
+  const actionKeys = Object.keys(ACTION_LABELS) as Exclude<Step, "menu">[];
+
+  return (
+    <>
+      <PageHeader
+        title="Manage Accounts"
+        subtitle="Select an account, then act on it. Every action needs a reason and is recorded on the audit trail."
+      />
+
+      <Panel title={`Users (${users.length})`}>
+        <DataTable rows={rows} columns={columns} loading={isLoading} height={560} />
+      </Panel>
+
+      <Dialog open={selected !== null} onClose={close} fullWidth maxWidth="xs">
+        {selected && (
+          <>
+            <DialogTitle>
+              {step === "menu" ? selected.name : ACTION_LABELS[step]}
+            </DialogTitle>
+            <DialogContent>
+              <Stack spacing={2} sx={{ mt: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  {selected.email} · {selected.role} · {selected.status}
+                </Typography>
+
+                {step === "menu" && (
+                  <Stack spacing={1.25}>
+                    {actionKeys.map((key) => (
+                      <Button
+                        key={key}
+                        variant="outlined"
+                        color={key === "suspend" || key === "forceLogout" ? "error" : "primary"}
+                        onClick={() => {
+                          setReason("");
+                          setStep(key);
+                        }}
+                      >
+                        {ACTION_LABELS[key]}
+                      </Button>
+                    ))}
+                  </Stack>
+                )}
+
+                {step === "grant" && (
+                  <TextField
+                    select
+                    label="Role"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value as GrantRoleRequestRole)}
+                  >
+                    {Object.values(GrantRoleRequestRole).map((r) => (
+                      <MenuItem key={r} value={r}>
+                        {r}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                )}
+
+                {step !== "menu" && (
+                  <TextField
+                    label="Reason"
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    multiline
+                    minRows={2}
+                    required
+                    slotProps={{ htmlInput: { maxLength: 500 } }}
+                  />
+                )}
+              </Stack>
+            </DialogContent>
+            <DialogActions>
+              {step === "menu" ? (
+                <Button onClick={close}>Close</Button>
+              ) : (
+                <>
+                  <Button onClick={() => setStep("menu")}>Back</Button>
+                  <Button
+                    variant="contained"
+                    color={step === "suspend" || step === "forceLogout" ? "error" : "primary"}
+                    disabled={!reason.trim() || pending}
+                    onClick={submit}
+                  >
+                    Confirm
+                  </Button>
+                </>
+              )}
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
+
+      <Snackbar open={!!toast} autoHideDuration={6000} onClose={() => setToast(null)}>
+        {toast ? (
+          <Alert severity={toast.severity} onClose={() => setToast(null)}>
+            {toast.text}
+          </Alert>
+        ) : undefined}
+      </Snackbar>
+    </>
+  );
+}

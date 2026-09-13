@@ -24,9 +24,21 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AppResponseIncidentCommentResponse,
   AppResponseIncidentResponseDTO,
+  AppResponseIncidentStatsDTO,
+  AppResponseListIncidentClusterDTO,
+  AppResponseListIncidentCommentResponse,
   AppResponseListIncidentResponseDTO,
+  AssignIncidentRequest,
+  CreateCommentRequest,
+  GetIncidentClustersParams,
+  GetNearbyIncidentsParams,
+  GetRecentIncidentsParams,
   IncidentRequestDTO,
+  ProgressUpdateRequest,
+  RejectAssignmentRequest,
+  ResolveIncidentRequest,
   SearchMyIncidentsParams,
   SseEmitter
 } from '../openAPIDefinition.schemas';
@@ -37,6 +49,393 @@ import { apiClient } from '../../../../lib/axios';
 
 
 /**
+ * Marks a REPORTED incident as VERIFIED, confirming it is a genuine issue. Must happen before the incident can be assigned to a contractor. Admin only.
+ * @summary Verify incident
+ */
+export const verifyIncident = (
+    id: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseIncidentResponseDTO>(
+      {url: `/incidents/${id}/verify`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getVerifyIncidentMutationOptions = <TError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyIncident>>, TError,{id: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof verifyIncident>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['verifyIncident'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyIncident>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  verifyIncident(id,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyIncidentMutationResult = NonNullable<Awaited<ReturnType<typeof verifyIncident>>>
+    
+    export type VerifyIncidentMutationError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO
+
+    /**
+ * @summary Verify incident
+ */
+export const useVerifyIncident = <TError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyIncident>>, TError,{id: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof verifyIncident>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+
+      const mutationOptions = getVerifyIncidentMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * Reopens a RESOLVED incident: reverts it to VERIFIED so an admin can reassign it, and links the reporting user so they receive future updates.
+ * @summary Report incident still unresolved
+ */
+export const reportStillUnresolved = (
+    id: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseIncidentResponseDTO>(
+      {url: `/incidents/${id}/still-unresolved`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getReportStillUnresolvedMutationOptions = <TError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportStillUnresolved>>, TError,{id: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof reportStillUnresolved>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['reportStillUnresolved'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportStillUnresolved>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  reportStillUnresolved(id,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportStillUnresolvedMutationResult = NonNullable<Awaited<ReturnType<typeof reportStillUnresolved>>>
+    
+    export type ReportStillUnresolvedMutationError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO
+
+    /**
+ * @summary Report incident still unresolved
+ */
+export const useReportStillUnresolved = <TError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportStillUnresolved>>, TError,{id: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reportStillUnresolved>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+
+      const mutationOptions = getReportStillUnresolvedMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * Marks the caller's assignment for this incident as RESOLVED, storing a repair photo and note. Caller must be the contractor this incident is assigned to.
+ * @summary Resolve incident
+ */
+export const resolveIncident = (
+    id: string,
+    resolveIncidentRequest: ResolveIncidentRequest,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseIncidentResponseDTO>(
+      {url: `/incidents/${id}/resolve`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: resolveIncidentRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getResolveIncidentMutationOptions = <TError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveIncident>>, TError,{id: string;data: ResolveIncidentRequest}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof resolveIncident>>, TError,{id: string;data: ResolveIncidentRequest}, TContext> => {
+
+const mutationKey = ['resolveIncident'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resolveIncident>>, {id: string;data: ResolveIncidentRequest}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  resolveIncident(id,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResolveIncidentMutationResult = NonNullable<Awaited<ReturnType<typeof resolveIncident>>>
+    export type ResolveIncidentMutationBody = ResolveIncidentRequest
+    export type ResolveIncidentMutationError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO
+
+    /**
+ * @summary Resolve incident
+ */
+export const useResolveIncident = <TError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveIncident>>, TError,{id: string;data: ResolveIncidentRequest}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof resolveIncident>>,
+        TError,
+        {id: string;data: ResolveIncidentRequest},
+        TContext
+      > => {
+
+      const mutationOptions = getResolveIncidentMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * Admin-only: reverts a RESOLVED incident back to VERIFIED and removes the existing assignment so it can be reassigned to a contractor. Civilians are notified of the status change.
+ * @summary Reopen a resolved incident
+ */
+export const reopenIncident = (
+    id: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseIncidentResponseDTO>(
+      {url: `/incidents/${id}/reopen`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getReopenIncidentMutationOptions = <TError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reopenIncident>>, TError,{id: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof reopenIncident>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['reopenIncident'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reopenIncident>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  reopenIncident(id,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReopenIncidentMutationResult = NonNullable<Awaited<ReturnType<typeof reopenIncident>>>
+    
+    export type ReopenIncidentMutationError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO
+
+    /**
+ * @summary Reopen a resolved incident
+ */
+export const useReopenIncident = <TError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reopenIncident>>, TError,{id: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reopenIncident>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+
+      const mutationOptions = getReopenIncidentMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * Called by the assigned contractor to reject the incident, giving a required reason. The assignment is removed from the contractor and the incident reverts to VERIFIED so an admin can assign it to someone else.
+ * @summary Reject assignment
+ */
+export const rejectAssignment = (
+    id: string,
+    rejectAssignmentRequest: RejectAssignmentRequest,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseIncidentResponseDTO>(
+      {url: `/incidents/${id}/reject`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: rejectAssignmentRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getRejectAssignmentMutationOptions = <TError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectAssignment>>, TError,{id: string;data: RejectAssignmentRequest}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof rejectAssignment>>, TError,{id: string;data: RejectAssignmentRequest}, TContext> => {
+
+const mutationKey = ['rejectAssignment'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectAssignment>>, {id: string;data: RejectAssignmentRequest}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  rejectAssignment(id,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RejectAssignmentMutationResult = NonNullable<Awaited<ReturnType<typeof rejectAssignment>>>
+    export type RejectAssignmentMutationBody = RejectAssignmentRequest
+    export type RejectAssignmentMutationError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO
+
+    /**
+ * @summary Reject assignment
+ */
+export const useRejectAssignment = <TError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectAssignment>>, TError,{id: string;data: RejectAssignmentRequest}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof rejectAssignment>>,
+        TError,
+        {id: string;data: RejectAssignmentRequest},
+        TContext
+      > => {
+
+      const mutationOptions = getRejectAssignmentMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * Called by the assigned contractor to post a free-text progress note while the incident is IN_PROGRESS. Each note is appended to the incident's workflow history, visible to admins.
+ * @summary Add progress update
+ */
+export const addProgressUpdate = (
+    id: string,
+    progressUpdateRequest: ProgressUpdateRequest,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseIncidentResponseDTO>(
+      {url: `/incidents/${id}/progress`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: progressUpdateRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getAddProgressUpdateMutationOptions = <TError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addProgressUpdate>>, TError,{id: string;data: ProgressUpdateRequest}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof addProgressUpdate>>, TError,{id: string;data: ProgressUpdateRequest}, TContext> => {
+
+const mutationKey = ['addProgressUpdate'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addProgressUpdate>>, {id: string;data: ProgressUpdateRequest}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addProgressUpdate(id,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddProgressUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof addProgressUpdate>>>
+    export type AddProgressUpdateMutationBody = ProgressUpdateRequest
+    export type AddProgressUpdateMutationError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO
+
+    /**
+ * @summary Add progress update
+ */
+export const useAddProgressUpdate = <TError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addProgressUpdate>>, TError,{id: string;data: ProgressUpdateRequest}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof addProgressUpdate>>,
+        TError,
+        {id: string;data: ProgressUpdateRequest},
+        TContext
+      > => {
+
+      const mutationOptions = getAddProgressUpdateMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
  * Called when the user confirms they are reporting the same issue as an existing incident. Increments the report count to signal severity.
  * @summary Confirm duplicate
  */
@@ -96,6 +495,293 @@ export const useConfirmDuplicate = <TError = AppResponseIncidentResponseDTO,
       > => {
 
       const mutationOptions = getConfirmDuplicateMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * Returns all comments for the given incident, oldest first. Open to any authenticated user.
+ * @summary Get comments
+ */
+export const getComments = (
+    id: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseListIncidentCommentResponse>(
+      {url: `/incidents/${id}/comments`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getGetCommentsQueryKey = (id?: string,) => {
+    return [
+    `/incidents/${id}/comments`
+    ] as const;
+    }
+
+    
+export const getGetCommentsQueryOptions = <TData = Awaited<ReturnType<typeof getComments>>, TError = AppResponseListIncidentCommentResponse>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCommentsQueryKey(id);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getComments>>> = ({ signal }) => getComments(id, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetCommentsQueryResult = NonNullable<Awaited<ReturnType<typeof getComments>>>
+export type GetCommentsQueryError = AppResponseListIncidentCommentResponse
+
+
+export function useGetComments<TData = Awaited<ReturnType<typeof getComments>>, TError = AppResponseListIncidentCommentResponse>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getComments>>,
+          TError,
+          Awaited<ReturnType<typeof getComments>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetComments<TData = Awaited<ReturnType<typeof getComments>>, TError = AppResponseListIncidentCommentResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getComments>>,
+          TError,
+          Awaited<ReturnType<typeof getComments>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetComments<TData = Awaited<ReturnType<typeof getComments>>, TError = AppResponseListIncidentCommentResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get comments
+ */
+
+export function useGetComments<TData = Awaited<ReturnType<typeof getComments>>, TError = AppResponseListIncidentCommentResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetCommentsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
+ * Posts a comment on behalf of the authenticated user. Any role may comment.
+ * @summary Post comment
+ */
+export const addComment = (
+    id: string,
+    createCommentRequest: CreateCommentRequest,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseIncidentCommentResponse>(
+      {url: `/incidents/${id}/comments`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: createCommentRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getAddCommentMutationOptions = <TError = AppResponseIncidentCommentResponse | AppResponseIncidentCommentResponse | AppResponseIncidentCommentResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addComment>>, TError,{id: string;data: CreateCommentRequest}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof addComment>>, TError,{id: string;data: CreateCommentRequest}, TContext> => {
+
+const mutationKey = ['addComment'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addComment>>, {id: string;data: CreateCommentRequest}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addComment(id,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddCommentMutationResult = NonNullable<Awaited<ReturnType<typeof addComment>>>
+    export type AddCommentMutationBody = CreateCommentRequest
+    export type AddCommentMutationError = AppResponseIncidentCommentResponse | AppResponseIncidentCommentResponse | AppResponseIncidentCommentResponse
+
+    /**
+ * @summary Post comment
+ */
+export const useAddComment = <TError = AppResponseIncidentCommentResponse | AppResponseIncidentCommentResponse | AppResponseIncidentCommentResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addComment>>, TError,{id: string;data: CreateCommentRequest}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof addComment>>,
+        TError,
+        {id: string;data: CreateCommentRequest},
+        TContext
+      > => {
+
+      const mutationOptions = getAddCommentMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * Assigns the incident to a contractor, creating an Assignment and advancing its status to ASSIGNED. Admin only.
+ * @summary Assign incident to contractor
+ */
+export const assignIncident = (
+    id: string,
+    assignIncidentRequest: AssignIncidentRequest,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseIncidentResponseDTO>(
+      {url: `/incidents/${id}/assign`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: assignIncidentRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getAssignIncidentMutationOptions = <TError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assignIncident>>, TError,{id: string;data: AssignIncidentRequest}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof assignIncident>>, TError,{id: string;data: AssignIncidentRequest}, TContext> => {
+
+const mutationKey = ['assignIncident'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof assignIncident>>, {id: string;data: AssignIncidentRequest}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  assignIncident(id,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AssignIncidentMutationResult = NonNullable<Awaited<ReturnType<typeof assignIncident>>>
+    export type AssignIncidentMutationBody = AssignIncidentRequest
+    export type AssignIncidentMutationError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO
+
+    /**
+ * @summary Assign incident to contractor
+ */
+export const useAssignIncident = <TError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assignIncident>>, TError,{id: string;data: AssignIncidentRequest}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof assignIncident>>,
+        TError,
+        {id: string;data: AssignIncidentRequest},
+        TContext
+      > => {
+
+      const mutationOptions = getAssignIncidentMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * Called by the assigned contractor to accept the incident, advancing its status to IN_PROGRESS.
+ * @summary Accept assignment
+ */
+export const acceptAssignment = (
+    id: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseIncidentResponseDTO>(
+      {url: `/incidents/${id}/accept`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getAcceptAssignmentMutationOptions = <TError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptAssignment>>, TError,{id: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof acceptAssignment>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['acceptAssignment'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptAssignment>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  acceptAssignment(id,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptAssignmentMutationResult = NonNullable<Awaited<ReturnType<typeof acceptAssignment>>>
+    
+    export type AcceptAssignmentMutationError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO
+
+    /**
+ * @summary Accept assignment
+ */
+export const useAcceptAssignment = <TError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptAssignment>>, TError,{id: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof acceptAssignment>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+
+      const mutationOptions = getAcceptAssignmentMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
@@ -319,6 +1005,376 @@ export const useDeleteIncident = <TError = void | void,
       return useMutation(mutationOptions, queryClient);
     }
     /**
+ * Returns platform-wide totals (total logged, total resolved) for admin dashboard KPI cards.
+ * @summary Get incident stats
+ */
+export const getIncidentStats = (
+    
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseIncidentStatsDTO>(
+      {url: `/incidents/stats`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getGetIncidentStatsQueryKey = () => {
+    return [
+    `/incidents/stats`
+    ] as const;
+    }
+
+    
+export const getGetIncidentStatsQueryOptions = <TData = Awaited<ReturnType<typeof getIncidentStats>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentStats>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetIncidentStatsQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIncidentStats>>> = ({ signal }) => getIncidentStats(signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIncidentStats>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetIncidentStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getIncidentStats>>>
+export type GetIncidentStatsQueryError = unknown
+
+
+export function useGetIncidentStats<TData = Awaited<ReturnType<typeof getIncidentStats>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentStats>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getIncidentStats>>,
+          TError,
+          Awaited<ReturnType<typeof getIncidentStats>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetIncidentStats<TData = Awaited<ReturnType<typeof getIncidentStats>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentStats>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getIncidentStats>>,
+          TError,
+          Awaited<ReturnType<typeof getIncidentStats>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetIncidentStats<TData = Awaited<ReturnType<typeof getIncidentStats>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentStats>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get incident stats
+ */
+
+export function useGetIncidentStats<TData = Awaited<ReturnType<typeof getIncidentStats>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentStats>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetIncidentStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
+ * Returns the most recently logged incidents across all users, ordered by date descending. Intended for admin dashboards.
+ * @summary Get recent incidents
+ */
+export const getRecentIncidents = (
+    params?: GetRecentIncidentsParams,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseListIncidentResponseDTO>(
+      {url: `/incidents/recent`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+  
+
+
+
+export const getGetRecentIncidentsQueryKey = (params?: GetRecentIncidentsParams,) => {
+    return [
+    `/incidents/recent`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getGetRecentIncidentsQueryOptions = <TData = Awaited<ReturnType<typeof getRecentIncidents>>, TError = unknown>(params?: GetRecentIncidentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRecentIncidents>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRecentIncidentsQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRecentIncidents>>> = ({ signal }) => getRecentIncidents(params, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRecentIncidents>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetRecentIncidentsQueryResult = NonNullable<Awaited<ReturnType<typeof getRecentIncidents>>>
+export type GetRecentIncidentsQueryError = unknown
+
+
+export function useGetRecentIncidents<TData = Awaited<ReturnType<typeof getRecentIncidents>>, TError = unknown>(
+ params: undefined |  GetRecentIncidentsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRecentIncidents>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getRecentIncidents>>,
+          TError,
+          Awaited<ReturnType<typeof getRecentIncidents>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetRecentIncidents<TData = Awaited<ReturnType<typeof getRecentIncidents>>, TError = unknown>(
+ params?: GetRecentIncidentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRecentIncidents>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getRecentIncidents>>,
+          TError,
+          Awaited<ReturnType<typeof getRecentIncidents>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetRecentIncidents<TData = Awaited<ReturnType<typeof getRecentIncidents>>, TError = unknown>(
+ params?: GetRecentIncidentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRecentIncidents>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get recent incidents
+ */
+
+export function useGetRecentIncidents<TData = Awaited<ReturnType<typeof getRecentIncidents>>, TError = unknown>(
+ params?: GetRecentIncidentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRecentIncidents>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetRecentIncidentsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
+ * Returns AI-generated incidents whose detection confidence fell below the auto-approval threshold, so they were left as REPORTED instead of being auto-verified. Admin only.
+ * @summary Get AI incidents pending review
+ */
+export const getIncidentsPendingAiReview = (
+    
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseListIncidentResponseDTO>(
+      {url: `/incidents/pending-review`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getGetIncidentsPendingAiReviewQueryKey = () => {
+    return [
+    `/incidents/pending-review`
+    ] as const;
+    }
+
+    
+export const getGetIncidentsPendingAiReviewQueryOptions = <TData = Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError = AppResponseListIncidentResponseDTO>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetIncidentsPendingAiReviewQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIncidentsPendingAiReview>>> = ({ signal }) => getIncidentsPendingAiReview(signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetIncidentsPendingAiReviewQueryResult = NonNullable<Awaited<ReturnType<typeof getIncidentsPendingAiReview>>>
+export type GetIncidentsPendingAiReviewQueryError = AppResponseListIncidentResponseDTO
+
+
+export function useGetIncidentsPendingAiReview<TData = Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError = AppResponseListIncidentResponseDTO>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getIncidentsPendingAiReview>>,
+          TError,
+          Awaited<ReturnType<typeof getIncidentsPendingAiReview>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetIncidentsPendingAiReview<TData = Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError = AppResponseListIncidentResponseDTO>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getIncidentsPendingAiReview>>,
+          TError,
+          Awaited<ReturnType<typeof getIncidentsPendingAiReview>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetIncidentsPendingAiReview<TData = Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError = AppResponseListIncidentResponseDTO>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get AI incidents pending review
+ */
+
+export function useGetIncidentsPendingAiReview<TData = Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError = AppResponseListIncidentResponseDTO>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetIncidentsPendingAiReviewQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
+ * Returns non-deleted incidents within radiusMeters of the given point, closest first — shown to a civilian before they submit a report so they can avoid creating a duplicate.
+ * @summary Get nearby incidents
+ */
+export const getNearbyIncidents = (
+    params: GetNearbyIncidentsParams,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseListIncidentResponseDTO>(
+      {url: `/incidents/nearby`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+  
+
+
+
+export const getGetNearbyIncidentsQueryKey = (params?: GetNearbyIncidentsParams,) => {
+    return [
+    `/incidents/nearby`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getGetNearbyIncidentsQueryOptions = <TData = Awaited<ReturnType<typeof getNearbyIncidents>>, TError = unknown>(params: GetNearbyIncidentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNearbyIncidents>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetNearbyIncidentsQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNearbyIncidents>>> = ({ signal }) => getNearbyIncidents(params, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNearbyIncidents>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetNearbyIncidentsQueryResult = NonNullable<Awaited<ReturnType<typeof getNearbyIncidents>>>
+export type GetNearbyIncidentsQueryError = unknown
+
+
+export function useGetNearbyIncidents<TData = Awaited<ReturnType<typeof getNearbyIncidents>>, TError = unknown>(
+ params: GetNearbyIncidentsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNearbyIncidents>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getNearbyIncidents>>,
+          TError,
+          Awaited<ReturnType<typeof getNearbyIncidents>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetNearbyIncidents<TData = Awaited<ReturnType<typeof getNearbyIncidents>>, TError = unknown>(
+ params: GetNearbyIncidentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNearbyIncidents>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getNearbyIncidents>>,
+          TError,
+          Awaited<ReturnType<typeof getNearbyIncidents>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetNearbyIncidents<TData = Awaited<ReturnType<typeof getNearbyIncidents>>, TError = unknown>(
+ params: GetNearbyIncidentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNearbyIncidents>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get nearby incidents
+ */
+
+export function useGetNearbyIncidents<TData = Awaited<ReturnType<typeof getNearbyIncidents>>, TError = unknown>(
+ params: GetNearbyIncidentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNearbyIncidents>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetNearbyIncidentsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
  * Returns all incidents reported by the authenticated user.
  * @summary Get my incidents
  */
@@ -504,6 +1560,98 @@ export function useSearchMyIncidents<TData = Awaited<ReturnType<typeof searchMyI
 
 
 /**
+ * Returns every incident assigned to the authenticated contractor, any status.
+ * @summary Get my assignments
+ */
+export const getMyAssignments = (
+    
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseListIncidentResponseDTO>(
+      {url: `/incidents/my-assignments`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getGetMyAssignmentsQueryKey = () => {
+    return [
+    `/incidents/my-assignments`
+    ] as const;
+    }
+
+    
+export const getGetMyAssignmentsQueryOptions = <TData = Awaited<ReturnType<typeof getMyAssignments>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyAssignments>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyAssignmentsQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyAssignments>>> = ({ signal }) => getMyAssignments(signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyAssignments>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMyAssignmentsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyAssignments>>>
+export type GetMyAssignmentsQueryError = unknown
+
+
+export function useGetMyAssignments<TData = Awaited<ReturnType<typeof getMyAssignments>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyAssignments>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyAssignments>>,
+          TError,
+          Awaited<ReturnType<typeof getMyAssignments>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyAssignments<TData = Awaited<ReturnType<typeof getMyAssignments>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyAssignments>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyAssignments>>,
+          TError,
+          Awaited<ReturnType<typeof getMyAssignments>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyAssignments<TData = Awaited<ReturnType<typeof getMyAssignments>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyAssignments>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get my assignments
+ */
+
+export function useGetMyAssignments<TData = Awaited<ReturnType<typeof getMyAssignments>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyAssignments>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMyAssignmentsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
  * Opens a persistent SSE connection for real-time incident update notifications. Authenticate via ?token=<jwt> query param (EventSource does not support custom headers). Emits an 'incident-updated' event whose payload is the incident UUID whenever an incident linked to this user is changed by another reporter.
  * @summary SSE stream
  */
@@ -585,6 +1733,99 @@ export function useSubscribeToIncidentEvents<TData = Awaited<ReturnType<typeof s
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSubscribeToIncidentEventsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
+ * Groups non-deleted incidents into up to k clusters of nearby locations using K-Means, optionally restricted to a single issue type. Intended for admin dashboard hotspot maps.
+ * @summary Cluster incidents by location
+ */
+export const getIncidentClusters = (
+    params?: GetIncidentClustersParams,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseListIncidentClusterDTO>(
+      {url: `/incidents/clusters`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+  
+
+
+
+export const getGetIncidentClustersQueryKey = (params?: GetIncidentClustersParams,) => {
+    return [
+    `/incidents/clusters`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getGetIncidentClustersQueryOptions = <TData = Awaited<ReturnType<typeof getIncidentClusters>>, TError = AppResponseListIncidentClusterDTO>(params?: GetIncidentClustersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentClusters>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetIncidentClustersQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIncidentClusters>>> = ({ signal }) => getIncidentClusters(params, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIncidentClusters>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetIncidentClustersQueryResult = NonNullable<Awaited<ReturnType<typeof getIncidentClusters>>>
+export type GetIncidentClustersQueryError = AppResponseListIncidentClusterDTO
+
+
+export function useGetIncidentClusters<TData = Awaited<ReturnType<typeof getIncidentClusters>>, TError = AppResponseListIncidentClusterDTO>(
+ params: undefined |  GetIncidentClustersParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentClusters>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getIncidentClusters>>,
+          TError,
+          Awaited<ReturnType<typeof getIncidentClusters>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetIncidentClusters<TData = Awaited<ReturnType<typeof getIncidentClusters>>, TError = AppResponseListIncidentClusterDTO>(
+ params?: GetIncidentClustersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentClusters>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getIncidentClusters>>,
+          TError,
+          Awaited<ReturnType<typeof getIncidentClusters>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetIncidentClusters<TData = Awaited<ReturnType<typeof getIncidentClusters>>, TError = AppResponseListIncidentClusterDTO>(
+ params?: GetIncidentClustersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentClusters>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Cluster incidents by location
+ */
+
+export function useGetIncidentClusters<TData = Awaited<ReturnType<typeof getIncidentClusters>>, TError = AppResponseListIncidentClusterDTO>(
+ params?: GetIncidentClustersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentClusters>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetIncidentClustersQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

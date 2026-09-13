@@ -40,8 +40,8 @@ const MetricCard = ({
 
         "&:hover": {
           transform: "translateY(-3px)",
-          borderColor: "primary.main",
-          boxShadow: "0 8px 24px rgba(37,99,235,.15)",
+          borderColor: "divider",
+          boxShadow: "0 8px 24px rgba(0,0,0,.08)",
         },
       }}
     >
@@ -108,7 +108,7 @@ const MetricCard = ({
 
               borderRadius: "14px",
 
-              bgcolor: "rgba(37,99,235,.10)",
+              bgcolor: "action.hover",
 
               color,
 

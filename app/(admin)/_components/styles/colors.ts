@@ -1,32 +1,32 @@
 export const colors = {
   dark: {
     background: {
-      primary: "#07111F",
-      secondary: "rgba(15, 23, 42, 0.72)",
-      tertiary: "rgba(30, 41, 59, 0.55)",
+      primary: "#0F0F0F",
+      secondary: "#161616",
+      tertiary: "#1C1C1C",
     },
 
     surface: {
-      primary: "rgba(17, 25, 40, 0.72)",
-      secondary: "rgba(30, 41, 59, 0.60)",
+      primary: "#161616",
+      secondary: "#1C1C1C",
     },
 
-    border: "rgba(255,255,255,0.08)",
+    border: "#2D2D2D",
 
     glass: {
-      background: "rgba(255,255,255,0.06)",
-      hover: "rgba(59,130,246,.15)",
-      active: "rgba(59,130,246,.22)",
+      background: "rgba(255,255,255,0.04)",
+      hover: "rgba(255,255,255,.06)",
+      active: "#FFFFFF",
     },
 
     text: {
-      primary: "#F8FAFC",
-      secondary: "#CBD5E1",
-      disabled: "#64748B",
+      primary: "#F9FAFB",
+      secondary: "#9CA3AF",
+      disabled: "#4B5563",
     },
 
-    primary: "#3B82F6",
-    secondary: "#06B6D4",
+    primary: "#FFFFFF",
+    secondary: "#D1D5DB",
 
     success: "#22C55E",
     warning: "#F59E0B",
@@ -35,34 +35,33 @@ export const colors = {
   },
 
   light: {
-    // Matches the civilian Tailwind palette exactly
     background: {
-      primary: "#F3F4F6",   // gray-100
+      primary: "#FFFFFF",
       secondary: "#FFFFFF",
-      tertiary: "#F9FAFB",  // gray-50
+      tertiary: "#F9FAFB",
     },
 
     surface: {
-      primary: "#FFFFFF",   // white cards (civilian bg-white)
-      secondary: "#F9FAFB", // gray-50 on hover
+      primary: "#FFFFFF",
+      secondary: "#F9FAFB",
     },
 
-    border: "#E5E7EB",      // gray-200
+    border: "#E5E7EB",
 
     glass: {
       background: "#FFFFFF",
-      hover: "rgba(37,99,235,0.06)",   // blue-600 tint
-      active: "rgba(37,99,235,0.12)",
+      hover: "rgba(0,0,0,.04)",
+      active: "#111111",
     },
 
     text: {
-      primary: "#1F2937",   // gray-800
-      secondary: "#6B7280", // gray-500
-      disabled: "#9CA3AF",  // gray-400
+      primary: "#111111",
+      secondary: "#6B7280",
+      disabled: "#9CA3AF",
     },
 
-    primary: "#2563EB",     // blue-600
-    secondary: "#3B82F6",   // blue-500
+    primary: "#111111",
+    secondary: "#374151",
 
     success: "#22C55E",
     warning: "#F59E0B",
