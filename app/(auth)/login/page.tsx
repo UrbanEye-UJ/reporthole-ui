@@ -140,7 +140,7 @@ function LoginForm() {
                 type="button"
                 onClick={handleLogin}
                 disabled={isSubmitting}
-                className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-white font-semibold rounded-xl py-3.5 text-sm"
+                className="w-full bg-gray-900 hover:bg-gray-800 active:bg-gray-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-white font-semibold rounded-xl py-3.5 text-sm"
             >
                 {isSubmitting ? "Logging in..." : "Login"}
             </button>

@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#2563EB",
+  themeColor: "#111111",
 };
 
 export default function CivilianLayout({ children }: { children: ReactNode }) {

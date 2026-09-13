@@ -36,4 +36,5 @@ export const useGetRecentIncidents = (limit = 10) =>
   useQuery({
     queryKey: ["/incidents/recent", limit] as const,
     queryFn: ({ signal }) => getRecentIncidents(limit, signal),
+    refetchInterval: 60_000,
   });

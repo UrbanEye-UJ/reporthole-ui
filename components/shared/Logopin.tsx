@@ -1,6 +1,6 @@
 export default function LogoPin() {
     return (
-        <div className="bg-blue-600 rounded-full w-16 h-16 flex items-center justify-center shadow-md">
+        <div className="bg-gray-900 rounded-full w-16 h-16 flex items-center justify-center shadow-md">
             <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="w-8 h-8 text-white"

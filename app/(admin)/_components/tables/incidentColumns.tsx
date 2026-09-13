@@ -26,6 +26,7 @@ const SPECIALISATION_LABELS: Record<string, string> = {
   BLOCKED_DRAIN:        "Stormwater & Drainage",
   BROKEN_TRAFFIC_LIGHT: "Traffic Signals & Electrical",
   ACCIDENT:             "Incident Management & Clearance",
+  OTHER:                "Other / All Types",
 };
 
 export const formatSpecialisation = (type?: string): string =>

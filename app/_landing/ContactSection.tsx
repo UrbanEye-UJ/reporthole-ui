@@ -2,17 +2,26 @@
 
 import { useState } from "react";
 import { useContact } from "@/app/api/generated/messages/messages";
+import { useLandingTheme } from "./LandingThemeContext";
 
 /**
  * Landing-page contact form — submits to the public POST /messages/contact endpoint.
  * No authentication required.
  */
 export default function ContactSection() {
+  const { dark } = useLandingTheme();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("");
   const [content, setContent] = useState("");
   const [submitted, setSubmitted] = useState(false);
+
+  const inputBorder = dark ? "#2D2D2D" : "#e5e7eb";
+  const inputBg     = dark ? "#161616" : "#fff";
+  const inputColor  = dark ? "#F9FAFB" : "#111827";
+  const labelColor  = dark ? "#9CA3AF" : "#374151";
+  const headingCol  = dark ? "#F9FAFB" : "#111111";
+  const subColor    = dark ? "#6B7280" : "#6b7280";
 
   const { mutate: sendContact, isPending } = useContact({
     mutation: {
@@ -38,12 +47,12 @@ export default function ContactSection() {
             fontWeight: 800,
             letterSpacing: "-0.03em",
             margin: 0,
-            color: "#0E1420",
+            color: headingCol,
           }}
         >
           Get in touch
         </h2>
-        <p style={{ fontSize: 16, color: "#6b7280", margin: "12px auto 0", maxWidth: "36em", lineHeight: 1.6 }}>
+        <p style={{ fontSize: 16, color: subColor, margin: "12px auto 0", maxWidth: "36em", lineHeight: 1.6 }}>
           Questions about pricing, access, or partnership? Send us a message and we&apos;ll get back to you.
         </p>
       </div>
@@ -83,7 +92,7 @@ export default function ContactSection() {
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label htmlFor="cf-name" style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>
+              <label htmlFor="cf-name" style={{ fontSize: 13, fontWeight: 600, color: labelColor }}>
                 Full name *
               </label>
               <input
@@ -96,12 +105,12 @@ export default function ContactSection() {
                 style={{
                   padding: "12px 16px",
                   borderRadius: 10,
-                  border: "1.5px solid #e5e7eb",
+                  border: `1.5px solid ${inputBorder}`,
                   fontSize: 15,
                   outline: "none",
                   transition: "border-color .15s",
-                  color: "#111827",
-                  background: "#fff",
+                  color: inputColor,
+                  background: inputBg,
                 }}
               />
             </div>
@@ -179,8 +188,8 @@ export default function ContactSection() {
             style={{
               padding: "15px 32px",
               borderRadius: 12,
-              background: "#1A56F0",
-              color: "#fff",
+              background: dark ? "#FFFFFF" : "#111111",
+              color: dark ? "#111111" : "#fff",
               fontWeight: 800,
               fontSize: 16,
               border: "none",

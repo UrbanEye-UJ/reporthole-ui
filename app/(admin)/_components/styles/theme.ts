@@ -3,7 +3,6 @@ import { createTheme } from "@mui/material/styles";
 import { colors } from "./colors";
 import { typography } from "./typography";
 import { radius } from "./radius";
-import { shadows } from "./shadows";
 
 import type { AdminThemeMode } from "./AdminThemeContext";
 
@@ -12,18 +11,9 @@ export function createAdminTheme(mode: AdminThemeMode) {
   const palette = mode === "dark" ? colors.dark : colors.light;
   const isDark = mode === "dark";
 
-  // Lighter shadows for the light theme so cards don't look heavy on a white background
   const cardShadow = isDark
-    ? shadows.card
-    : "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)";
-
-  const glassShadow = isDark
-    ? shadows.glass
-    : "0 1px 3px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)";
-
-  const hoverShadow = isDark
-    ? shadows.hover
-    : "0 4px 12px rgba(37,99,235,0.15)";
+    ? "0 1px 3px rgba(0,0,0,0.4)"
+    : "0 1px 3px rgba(0,0,0,0.06)";
 
   return createTheme({
     palette: {
@@ -68,8 +58,6 @@ export function createAdminTheme(mode: AdminThemeMode) {
     },
 
     shape: {
-      // Use MUI's default unit (4) so numeric sx values scale sensibly:
-      // borderRadius: 3 in sx = 12px (rounded-xl), borderRadius: 4 = 16px (rounded-2xl)
       borderRadius: 4,
     },
 
@@ -79,19 +67,14 @@ export function createAdminTheme(mode: AdminThemeMode) {
       MuiPaper: {
         styleOverrides: {
           root: {
-            borderRadius: "16px", // rounded-2xl — matches civilian card radius
+            borderRadius: "12px",
             background: palette.surface.primary,
-            backdropFilter: isDark ? "blur(18px)" : "none",
-            WebkitBackdropFilter: isDark ? "blur(18px)" : "none",
             border: `1px solid ${palette.border}`,
             backgroundImage: "none",
-            boxShadow: glassShadow,
-            transition: "all .25s ease",
+            boxShadow: cardShadow,
 
             "&:hover": {
               background: palette.surface.secondary,
-              boxShadow: hoverShadow,
-              borderColor: palette.primary,
             },
           },
         },
@@ -100,19 +83,14 @@ export function createAdminTheme(mode: AdminThemeMode) {
       MuiCard: {
         styleOverrides: {
           root: {
-            borderRadius: "16px",
+            borderRadius: "12px",
             background: palette.surface.primary,
-            backdropFilter: isDark ? "blur(18px)" : "none",
-            WebkitBackdropFilter: isDark ? "blur(18px)" : "none",
             backgroundImage: "none",
             border: `1px solid ${palette.border}`,
             boxShadow: cardShadow,
-            transition: "all .25s ease",
 
             "&:hover": {
               background: palette.surface.secondary,
-              boxShadow: hoverShadow,
-              transform: "translateY(-2px)",
             },
           },
         },
@@ -124,18 +102,20 @@ export function createAdminTheme(mode: AdminThemeMode) {
             borderRadius: radius.md,
             textTransform: "none",
             fontWeight: 600,
-            transition: ".25s",
+            transition: ".2s",
+            boxShadow: "none",
 
             "&:hover": {
-              boxShadow: shadows.glowBlue,
+              boxShadow: "none",
             },
           },
 
           contained: {
-            background: `linear-gradient(135deg, ${palette.primary}, ${palette.secondary})`,
+            background: palette.primary,
+            color: isDark ? "#111111" : "#FFFFFF",
 
             "&:hover": {
-              filter: "brightness(1.05)",
+              background: isDark ? "#E5E7EB" : "#374151",
             },
           },
         },
@@ -145,11 +125,10 @@ export function createAdminTheme(mode: AdminThemeMode) {
         styleOverrides: {
           root: {
             borderRadius: radius.round,
-            transition: ".25s",
+            transition: ".2s",
 
             "&:hover": {
               background: palette.glass.hover,
-              backdropFilter: "blur(12px)",
             },
           },
         },
@@ -159,7 +138,7 @@ export function createAdminTheme(mode: AdminThemeMode) {
         styleOverrides: {
           root: {
             borderRadius: radius.md,
-            transition: ".25s",
+            transition: ".2s",
 
             "&:hover": {
               background: palette.glass.hover,
@@ -167,10 +146,10 @@ export function createAdminTheme(mode: AdminThemeMode) {
 
             "&.Mui-selected": {
               background: palette.glass.active,
-              boxShadow: shadows.glowBlue,
+              color: isDark ? "#111111" : "#FFFFFF",
 
               "&:hover": {
-                background: palette.glass.active,
+                background: isDark ? "#E5E7EB" : "#374151",
               },
             },
           },
@@ -194,11 +173,11 @@ export function createAdminTheme(mode: AdminThemeMode) {
             },
 
             "&:hover fieldset": {
-              borderColor: palette.primary,
+              borderColor: palette.text.secondary,
             },
 
             "&.Mui-focused fieldset": {
-              borderColor: palette.primary,
+              borderColor: palette.text.primary,
             },
           },
         },

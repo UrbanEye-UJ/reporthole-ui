@@ -37,7 +37,7 @@ export default function MessagesPage() {
     <>
       <PageHeader
         title="Messages"
-        subtitle="Complaints and feedback submitted by civilians."
+        subtitle="Complaints and feedback submitted by civilians, contractors, and other users."
       />
 
       <Grid container spacing={3}>
@@ -88,7 +88,14 @@ export default function MessagesPage() {
                   No messages yet
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 380, textAlign: "center" }}>
-                  Civilians can send complaints directly from their dashboard. Check back here for new messages.
+                  Civilians and contractors can send messages from their dashboards. Check back here for new messages.
+                </Typography>
+                <Typography variant="caption" color="text.disabled" sx={{ textAlign: "center" }}>
+                  Or check{" "}
+                  <a href="mailto:reporthole.team@gmail.com" style={{ color: "inherit" }}>
+                    reporthole.team@gmail.com
+                  </a>{" "}
+                  for direct emails.
                 </Typography>
               </Box>
             ) : (

@@ -2,8 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import StatusCard from "@/components/shared/StatusCard";
+import IncidentComments from "@/components/shared/IncidentComments";
+import { useSend } from "@/app/api/generated/messages/messages";
 import ProgressUpdateModal from "@/components/contractor/ProgressUpdateModal";
 import ResolveIncidentModal from "@/components/contractor/ResolveIncidentModal";
 import RejectAssignmentModal from "@/components/contractor/RejectAssignmentModal";
@@ -12,6 +15,11 @@ import { useAcceptAssignment } from "@/lib/hooks/useAcceptAssignment";
 import { getErrorMessage } from "@/lib/getErrorMessage";
 import type { AssignmentStatus, IncidentWithStatus } from "@/lib/hooks/useRecentIncidents";
 import { useContractorTheme } from "../../_context/ContractorThemeContext";
+import {
+  useNotifications,
+  useUnreadNotificationCount,
+  useMarkAllNotificationsRead,
+} from "@/lib/hooks/useNotifications";
 
 const getCookie = (name: string) =>
   document.cookie
@@ -46,6 +54,22 @@ export default function ContractorDashboard() {
   const [resolveTarget, setResolveTarget] = useState<IncidentWithStatus | null>(null);
   const [progressTarget, setProgressTarget] = useState<IncidentWithStatus | null>(null);
   const [rejectTarget, setRejectTarget] = useState<IncidentWithStatus | null>(null);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [tab, setTab] = useState<"active" | "history">("active");
+  const [commentOpenId, setCommentOpenId] = useState<string | null>(null);
+  const [msgOpen, setMsgOpen] = useState(false);
+  const [msgContent, setMsgContent] = useState("");
+  const [msgSent, setMsgSent] = useState(false);
+
+  const { mutate: sendMsg, isPending: sendingMsg } = useSend({
+    mutation: {
+      onSuccess: () => { setMsgContent(""); setMsgSent(true); },
+    },
+  });
+
+  const { data: notifications = [] } = useNotifications();
+  const { data: unreadCount = 0 } = useUnreadNotificationCount();
+  const { mutate: markAllRead } = useMarkAllNotificationsRead();
 
   const { data, isLoading } = useGetMyAssignments();
   const assignments = useMemo(() => data?.data ?? [], [data]);
@@ -63,15 +87,17 @@ export default function ContractorDashboard() {
     });
   };
 
-  const sorted = useMemo(
-    () =>
-      [...assignments].sort((a, b) => {
-        const aResolved = a.status === "RESOLVED" ? 1 : 0;
-        const bResolved = b.status === "RESOLVED" ? 1 : 0;
-        return aResolved - bResolved;
-      }),
+  const active = useMemo(
+    () => assignments.filter((a) => a.status !== "RESOLVED"),
     [assignments]
   );
+
+  const history = useMemo(
+    () => assignments.filter((a) => a.status === "RESOLVED"),
+    [assignments]
+  );
+
+  const displayed = tab === "active" ? active : history;
 
   const total = assignments.length;
   const resolved = assignments.filter((a) => a.status === "RESOLVED").length;
@@ -85,21 +111,32 @@ export default function ContractorDashboard() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
+    <main className="min-h-screen bg-white dark:bg-[#0F0F0F] transition-colors duration-300">
       <div className="max-w-lg mx-auto px-4 py-6 flex flex-col gap-5">
 
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">Reporthole</h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Reporthole</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">{role.toLowerCase()}</p>
           </div>
           <div className="flex items-center gap-3">
+            {/* Profile link */}
+            <Link
+              href="/contractor/profile"
+              className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              aria-label="My profile"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </Link>
+
             <button
               type="button"
               onClick={toggleTheme}
               aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-              className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
             >
               {darkMode ? (
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -111,10 +148,31 @@ export default function ContractorDashboard() {
                 </svg>
               )}
             </button>
+
+            {/* Notification bell */}
+            <button
+              type="button"
+              onClick={() => {
+                setNotifOpen(true);
+                if (unreadCount > 0) markAllRead();
+              }}
+              aria-label="Notifications"
+              className="relative text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+              </svg>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex items-center justify-center w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full leading-none">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
+
             <button
               type="button"
               onClick={handleLogout}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+              className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
               aria-label="Logout"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -131,9 +189,74 @@ export default function ContractorDashboard() {
           <StatusCard label="Resolved" value={String(resolved)} />
         </div>
 
-        {/* Assigned incidents */}
+        {/* Contact municipality card */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+          <button
+            type="button"
+            onClick={() => { setMsgOpen((o) => !o); setMsgSent(false); }}
+            className="w-full flex items-center justify-between px-4 py-3 text-left"
+          >
+            <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">Contact Municipality</span>
+            <span className="text-xs text-gray-400">{msgOpen ? "▲" : "▼"}</span>
+          </button>
+
+          {msgOpen && (
+            <div className="px-4 pb-4 flex flex-col gap-3">
+              {msgSent ? (
+                <p className="text-xs text-green-600 font-medium">Message sent successfully.</p>
+              ) : (
+                <>
+                  <textarea
+                    value={msgContent}
+                    onChange={(e) => setMsgContent(e.target.value)}
+                    placeholder="Describe your query or concern…"
+                    rows={3}
+                    maxLength={2000}
+                    className="w-full text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent dark:text-white px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-gray-900/20 placeholder-gray-400"
+                  />
+                  <button
+                    type="button"
+                    disabled={sendingMsg || !msgContent.trim()}
+                    onClick={() => sendMsg({ data: { content: msgContent.trim() } })}
+                    className="self-end text-xs font-semibold bg-gray-900 dark:bg-white dark:text-gray-900 text-white px-4 py-1.5 rounded-lg disabled:opacity-40 hover:bg-gray-700 transition-colors"
+                  >
+                    {sendingMsg ? "Sending…" : "Send"}
+                  </button>
+                </>
+              )}
+              <p className="text-[11px] text-gray-400">
+                Or email us at{" "}
+                <a href="mailto:reporthole.team@gmail.com" className="underline">
+                  reporthole.team@gmail.com
+                </a>
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Tab switcher */}
+        <div className={`flex rounded-xl p-1 gap-1 ${darkMode ? "bg-gray-800" : "bg-gray-100"}`}>
+          {(["active", "history"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTab(t)}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                tab === t
+                  ? darkMode ? "bg-white text-gray-900" : "bg-white text-gray-900 shadow-sm"
+                  : darkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {t === "active" ? `Active (${active.length})` : `History (${history.length})`}
+            </button>
+          ))}
+        </div>
+
+        {/* Incident list */}
         <div className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">Assigned Incidents</h2>
+          <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">
+            {tab === "active" ? "Active Assignments" : "Completed Assignments"}
+          </h2>
 
           {actionError && (
             <p className="text-xs text-red-500 text-center bg-red-50 dark:bg-red-900/20 rounded-lg py-2 px-3">
@@ -143,10 +266,12 @@ export default function ContractorDashboard() {
 
           {isLoading ? (
             <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-6">Loading...</p>
-          ) : sorted.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-6">No incidents assigned yet.</p>
+          ) : displayed.length === 0 ? (
+            <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-6">
+              {tab === "active" ? "No active assignments." : "No completed assignments yet."}
+            </p>
           ) : (
-            sorted.map((incident) => {
+            displayed.map((incident) => {
               const status = (incident.status ?? "ASSIGNED") as AssignmentStatus;
               const meta = STATUS_META[status];
               const isAssigned = status === "ASSIGNED";
@@ -171,6 +296,25 @@ export default function ContractorDashboard() {
                     </span>
                   </div>
 
+                  {/* Comments toggle */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCommentOpenId(
+                        commentOpenId === incident.incidentId ? null : (incident.incidentId ?? null)
+                      )
+                    }
+                    className="text-left text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                  >
+                    {commentOpenId === incident.incidentId ? "Hide comments ▲" : "View / add comments ▼"}
+                  </button>
+
+                  {commentOpenId === incident.incidentId && (
+                    <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+                      <IncidentComments incidentId={incident.incidentId} />
+                    </div>
+                  )}
+
                   <div className="flex gap-2">
                     <a
                       href={directionsUrl(incident.latitude, incident.longitude)}
@@ -194,7 +338,7 @@ export default function ContractorDashboard() {
                           type="button"
                           onClick={() => handleAccept(incident.incidentId ?? "")}
                           disabled={isActing}
-                          className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
+                          className="flex-1 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
                         >
                           {isActing && accepting ? "Accepting..." : "Accept"}
                         </button>
@@ -212,7 +356,7 @@ export default function ContractorDashboard() {
                         <button
                           type="button"
                           onClick={() => setResolveTarget(incident)}
-                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
+                          className="flex-1 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
                         >
                           Mark Resolved
                         </button>
@@ -246,6 +390,68 @@ export default function ContractorDashboard() {
         incidentId={rejectTarget?.incidentId ?? ""}
         incidentLabel={`${formatType(rejectTarget?.incidentType)} — ${rejectTarget?.locationAddress || "Unknown location"}`}
       />
+
+      {/* Notification drawer — slides in from the right */}
+      {notifOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/40 z-40"
+            onClick={() => setNotifOpen(false)}
+          />
+          {/* Panel */}
+          <div className="fixed top-0 right-0 h-full w-80 max-w-full bg-white dark:bg-[#161616] border-l border-gray-200 dark:border-[#2D2D2D] z-50 flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-[#2D2D2D]">
+              <div>
+                <p className="text-base font-bold text-gray-900 dark:text-white">Notifications</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Your assignment activity</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setNotifOpen(false)}
+                aria-label="Close notifications"
+                className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-[#2D2D2D]">
+              {notifications.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400 dark:text-gray-500 py-16">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                  </svg>
+                  <p className="text-sm">No notifications yet.</p>
+                </div>
+              ) : (
+                notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className={`flex gap-3 px-5 py-3.5 ${!n.read ? "bg-gray-50 dark:bg-gray-800/40" : ""}`}
+                  >
+                    <span className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${!n.read ? "bg-gray-900 dark:bg-white" : "bg-transparent border border-gray-300 dark:border-gray-600"}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm leading-snug ${!n.read ? "font-semibold text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-300"}`}>
+                        {n.message}
+                      </p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                        {new Date(n.createdAt).toLocaleDateString("en-ZA", {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </main>
   );
 }

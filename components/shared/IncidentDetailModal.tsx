@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Issue } from "@/app/types/issue";
+import IncidentComments from "@/components/shared/IncidentComments";
 
 interface IncidentDetailModalProps {
     issue: Issue | null;
@@ -108,6 +109,11 @@ export default function IncidentDetailModal({ issue, onClose, onDelete, currentU
                                 : `${issue.reporterCount} people reported this`}
                         </span>
                     </div>
+                </div>
+
+                {/* Comments section */}
+                <div className="border-t border-gray-100 pt-3">
+                    <IncidentComments incidentId={issue.id} />
                 </div>
 
                 <div className="flex flex-col gap-2 mt-1">

@@ -165,14 +165,14 @@ export default function ProfilePage() {
 
     if (isLoading) {
         return (
-            <main className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center transition-colors duration-300">
+            <main className="min-h-screen bg-gray-100 dark:bg-[#0F0F0F] flex items-center justify-center transition-colors duration-300">
                 <p className="text-sm text-gray-400 dark:text-gray-500">Loading profile…</p>
             </main>
         );
     }
 
     return (
-        <main className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
+        <main className="min-h-screen bg-gray-100 dark:bg-[#0F0F0F] transition-colors duration-300">
             <div className="max-w-lg mx-auto px-4 py-6 flex flex-col gap-5">
 
                 {/* Header */}
@@ -180,7 +180,7 @@ export default function ProfilePage() {
                     <div className="flex items-center gap-3">
                         <Link
                             href="/civilian/dashboard"
-                            className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                            className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                             aria-label="Back"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -194,7 +194,7 @@ export default function ProfilePage() {
                         type="button"
                         onClick={toggleTheme}
                         aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-                        className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                     >
                         {darkMode ? (
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -209,7 +209,7 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Profile card */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 flex flex-col gap-4 transition-colors duration-300">
+                <div className="bg-white dark:bg-[#161616] rounded-2xl p-5 flex flex-col gap-4 transition-colors duration-300">
                     {editing ? (
                         <>
                             <div className="flex flex-col gap-3">
@@ -222,7 +222,7 @@ export default function ProfilePage() {
                                             type={field === "phoneNumber" ? "tel" : "text"}
                                             value={editValues[field]}
                                             onChange={(e) => setEditValues((v) => ({ ...v, [field]: e.target.value }))}
-                                            className="border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-800 dark:text-gray-100 outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                                            className="border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-800 dark:text-gray-100 outline-none focus:ring-2 focus:ring-gray-400 transition-colors"
                                         />
                                     </div>
                                 ))}
@@ -234,7 +234,7 @@ export default function ProfilePage() {
                                     Cancel
                                 </button>
                                 <button type="button" onClick={handleSave} disabled={isSaving}
-                                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl text-sm transition-colors">
+                                    className="flex-1 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 disabled:opacity-50 text-white font-semibold py-3 rounded-xl text-sm transition-colors">
                                     {isSaving ? "Saving…" : "Save"}
                                 </button>
                             </div>
@@ -279,7 +279,7 @@ export default function ProfilePage() {
                             )}
 
                             <button type="button" onClick={() => setEditing(true)}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm transition-colors">
+                                className="w-full bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 text-white font-semibold py-3 rounded-xl text-sm transition-colors">
                                 Edit profile
                             </button>
                         </>
@@ -288,7 +288,7 @@ export default function ProfilePage() {
 
                 {/* Send us a message */}
                 {!editing && (
-                    <div className="flex flex-col gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+                    <div className="flex flex-col gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#161616] p-4">
                         <button
                             type="button"
                             className="flex items-center justify-between w-full"
@@ -320,7 +320,7 @@ export default function ProfilePage() {
                                         placeholder="Subject (optional)"
                                         value={messageSubject}
                                         onChange={(e) => setMessageSubject(e.target.value)}
-                                        className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-gray-400"
                                     />
                                     <textarea
                                         rows={4}
@@ -328,12 +328,12 @@ export default function ProfilePage() {
                                         value={messageContent}
                                         onChange={(e) => setMessageContent(e.target.value)}
                                         required
-                                        className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                        className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-gray-400 resize-none"
                                     />
                                     <button
                                         type="submit"
                                         disabled={isSending || !messageContent.trim()}
-                                        className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-colors text-white font-semibold py-2.5 rounded-xl text-sm"
+                                        className="w-full bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 disabled:opacity-50 transition-colors text-white font-semibold py-2.5 rounded-xl text-sm"
                                     >
                                         {isSending ? "Sending…" : "Send Message"}
                                     </button>
@@ -345,7 +345,7 @@ export default function ProfilePage() {
 
                 {/* Danger zone */}
                 {!editing && (
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 flex flex-col gap-3 transition-colors duration-300">
+                    <div className="bg-white dark:bg-[#161616] rounded-2xl p-5 flex flex-col gap-3 transition-colors duration-300">
                         <h2 className="text-sm font-semibold text-red-600 dark:text-red-400">Danger zone</h2>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                             Deleting your account is permanent. Your incidents will remain in the system but you will no longer be able to log in.
@@ -372,7 +372,7 @@ export default function ProfilePage() {
             {showPasswordModal && (
                 <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4"
                     onClick={() => { setShowPasswordModal(false); setPasswordInput(""); setVerifyError(null); }}>
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm p-6 flex flex-col gap-4"
+                    <div className="bg-white dark:bg-[#161616] rounded-2xl w-full max-w-sm p-6 flex flex-col gap-4"
                         onClick={(e) => e.stopPropagation()}>
                         <div>
                             <h2 className="text-base font-bold text-gray-900 dark:text-gray-100">Confirm your identity</h2>
@@ -387,11 +387,11 @@ export default function ProfilePage() {
                             onKeyDown={(e) => e.key === "Enter" && handleRevealSubmit()}
                             placeholder="Your password"
                             autoFocus
-                            className="bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-500"
+                            className="bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 outline-none focus:ring-2 focus:ring-gray-400"
                         />
                         {verifyError && <p className="text-xs text-red-500">{verifyError}</p>}
                         <button type="button" onClick={handleRevealSubmit} disabled={verifying || !passwordInput.trim()}
-                            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl text-sm transition-colors">
+                            className="w-full bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 disabled:opacity-50 text-white font-semibold py-3 rounded-xl text-sm transition-colors">
                             {verifying ? "Verifying…" : "Reveal"}
                         </button>
                         <button type="button"

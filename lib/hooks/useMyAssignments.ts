@@ -16,4 +16,5 @@ export const useGetMyAssignments = () =>
   useQuery({
     queryKey: MY_ASSIGNMENTS_QUERY_KEY,
     queryFn: ({ signal }) => getMyAssignments(signal),
+    refetchInterval: 60_000,
   });

@@ -77,7 +77,7 @@ export default function ContactPage() {
                 fontSize: 12,
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
-                color: "#1A56F0",
+                color: "#2563EB",
               }}
             >
               Contact
@@ -108,13 +108,13 @@ export default function ContactPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
               <div>
                 <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 4px" }}>General &amp; support</h3>
-                <a href="mailto:hello@reporthole.co.za" style={{ fontSize: 15.5, color: "#1A56F0" }}>
+                <a href="mailto:hello@reporthole.co.za" style={{ fontSize: 15.5, color: "#2563EB" }}>
                   hello@reporthole.co.za
                 </a>
               </div>
               <div>
                 <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 4px" }}>Municipal partnerships</h3>
-                <a href="mailto:partners@reporthole.co.za" style={{ fontSize: 15.5, color: "#1A56F0" }}>
+                <a href="mailto:partners@reporthole.co.za" style={{ fontSize: 15.5, color: "#2563EB" }}>
                   partners@reporthole.co.za
                 </a>
               </div>
@@ -126,7 +126,7 @@ export default function ContactPage() {
               </div>
 
               {/* Callout */}
-              <div style={{ background: "#EEF3FE", borderRadius: 14, padding: "18px 20px" }}>
+              <div style={{ background: "#F3F4F6", borderRadius: 14, padding: "18px 20px" }}>
                 <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.6, color: "#1240C4" }}>
                   <strong>Reporting an urgent hazard?</strong> Don&rsquo;t use this form — create an
                   account and file it in the app so it reaches the queue with a location attached.
@@ -198,7 +198,7 @@ export default function ContactPage() {
                       onChange={(e) => setName(e.target.value)}
                       style={inputBase}
                       onFocus={(e) => {
-                        e.currentTarget.style.borderColor = "#1A56F0";
+                        e.currentTarget.style.borderColor = "#111111";
                         e.currentTarget.style.boxShadow = "0 0 0 3px rgba(26,86,240,0.14)";
                       }}
                       onBlur={(e) => {
@@ -217,7 +217,7 @@ export default function ContactPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       style={inputBase}
                       onFocus={(e) => {
-                        e.currentTarget.style.borderColor = "#1A56F0";
+                        e.currentTarget.style.borderColor = "#111111";
                         e.currentTarget.style.boxShadow = "0 0 0 3px rgba(26,86,240,0.14)";
                       }}
                       onBlur={(e) => {
@@ -235,7 +235,7 @@ export default function ContactPage() {
                     onChange={(e) => setRole(e.target.value)}
                     style={{ ...inputBase, appearance: "auto" }}
                     onFocus={(e) => {
-                      e.currentTarget.style.borderColor = "#1A56F0";
+                      e.currentTarget.style.borderColor = "#111111";
                       e.currentTarget.style.boxShadow = "0 0 0 3px rgba(26,86,240,0.14)";
                     }}
                     onBlur={(e) => {
@@ -259,7 +259,7 @@ export default function ContactPage() {
                     onChange={(e) => setMessage(e.target.value)}
                     style={{ ...inputBase, resize: "vertical" }}
                     onFocus={(e) => {
-                      e.currentTarget.style.borderColor = "#1A56F0";
+                      e.currentTarget.style.borderColor = "#111111";
                       e.currentTarget.style.boxShadow = "0 0 0 3px rgba(26,86,240,0.14)";
                     }}
                     onBlur={(e) => {
@@ -275,15 +275,15 @@ export default function ContactPage() {
                     padding: "15px 22px",
                     borderRadius: 12,
                     border: "none",
-                    background: "#1A56F0",
+                    background: "#111111",
                     color: "#fff",
                     fontSize: 15.5,
                     fontWeight: 800,
                     cursor: "pointer",
                     fontFamily: "inherit",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#1240C4")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "#1A56F0")}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#374151")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "#111111")}
                 >
                   Send message
                 </button>

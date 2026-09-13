@@ -15,10 +15,13 @@ import RepairProgress from "../../_components/dashboard/RepairProgress";
 
 import { useGetIncidentStats } from "@/lib/hooks/useIncidentStats";
 import { useGetContractors } from "@/app/api/generated/admin-contractors/admin-contractors";
+import { useGetProfile } from "@/app/api/generated/user-profile/user-profile";
 
 export default function DashboardPage() {
   const { data: statsData } = useGetIncidentStats();
   const { data: contractorsData } = useGetContractors();
+  const { data: profileData } = useGetProfile({ query: { staleTime: 1000 * 60 * 5 } });
+  const municipalityName = profileData?.data?.municipalityName ?? "Gauteng";
 
   const stats = statsData?.data;
   const contractors = contractorsData?.data ?? [];
@@ -27,7 +30,7 @@ export default function DashboardPage() {
     <>
       <PageHeader
         title="Operations Center"
-        subtitle="Real-time monitoring of Gauteng road infrastructure."
+        subtitle={`Real-time monitoring of ${municipalityName} road infrastructure.`}
       />
 
       <Grid
@@ -48,7 +51,6 @@ export default function DashboardPage() {
           <MetricCard
             title="Active Contractors"
             value={contractors.length}
-            color="#22C55E"
             icon={<EngineeringRoundedIcon />}
           />
         </Grid>
@@ -57,7 +59,6 @@ export default function DashboardPage() {
           <MetricCard
             title="Repairs Completed"
             value={stats?.resolvedIncidents ?? 0}
-            color="#38BDF8"
             icon={<CheckCircleRoundedIcon />}
           />
         </Grid>
