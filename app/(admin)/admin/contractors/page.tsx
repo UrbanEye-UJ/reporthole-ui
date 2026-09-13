@@ -69,22 +69,30 @@ export default function ContractorsPage() {
       headerName: "Specialisations",
       flex: 1,
       sortable: false,
-      renderCell: (params) => (
-        <Stack
-          direction="row"
-          spacing={0.5}
-          sx={{ flexWrap: "wrap", py: 1 }}
-        >
-          {(params.row.specialisations as string[]).map((s) => (
-            <Tooltip key={s} title={formatSpecialisation(s)} placement="top">
-              <Chip
-                label={formatSpecialisation(s)}
-                size="small"
-              />
-            </Tooltip>
-          ))}
-        </Stack>
-      ),
+      renderCell: (params) => {
+        const specs = params.row.specialisations as string[];
+        const [first, ...rest] = specs;
+        if (!first) return null;
+        return (
+          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ py: 1 }}>
+            <Chip label={formatSpecialisation(first)} size="small" />
+            {rest.length > 0 && (
+              <Tooltip
+                placement="top"
+                title={
+                  <Stack spacing={0.5}>
+                    {rest.map((s) => (
+                      <span key={s}>{formatSpecialisation(s)}</span>
+                    ))}
+                  </Stack>
+                }
+              >
+                <Chip label={`+${rest.length}`} size="small" variant="outlined" sx={{ cursor: "default" }} />
+              </Tooltip>
+            )}
+          </Stack>
+        );
+      },
     },
     {
       field: "actions",

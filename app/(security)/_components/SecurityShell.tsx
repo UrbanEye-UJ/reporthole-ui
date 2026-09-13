@@ -4,9 +4,11 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, IconButton, Tooltip, Typography } from "@mui/material";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import ShieldRoundedIcon from "@mui/icons-material/ShieldRounded";
+import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
+import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
 
 import { securityNavigation } from "./nav";
 
@@ -17,9 +19,16 @@ import { securityNavigation } from "./nav";
  * Intentionally simpler than the operational `AdminShell` (no collapse, no
  * theme toggle) — this surface is used rarely and by few people.
  */
-export default function SecurityShell({ children }: { children: ReactNode }) {
+interface Props {
+  children: ReactNode;
+  mode: "dark" | "light";
+  toggleMode: () => void;
+}
+
+export default function SecurityShell({ children, mode, toggleMode }: Props) {
   const pathname = usePathname();
   const router = useRouter();
+  const isDark = mode === "dark";
 
   const handleLogout = () => {
     document.cookie = "reporthole_token=; path=/; max-age=0";
@@ -60,7 +69,7 @@ export default function SecurityShell({ children }: { children: ReactNode }) {
             borderColor: "divider",
           }}
         >
-          <ShieldRoundedIcon fontSize="small" color="primary" />
+          <ShieldRoundedIcon fontSize="small" sx={{ color: "text.primary" }} />
           <Typography sx={{ fontWeight: 700 }}>Security Admin</Typography>
         </Box>
 
@@ -81,10 +90,10 @@ export default function SecurityShell({ children }: { children: ReactNode }) {
                   py: 1.15,
                   borderRadius: 1.5,
                   textDecoration: "none",
-                  color: active ? "primary.main" : "text.secondary",
-                  bgcolor: active ? "action.selected" : "transparent",
-                  fontWeight: active ? 700 : 500,
-                  "&:hover": { bgcolor: "action.hover" },
+                  color: active ? (isDark ? "#111111" : "#FFFFFF") : "text.secondary",
+                  bgcolor: active ? (isDark ? "#FFFFFF" : "#111111") : "transparent",
+                  fontWeight: active ? 600 : 500,
+                  "&:hover": { bgcolor: active ? (isDark ? "#E5E7EB" : "#2D2D2D") : (isDark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)") },
                 }}
               >
                 <Icon fontSize="small" />
@@ -108,6 +117,11 @@ export default function SecurityShell({ children }: { children: ReactNode }) {
           bgcolor: "background.paper",
         }}
       >
+        <Tooltip title={isDark ? "Switch to light mode" : "Switch to dark mode"}>
+          <IconButton onClick={toggleMode} aria-label="Toggle theme" size="small" sx={{ mr: 1 }}>
+            {isDark ? <LightModeRoundedIcon fontSize="small" /> : <DarkModeRoundedIcon fontSize="small" />}
+          </IconButton>
+        </Tooltip>
         <Button
           size="small"
           color="inherit"

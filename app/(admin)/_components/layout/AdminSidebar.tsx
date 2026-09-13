@@ -14,6 +14,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { navigation } from "../navigation";
+import { useGetProfile } from "@/app/api/generated/user-profile/user-profile";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -22,6 +23,8 @@ interface SidebarProps {
 
 const AdminSidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
   const pathname = usePathname();
+  const { data } = useGetProfile({ query: { staleTime: 1000 * 60 * 5 } });
+  const brandName = data?.data?.municipalityName ?? "Reporthole";
 
   return (
     <Box
@@ -60,7 +63,7 @@ const AdminSidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
               whiteSpace: "nowrap",
             }}
           >
-            Reporthole
+            {brandName}
           </Typography>
         )}
 
@@ -111,32 +114,25 @@ const AdminSidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
                     ? "primary.main"
                     : "transparent",
 
-                  backdropFilter: isActive
-                    ? "blur(14px)"
-                    : undefined,
-
-                  boxShadow: isActive
-                    ? "0 0 20px rgba(59,130,246,.25)"
-                    : "none",
-
                   color: isActive
-                    ? "#ffffff"
+                    ? (t) =>
+                        t.palette.mode === "dark"
+                          ? "#111111"
+                          : "#FFFFFF"
                     : "text.primary",
 
-                  transition: "all 0.25s ease",
+                  transition: "all 0.2s ease",
 
                   "&:hover": {
                     bgcolor: isActive
-                      ? "primary.dark"
+                      ? (t) =>
+                          t.palette.mode === "dark"
+                            ? "#E5E7EB"
+                            : "#374151"
                       : (t) =>
                           t.palette.mode === "dark"
                             ? "rgba(255,255,255,.06)"
-                            : "rgba(0,0,0,.05)",
-
-                    transform: "translateX(4px)",
-
-                    boxShadow:
-                      "0 6px 18px rgba(0,0,0,.10)",
+                            : "rgba(0,0,0,.04)",
                   },
                 }}
               >

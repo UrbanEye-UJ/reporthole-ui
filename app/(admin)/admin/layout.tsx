@@ -12,7 +12,6 @@ import { createAdminTheme } from "../_components/styles/theme";
 import { AdminThemeContext } from "../_components/styles/AdminThemeContext";
 import type { AdminThemeMode } from "../_components/styles/AdminThemeContext";
 import AdminShell from "../_components/layout/AdminShell";
-
 import "../_components/styles/globals.css";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

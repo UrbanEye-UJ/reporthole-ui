@@ -1,5 +1,6 @@
 import Link from "next/link";
 import PinIcon from "./PinIcon";
+import { useLandingTheme } from "./LandingThemeContext";
 
 const mono: React.CSSProperties = { fontFamily: "var(--font-mono-brand, 'IBM Plex Mono', monospace)" };
 
@@ -14,8 +15,11 @@ const colLabel: React.CSSProperties = {
 const footLink: React.CSSProperties = { fontSize: 14.5, color: "#C8D0DE", textDecoration: "none" };
 
 export default function LandingFooter() {
+  const { dark } = useLandingTheme();
+  const footerBg = dark ? "#0F0F0F" : "#111111";
+
   return (
-    <footer style={{ background: "#0E1420", color: "#B9C2D4", padding: "54px 24px 40px" }}>
+    <footer style={{ background: footerBg, color: "#B9C2D4", padding: "54px 24px 40px" }}>
       <div
         style={{
           maxWidth: 1180,
@@ -33,14 +37,14 @@ export default function LandingFooter() {
                 width: 28,
                 height: 28,
                 borderRadius: "50%",
-                background: "#1A56F0",
+                background: "#FFFFFF",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 flex: "none",
               }}
             >
-              <PinIcon size={15} />
+              <PinIcon size={15} color="#111111" />
             </span>
             <span style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.02em" }}>Reporthole</span>
           </div>

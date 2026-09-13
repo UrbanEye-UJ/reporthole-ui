@@ -7,7 +7,6 @@ import {
   Avatar,
   Badge,
   Box,
-  Chip,
   Divider,
   Drawer,
   IconButton,
@@ -23,27 +22,30 @@ import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
 import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
-import ReportProblemRoundedIcon from "@mui/icons-material/ReportProblemRounded";
+import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneRounded";
 
 import { useRouter } from "next/navigation";
 
 import { useAdminTheme } from "../styles/AdminThemeContext";
-import { useGetRecentIncidents } from "@/lib/hooks/useRecentIncidents";
-import { formatIncidentType, STATUS_MAP } from "../tables/incidentColumns";
-import type { AssignmentStatus } from "@/lib/hooks/useRecentIncidents";
+import {
+  useNotifications,
+  useUnreadNotificationCount,
+  useMarkAllNotificationsRead,
+} from "@/lib/hooks/useNotifications";
 
 const AdminTopbar = () => {
   const { mode, toggle } = useAdminTheme();
   const router = useRouter();
   const [notifOpen, setNotifOpen] = useState(false);
 
-  const { data: recentData } = useGetRecentIncidents(10);
-  const recentIncidents = recentData?.data ?? [];
+  const { data: notifications = [] } = useNotifications();
+  const { data: unreadCount = 0 } = useUnreadNotificationCount();
+  const { mutate: markAllRead } = useMarkAllNotificationsRead();
 
-  /** Incidents that have not been verified or assigned yet count as "unactioned" */
-  const unactionedCount = recentIncidents.filter(
-    (i) => i.status === "REPORTED" || i.status === "VERIFIED"
-  ).length;
+  const handleOpenNotif = () => {
+    setNotifOpen(true);
+    if (unreadCount > 0) markAllRead();
+  };
 
   const handleLogout = () => {
     document.cookie = "reporthole_token=; path=/; max-age=0";
@@ -62,16 +64,11 @@ const AdminTopbar = () => {
         color="inherit"
         sx={{
           gridColumn: 2,
-          background: isDark
-            ? "rgba(17, 25, 40, 0.72)"
-            : "rgba(255, 255, 255, 0.85)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          borderBottom: isDark
-            ? "1px solid rgba(255,255,255,0.08)"
-            : "1px solid rgba(0,0,0,0.08)",
+          bgcolor: "background.paper",
+          borderBottom: "1px solid",
+          borderColor: "divider",
           boxShadow: "none",
-          transition: "background 0.3s ease, border-color 0.3s ease",
+          transition: "background 0.3s ease",
         }}
       >
         <Toolbar
@@ -123,8 +120,7 @@ const AdminTopbar = () => {
                 sx={{
                   bgcolor: isDark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.05)",
                   "&:hover": {
-                    bgcolor: isDark ? "rgba(59,130,246,.18)" : "rgba(37,99,235,.10)",
-                    transform: "scale(1.05)",
+                    bgcolor: isDark ? "rgba(255,255,255,.10)" : "rgba(0,0,0,.08)",
                   },
                   transition: ".25s",
                 }}
@@ -136,25 +132,24 @@ const AdminTopbar = () => {
             {/* Notifications */}
             <Tooltip title="Notifications">
               <IconButton
-                onClick={() => setNotifOpen(true)}
+                onClick={handleOpenNotif}
                 aria-label="Open notifications"
                 sx={{
                   bgcolor: isDark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.05)",
                   "&:hover": {
-                    bgcolor: isDark ? "rgba(59,130,246,.18)" : "rgba(37,99,235,.10)",
-                    transform: "scale(1.05)",
+                    bgcolor: isDark ? "rgba(255,255,255,.10)" : "rgba(0,0,0,.08)",
                   },
                   transition: ".25s",
                 }}
               >
-                <Badge badgeContent={unactionedCount > 0 ? unactionedCount : 0} color="error" max={99}>
+                <Badge badgeContent={unreadCount > 0 ? unreadCount : 0} color="error" max={99}>
                   <NotificationsRoundedIcon />
                 </Badge>
               </IconButton>
             </Tooltip>
 
             {/* User avatar — TODO(api): replace "A" with first letter of profile first name */}
-            <Avatar sx={{ bgcolor: "primary.main", fontWeight: 700, boxShadow: "0 0 20px rgba(59,130,246,.35)" }}>
+            <Avatar sx={{ bgcolor: "primary.main", color: isDark ? "#111111" : "#FFFFFF", fontWeight: 700 }}>
               A
             </Avatar>
 
@@ -191,73 +186,66 @@ const AdminTopbar = () => {
           Notifications
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Recent incident activity
+          Your incident activity
         </Typography>
 
         <Divider sx={{ mb: 2 }} />
 
-        {recentIncidents.length === 0 ? (
-          <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", mt: 4 }}>
-            No recent incidents.
-          </Typography>
+        {notifications.length === 0 ? (
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mt: 6, gap: 1 }}>
+            <NotificationsNoneRoundedIcon sx={{ fontSize: 40, color: "text.disabled" }} />
+            <Typography variant="body2" color="text.secondary">
+              No notifications yet.
+            </Typography>
+          </Box>
         ) : (
           <Stack spacing={0}>
-            {recentIncidents.map((incident, idx) => {
-              const statusLabel = STATUS_MAP[incident.status as AssignmentStatus] ?? "Open";
-              const isUnactioned = incident.status === "REPORTED" || incident.status === "VERIFIED";
-              return (
-                <Box key={incident.incidentId ?? idx}>
+            {notifications.map((n, idx) => (
+              <Box key={n.id}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 1.5,
+                    py: 1.5,
+                    px: 1,
+                    borderRadius: 2,
+                    bgcolor: !n.read
+                      ? isDark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)"
+                      : "transparent",
+                  }}
+                >
                   <Box
                     sx={{
-                      display: "flex",
-                      gap: 1.5,
-                      py: 1.5,
-                      px: 1,
-                      borderRadius: 2,
-                      bgcolor: isUnactioned
-                        ? isDark ? "rgba(59,130,246,.08)" : "rgba(37,99,235,.05)"
-                        : "transparent",
+                      mt: 0.4,
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      bgcolor: !n.read ? "primary.main" : "transparent",
+                      border: n.read ? "1.5px solid" : "none",
+                      borderColor: "divider",
+                      flexShrink: 0,
                     }}
-                  >
-                    <Box
-                      sx={{
-                        mt: 0.25,
-                        color: isUnactioned ? "primary.main" : "text.disabled",
-                        flexShrink: 0,
-                      }}
+                  />
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontWeight: !n.read ? 600 : 400, lineHeight: 1.4 }}
                     >
-                      <ReportProblemRoundedIcon fontSize="small" />
-                    </Box>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography variant="body2" sx={{ fontWeight: isUnactioned ? 600 : 400 }} noWrap>
-                        {formatIncidentType(incident.incidentType)}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" noWrap>
-                        {incident.locationAddress || "Unknown location"}
-                      </Typography>
-                      <Box sx={{ display: "flex", gap: 1, mt: 0.5, alignItems: "center" }}>
-                        <Chip
-                          label={statusLabel}
-                          size="small"
-                          color={isUnactioned ? "warning" : "default"}
-                          variant={isUnactioned ? "filled" : "outlined"}
-                          sx={{ height: 18, fontSize: "0.65rem" }}
-                        />
-                        {incident.incidentDate && (
-                          <Typography variant="caption" color="text.disabled">
-                            {new Date(incident.incidentDate).toLocaleDateString("en-ZA", {
-                              day: "numeric",
-                              month: "short",
-                            })}
-                          </Typography>
-                        )}
-                      </Box>
-                    </Box>
+                      {n.message}
+                    </Typography>
+                    <Typography variant="caption" color="text.disabled" sx={{ mt: 0.25, display: "block" }}>
+                      {new Date(n.createdAt).toLocaleDateString("en-ZA", {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </Typography>
                   </Box>
-                  {idx < recentIncidents.length - 1 && <Divider />}
                 </Box>
-              );
-            })}
+                {idx < notifications.length - 1 && <Divider />}
+              </Box>
+            ))}
           </Stack>
         )}
       </Drawer>

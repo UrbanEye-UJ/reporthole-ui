@@ -71,6 +71,6 @@ describe("Dashboard pages", () => {
     it("renders the Contractor Dashboard", () => {
         renderWithClient(<ContractorDashboard />);
         expect(screen.getByText("Reporthole")).toBeInTheDocument();
-        expect(screen.getByText("No incidents assigned yet.")).toBeInTheDocument();
+        expect(screen.getByText("No active assignments.")).toBeInTheDocument();
     });
 });

@@ -15,12 +15,8 @@ const AdminShell = ({ children }: Props) => {
   const [collapsed, setCollapsed] = useState(false);
   const { mode } = useAdminTheme();
 
-  const background =
-    mode === "dark"
-      ? "radial-gradient(circle at top left, #163A72 0%, #08111F 45%, #050B14 100%)"
-      : "linear-gradient(135deg, #EFF6FF 0%, #F8FAFC 60%, #F0F9FF 100%)";
-
-  const color = mode === "dark" ? "#F8FAFC" : "#0F172A";
+  const background = mode === "dark" ? "#0F0F0F" : "#FFFFFF";
+  const color = mode === "dark" ? "#F9FAFB" : "#111111";
 
   return (
     /*
@@ -62,8 +58,7 @@ const AdminShell = ({ children }: Props) => {
             gridRow: 2,
             p: 3,
             overflow: "auto",
-            background:
-              "linear-gradient(180deg, transparent, rgba(255,255,255,.02))",
+            background: "transparent",
           }}
         >
           {children}

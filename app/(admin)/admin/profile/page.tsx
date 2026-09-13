@@ -2,234 +2,206 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import {
-    useGetProfile,
-    useUpdateProfile,
-    useDeleteAccount,
-} from "@/app/api/generated/user-profile/user-profile";
-import { useAdminTheme } from "../../_components/styles/AdminThemeContext";
 
-type EditState = {
-    firstName: string;
-    lastName: string;
-    phoneNumber: string;
-};
+import {
+  Alert,
+  Box,
+  Button,
+  Divider,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
+
+import {
+  useGetProfile,
+  useUpdateProfile,
+  useDeleteAccount,
+} from "@/app/api/generated/user-profile/user-profile";
+
+import PageHeader from "../../_components/ui/PageHeader";
+
+type EditState = { firstName: string; lastName: string; phoneNumber: string };
 
 /**
- * Profile page for admin users — uses the same profile API as civilians
- * but is wrapped in the admin layout and AdminThemeContext.
+ * Profile page for admin users — uses MUI components to stay consistent with the admin shell.
  */
 export default function AdminProfilePage() {
-    const router = useRouter();
-    const { mode, toggle: toggleTheme } = useAdminTheme();
-    const darkMode = mode === "dark";
+  const router = useRouter();
 
-    const [editing, setEditing] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState(false);
-    const [editValues, setEditValues] = useState<EditState>({ firstName: "", lastName: "", phoneNumber: "" });
-    const [saveError, setSaveError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editValues, setEditValues] = useState<EditState>({ firstName: "", lastName: "", phoneNumber: "" });
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-    const { data, refetch, isLoading } = useGetProfile({ query: { staleTime: 0 } });
-    const profile = data?.data;
+  const { data, refetch, isLoading } = useGetProfile({ query: { staleTime: 0 } });
+  const profile = data?.data;
 
-    useEffect(() => {
-        if (profile) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setEditValues({
-                firstName: profile.firstName ?? "",
-                lastName: profile.lastName ?? "",
-                phoneNumber: profile.phoneNumber ?? "",
-            });
-        }
-    }, [profile]);
-
-    const { mutate: updateProfile, isPending: isSaving } = useUpdateProfile({
-        mutation: {
-            onSuccess: () => {
-                setEditing(false);
-                setSaveError(null);
-                refetch();
-            },
-            onError: () => setSaveError("Failed to save changes. Please try again."),
-        },
-    });
-
-    const { mutate: deleteAccount, isPending: isDeleting } = useDeleteAccount({
-        mutation: {
-            onSuccess: () => {
-                document.cookie = "reporthole_token=; path=/; max-age=0";
-                document.cookie = "reporthole_role=; path=/; max-age=0";
-                document.cookie = "reporthole_user_id=; path=/; max-age=0";
-                router.push("/");
-            },
-            onError: () => setConfirmDelete(false),
-        },
-    });
-
-    const handleSave = () => {
-        const { firstName, lastName, phoneNumber } = editValues;
-        if (!firstName.trim() || !lastName.trim() || !phoneNumber.trim()) {
-            setSaveError("All fields are required.");
-            return;
-        }
-        updateProfile({ data: { firstName, lastName, phoneNumber } });
-    };
-
-    const handleDelete = () => {
-        if (!confirmDelete) { setConfirmDelete(true); return; }
-        deleteAccount();
-    };
-
-    const formatDate = (iso?: string) =>
-        iso ? new Date(iso).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" }) : "—";
-
-    if (isLoading) {
-        return (
-            <main className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
-                <p className="text-sm text-gray-400">Loading profile…</p>
-            </main>
-        );
+  useEffect(() => {
+    if (profile) {
+      setEditValues({
+        firstName: profile.firstName ?? "",
+        lastName: profile.lastName ?? "",
+        phoneNumber: profile.phoneNumber ?? "",
+      });
     }
+  }, [profile]);
 
+  const { mutate: updateProfile, isPending: isSaving } = useUpdateProfile({
+    mutation: {
+      onSuccess: () => { setEditing(false); setSaveError(null); refetch(); },
+      onError: () => setSaveError("Failed to save changes. Please try again."),
+    },
+  });
+
+  const { mutate: deleteAccount, isPending: isDeleting } = useDeleteAccount({
+    mutation: {
+      onSuccess: () => {
+        document.cookie = "reporthole_token=; path=/; max-age=0";
+        document.cookie = "reporthole_role=; path=/; max-age=0";
+        document.cookie = "reporthole_user_id=; path=/; max-age=0";
+        router.push("/");
+      },
+      onError: () => setConfirmDelete(false),
+    },
+  });
+
+  const handleSave = () => {
+    const { firstName, lastName, phoneNumber } = editValues;
+    if (!firstName.trim() || !lastName.trim() || !phoneNumber.trim()) {
+      setSaveError("All fields are required.");
+      return;
+    }
+    updateProfile({ data: { firstName, lastName, phoneNumber } });
+  };
+
+  const handleDelete = () => {
+    if (!confirmDelete) { setConfirmDelete(true); return; }
+    deleteAccount();
+  };
+
+  const formatDate = (iso?: string) =>
+    iso ? new Date(iso).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" }) : "—";
+
+  if (isLoading) {
     return (
-        <main className={`min-h-screen transition-colors duration-300 ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}>
-            <div className="max-w-lg mx-auto px-4 py-6 flex flex-col gap-5">
-
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <Link
-                            href="/admin/dashboard"
-                            className={`transition-colors ${darkMode ? "text-gray-400 hover:text-blue-400" : "text-gray-500 hover:text-blue-600"}`}
-                            aria-label="Back to dashboard"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-                            </svg>
-                        </Link>
-                        <h1 className={`text-xl font-bold ${darkMode ? "text-gray-100" : "text-gray-900"}`}>My Profile</h1>
-                    </div>
-
-                    {/* Theme toggle */}
-                    <button
-                        type="button"
-                        onClick={toggleTheme}
-                        aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-                        className={`transition-colors ${darkMode ? "text-gray-400 hover:text-blue-400" : "text-gray-500 hover:text-blue-600"}`}
-                    >
-                        {darkMode ? (
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0z" />
-                            </svg>
-                        ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998z" />
-                            </svg>
-                        )}
-                    </button>
-                </div>
-
-                {/* Profile card */}
-                <div className={`rounded-2xl p-5 flex flex-col gap-4 transition-colors duration-300 ${darkMode ? "bg-gray-800" : "bg-white"}`}>
-                    {editing ? (
-                        <>
-                            <div className="flex flex-col gap-3">
-                                {(["firstName", "lastName", "phoneNumber"] as const).map((field) => (
-                                    <div key={field} className="flex flex-col gap-1">
-                                        <label className={`text-xs font-medium ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-                                            {field === "firstName" ? "First name" : field === "lastName" ? "Last name" : "Phone number"}
-                                        </label>
-                                        <input
-                                            type={field === "phoneNumber" ? "tel" : "text"}
-                                            value={editValues[field]}
-                                            onChange={(e) => setEditValues((v) => ({ ...v, [field]: e.target.value }))}
-                                            className={`border rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${darkMode ? "border-gray-600 bg-gray-700 text-gray-100" : "border-gray-200 bg-white text-gray-800"}`}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                            {saveError && <p className="text-xs text-red-500">{saveError}</p>}
-                            <div className="flex gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => { setEditing(false); setSaveError(null); }}
-                                    className={`flex-1 font-semibold py-3 rounded-xl text-sm transition-colors ${darkMode ? "bg-gray-700 hover:bg-gray-600 text-gray-200" : "bg-gray-100 hover:bg-gray-200 text-gray-700"}`}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleSave}
-                                    disabled={isSaving}
-                                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
-                                >
-                                    {isSaving ? "Saving…" : "Save"}
-                                </button>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <div className="flex flex-col gap-3">
-                                <ProfileRow darkMode={darkMode} label="Name" value={`${profile?.firstName ?? ""} ${profile?.lastName ?? ""}`.trim() || "—"} />
-                                <ProfileRow darkMode={darkMode} label="Email" value={profile?.email ?? "—"} />
-                                <ProfileRow darkMode={darkMode} label="Phone" value={profile?.phoneNumber ?? "—"} />
-                                <ProfileRow darkMode={darkMode} label="Role" value={profile?.role ?? "—"} />
-                                <ProfileRow darkMode={darkMode} label="Member since" value={formatDate(profile?.createdAt)} />
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setEditing(true)}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
-                            >
-                                Edit profile
-                            </button>
-                        </>
-                    )}
-                </div>
-
-                {/* Danger zone */}
-                {!editing && (
-                    <div className={`rounded-2xl p-5 flex flex-col gap-3 transition-colors duration-300 ${darkMode ? "bg-gray-800" : "bg-white"}`}>
-                        <h2 className={`text-sm font-semibold ${darkMode ? "text-red-400" : "text-red-600"}`}>Danger zone</h2>
-                        <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-                            Deleting your account is permanent. Your action history will remain in the system but you will no longer be able to log in.
-                        </p>
-                        <button
-                            type="button"
-                            onClick={handleDelete}
-                            disabled={isDeleting}
-                            className={`w-full font-semibold py-3 rounded-xl text-sm transition-colors disabled:opacity-50 ${
-                                confirmDelete
-                                    ? "bg-red-600 hover:bg-red-700 text-white"
-                                    : darkMode
-                                        ? "bg-red-900/30 hover:bg-red-900/50 text-red-400"
-                                        : "bg-red-50 hover:bg-red-100 text-red-600"
-                            }`}
-                        >
-                            {isDeleting ? "Deleting…" : confirmDelete ? "Tap again to confirm" : "Delete account"}
-                        </button>
-                        {confirmDelete && (
-                            <button
-                                type="button"
-                                onClick={() => setConfirmDelete(false)}
-                                className={`w-full text-xs ${darkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-700"}`}
-                            >
-                                Cancel
-                            </button>
-                        )}
-                    </div>
-                )}
-            </div>
-        </main>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
+        <Typography color="text.secondary">Loading profile…</Typography>
+      </Box>
     );
+  }
+
+  return (
+    <>
+      <PageHeader title="My Profile" subtitle="View and update your account details." />
+
+      <Stack spacing={3} sx={{ maxWidth: 560 }}>
+
+        {/* Profile card */}
+        <Paper elevation={0} sx={{ p: 3 }}>
+          {editing ? (
+            <Stack spacing={2.5}>
+              <TextField
+                label="First name"
+                value={editValues.firstName}
+                onChange={(e) => setEditValues((v) => ({ ...v, firstName: e.target.value }))}
+                fullWidth
+              />
+              <TextField
+                label="Last name"
+                value={editValues.lastName}
+                onChange={(e) => setEditValues((v) => ({ ...v, lastName: e.target.value }))}
+                fullWidth
+              />
+              <TextField
+                label="Phone number"
+                type="tel"
+                value={editValues.phoneNumber}
+                onChange={(e) => setEditValues((v) => ({ ...v, phoneNumber: e.target.value }))}
+                fullWidth
+              />
+
+              {saveError && <Alert severity="error">{saveError}</Alert>}
+
+              <Stack direction="row" spacing={1.5}>
+                <Button fullWidth variant="outlined" onClick={() => { setEditing(false); setSaveError(null); }}>
+                  Cancel
+                </Button>
+                <Button fullWidth variant="contained" disabled={isSaving} onClick={handleSave}>
+                  {isSaving ? "Saving…" : "Save"}
+                </Button>
+              </Stack>
+            </Stack>
+          ) : (
+            <Stack spacing={2}>
+              <ProfileRow label="Name" value={`${profile?.firstName ?? ""} ${profile?.lastName ?? ""}`.trim() || "—"} />
+              <Divider />
+              <ProfileRow label="Email" value={profile?.email ?? "—"} />
+              <Divider />
+              <ProfileRow label="Phone" value={profile?.phoneNumber ?? "—"} />
+              <Divider />
+              <ProfileRow label="Role" value={profile?.role ?? "—"} />
+              <Divider />
+              <ProfileRow label="Municipality" value={profile?.municipalityName ?? "—"} />
+              <Divider />
+              <ProfileRow label="Member since" value={formatDate(profile?.createdAt)} />
+
+              <Button fullWidth variant="contained" sx={{ mt: 1 }} onClick={() => setEditing(true)}>
+                Edit profile
+              </Button>
+            </Stack>
+          )}
+        </Paper>
+
+        {/* Danger zone */}
+        {!editing && (
+          <Paper elevation={0} sx={{ p: 3, border: "1px solid", borderColor: "error.main", borderRadius: 2 }}>
+            <Typography variant="subtitle2" color="error" sx={{ fontWeight: 700, mb: 1 }}>
+              Danger zone
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Deleting your account is permanent. Your action history will remain in the system but you will no longer be able to log in.
+            </Typography>
+
+            {confirmDelete && (
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                Are you sure? This cannot be undone.
+              </Alert>
+            )}
+
+            <Stack direction="row" spacing={1.5}>
+              {confirmDelete && (
+                <Button fullWidth variant="outlined" onClick={() => setConfirmDelete(false)}>
+                  Cancel
+                </Button>
+              )}
+              <Button
+                fullWidth
+                variant={confirmDelete ? "contained" : "outlined"}
+                color="error"
+                disabled={isDeleting}
+                onClick={handleDelete}
+              >
+                {isDeleting ? "Deleting…" : confirmDelete ? "Confirm delete" : "Delete account"}
+              </Button>
+            </Stack>
+          </Paper>
+        )}
+      </Stack>
+    </>
+  );
 }
 
-function ProfileRow({ label, value, darkMode }: { label: string; value: string; darkMode: boolean }) {
-    return (
-        <div className="flex justify-between items-start gap-4">
-            <span className={`text-xs font-medium shrink-0 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{label}</span>
-            <span className={`text-sm text-right ${darkMode ? "text-gray-100" : "text-gray-800"}`}>{value}</span>
-        </div>
-    );
+function ProfileRow({ label, value }: { label: string; value: string }) {
+  return (
+    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, flexShrink: 0 }}>
+        {label}
+      </Typography>
+      <Typography variant="body2" sx={{ textAlign: "right" }}>
+        {value}
+      </Typography>
+    </Box>
+  );
 }

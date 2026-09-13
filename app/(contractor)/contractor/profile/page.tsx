@@ -9,6 +9,12 @@ import {
     useDeleteAccount,
 } from "@/app/api/generated/user-profile/user-profile";
 import { useContractorTheme } from "../../_context/ContractorThemeContext";
+import {
+    useUpdateSpecialisations,
+    ALL_ISSUE_TYPES,
+    ISSUE_TYPE_LABEL,
+    type IssueType,
+} from "@/lib/hooks/useUpdateSpecialisations";
 
 type EditState = {
     firstName: string;
@@ -29,6 +35,10 @@ export default function ContractorProfilePage() {
     const [editValues, setEditValues] = useState<EditState>({ firstName: "", lastName: "", phoneNumber: "" });
     const [saveError, setSaveError] = useState<string | null>(null);
 
+    const [editingSpec, setEditingSpec] = useState(false);
+    const [selectedSpec, setSelectedSpec] = useState<Set<IssueType>>(new Set());
+    const [specError, setSpecError] = useState<string | null>(null);
+
     const { data, refetch, isLoading } = useGetProfile({ query: { staleTime: 0 } });
     const profile = data?.data;
 
@@ -40,6 +50,8 @@ export default function ContractorProfilePage() {
                 lastName: profile.lastName ?? "",
                 phoneNumber: profile.phoneNumber ?? "",
             });
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setSelectedSpec(new Set((profile as { specialisations?: IssueType[] }).specialisations ?? []));
         }
     }, [profile]);
 
@@ -53,6 +65,24 @@ export default function ContractorProfilePage() {
             onError: () => setSaveError("Failed to save changes. Please try again."),
         },
     });
+
+    const { mutate: updateSpecialisations, isPending: isSavingSpec } = useUpdateSpecialisations();
+
+    const toggleSpec = (type: IssueType) => {
+        setSelectedSpec((prev) => {
+            const next = new Set(prev);
+            if (next.has(type)) next.delete(type); else next.add(type);
+            return next;
+        });
+    };
+
+    const handleSaveSpec = () => {
+        if (selectedSpec.size === 0) { setSpecError("Select at least one specialisation."); return; }
+        updateSpecialisations([...selectedSpec], {
+            onSuccess: () => { setEditingSpec(false); setSpecError(null); refetch(); },
+            onError: () => setSpecError("Failed to save. Please try again."),
+        });
+    };
 
     const { mutate: deleteAccount, isPending: isDeleting } = useDeleteAccount({
         mutation: {
@@ -85,14 +115,14 @@ export default function ContractorProfilePage() {
 
     if (isLoading) {
         return (
-            <main className={`min-h-screen flex items-center justify-center ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}>
+            <main className={`min-h-screen flex items-center justify-center ${darkMode ? "bg-[#0F0F0F]" : "bg-gray-100"}`}>
                 <p className="text-sm text-gray-400">Loading profile…</p>
             </main>
         );
     }
 
     return (
-        <main className={`min-h-screen transition-colors duration-300 ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}>
+        <main className={`min-h-screen transition-colors duration-300 ${darkMode ? "bg-[#0F0F0F]" : "bg-gray-100"}`}>
             <div className="max-w-lg mx-auto px-4 py-6 flex flex-col gap-5">
 
                 {/* Header */}
@@ -100,7 +130,7 @@ export default function ContractorProfilePage() {
                     <div className="flex items-center gap-3">
                         <Link
                             href="/contractor/dashboard"
-                            className={`transition-colors ${darkMode ? "text-gray-400 hover:text-blue-400" : "text-gray-500 hover:text-blue-600"}`}
+                            className={`transition-colors ${darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-900"}`}
                             aria-label="Back to dashboard"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -114,7 +144,7 @@ export default function ContractorProfilePage() {
                         type="button"
                         onClick={toggleTheme}
                         aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-                        className={`transition-colors ${darkMode ? "text-gray-400 hover:text-blue-400" : "text-gray-500 hover:text-blue-600"}`}
+                        className={`transition-colors ${darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-900"}`}
                     >
                         {darkMode ? (
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -129,7 +159,7 @@ export default function ContractorProfilePage() {
                 </div>
 
                 {/* Profile card */}
-                <div className={`rounded-2xl p-5 flex flex-col gap-4 transition-colors duration-300 ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+                <div className={`rounded-2xl p-5 flex flex-col gap-4 transition-colors duration-300 ${darkMode ? "bg-[#161616]" : "bg-white"}`}>
                     {editing ? (
                         <>
                             <div className="flex flex-col gap-3">
@@ -142,7 +172,7 @@ export default function ContractorProfilePage() {
                                             type={field === "phoneNumber" ? "tel" : "text"}
                                             value={editValues[field]}
                                             onChange={(e) => setEditValues((v) => ({ ...v, [field]: e.target.value }))}
-                                            className={`border rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${darkMode ? "border-gray-600 bg-gray-700 text-gray-100" : "border-gray-200 bg-white text-gray-800"}`}
+                                            className={`border rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-gray-400 transition-colors ${darkMode ? "border-gray-600 bg-gray-700 text-gray-100" : "border-gray-200 bg-white text-gray-800"}`}
                                         />
                                     </div>
                                 ))}
@@ -160,7 +190,7 @@ export default function ContractorProfilePage() {
                                     type="button"
                                     onClick={handleSave}
                                     disabled={isSaving}
-                                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
+                                    className={`flex-1 text-white font-semibold py-3 rounded-xl text-sm transition-colors disabled:opacity-50 ${darkMode ? "bg-white hover:bg-gray-100 !text-gray-900" : "bg-gray-900 hover:bg-gray-800"}`}
                                 >
                                     {isSaving ? "Saving…" : "Save"}
                                 </button>
@@ -178,7 +208,7 @@ export default function ContractorProfilePage() {
                             <button
                                 type="button"
                                 onClick={() => setEditing(true)}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
+                                className={`w-full text-white font-semibold py-3 rounded-xl text-sm transition-colors ${darkMode ? "bg-white hover:bg-gray-100 !text-gray-900" : "bg-gray-900 hover:bg-gray-800"}`}
                             >
                                 Edit profile
                             </button>
@@ -186,9 +216,87 @@ export default function ContractorProfilePage() {
                     )}
                 </div>
 
+                {/* Specialisations */}
+                {!editing && (
+                    <div className={`rounded-2xl p-5 flex flex-col gap-3 transition-colors duration-300 ${darkMode ? "bg-[#161616]" : "bg-white"}`}>
+                        <div className="flex items-center justify-between">
+                            <h2 className={`text-sm font-semibold ${darkMode ? "text-gray-100" : "text-gray-900"}`}>Specialisations</h2>
+                            {!editingSpec && (
+                                <button
+                                    type="button"
+                                    onClick={() => setEditingSpec(true)}
+                                    className={`text-xs font-medium transition-colors ${darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-900"}`}
+                                >
+                                    Edit
+                                </button>
+                            )}
+                        </div>
+
+                        {editingSpec ? (
+                            <>
+                                <div className="flex flex-wrap gap-2">
+                                    {ALL_ISSUE_TYPES.map((type) => {
+                                        const active = selectedSpec.has(type);
+                                        return (
+                                            <button
+                                                key={type}
+                                                type="button"
+                                                onClick={() => toggleSpec(type)}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                                                    active
+                                                        ? darkMode
+                                                            ? "bg-white text-gray-900 border-white"
+                                                            : "bg-gray-900 text-white border-gray-900"
+                                                        : darkMode
+                                                            ? "bg-transparent text-gray-400 border-gray-600 hover:border-gray-400"
+                                                            : "bg-transparent text-gray-500 border-gray-200 hover:border-gray-400"
+                                                }`}
+                                            >
+                                                {ISSUE_TYPE_LABEL[type]}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                {specError && <p className="text-xs text-red-500">{specError}</p>}
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => { setEditingSpec(false); setSpecError(null); setSelectedSpec(new Set((profile as { specialisations?: IssueType[] }).specialisations ?? [])); }}
+                                        className={`flex-1 font-semibold py-2.5 rounded-xl text-sm transition-colors ${darkMode ? "bg-gray-700 hover:bg-gray-600 text-gray-200" : "bg-gray-100 hover:bg-gray-200 text-gray-700"}`}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleSaveSpec}
+                                        disabled={isSavingSpec}
+                                        className={`flex-1 font-semibold py-2.5 rounded-xl text-sm transition-colors disabled:opacity-50 ${darkMode ? "bg-white hover:bg-gray-100 !text-gray-900" : "bg-gray-900 hover:bg-gray-800 text-white"}`}
+                                    >
+                                        {isSavingSpec ? "Saving…" : "Save"}
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="flex flex-wrap gap-2">
+                                {[...(selectedSpec.size > 0 ? selectedSpec : [])].map((type) => (
+                                    <span
+                                        key={type}
+                                        className={`px-3 py-1 rounded-lg text-xs font-medium ${darkMode ? "bg-gray-700 text-gray-200" : "bg-gray-100 text-gray-700"}`}
+                                    >
+                                        {ISSUE_TYPE_LABEL[type]}
+                                    </span>
+                                ))}
+                                {selectedSpec.size === 0 && (
+                                    <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>No specialisations set yet.</p>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* Danger zone */}
                 {!editing && (
-                    <div className={`rounded-2xl p-5 flex flex-col gap-3 transition-colors duration-300 ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+                    <div className={`rounded-2xl p-5 flex flex-col gap-3 transition-colors duration-300 ${darkMode ? "bg-[#161616]" : "bg-white"}`}>
                         <h2 className={`text-sm font-semibold ${darkMode ? "text-red-400" : "text-red-600"}`}>Danger zone</h2>
                         <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
                             Deleting your account is permanent. Your job history will remain in the system but you will no longer be able to log in.

@@ -1,7 +1,9 @@
 "use client";
 
 import {
+  Alert,
   Box,
+  Button,
   Chip,
   Divider,
   Drawer,
@@ -9,10 +11,15 @@ import {
   Typography,
 } from "@mui/material";
 
+import LockOpenRoundedIcon from "@mui/icons-material/LockOpenRounded";
+
 import type { WorkflowEntryDTO, WorkflowEntryDTOStatus } from "@/app/api/generated/openAPIDefinition.schemas";
 import type { IncidentWithStatus, AssignmentStatus } from "@/lib/hooks/useRecentIncidents";
 import { STATUS_MAP, formatIncidentType } from "../tables/incidentColumns";
 import StatusBadge from "../ui/StatusBadge";
+import { useReopenIncident } from "@/lib/hooks/useReopenIncident";
+import { getErrorMessage } from "@/lib/getErrorMessage";
+import IncidentComments from "@/components/shared/IncidentComments";
 
 interface IncidentDetailDrawerProps {
   incident: IncidentWithStatus | null;
@@ -113,6 +120,14 @@ export default function IncidentDetailDrawer({ incident, onClose }: IncidentDeta
   const open = !!incident;
   const history: WorkflowEntryDTO[] = incident?.workflowHistory ?? [];
   const uiStatus = STATUS_MAP[(incident?.status ?? "REPORTED") as AssignmentStatus] ?? "Open";
+  const isResolved = incident?.status === "RESOLVED";
+
+  const { mutate: reopen, isPending: reopening, error: reopenError, reset: resetReopen } = useReopenIncident();
+
+  const handleReopen = () => {
+    if (!incident?.incidentId) return;
+    reopen(incident.incidentId, { onSuccess: onClose });
+  };
 
   return (
     <Drawer
@@ -180,6 +195,34 @@ export default function IncidentDetailDrawer({ incident, onClose }: IncidentDeta
             </Typography>
             <WorkflowTimeline entries={history} />
           </Box>
+
+          <Divider />
+
+          {/* Comments */}
+          <Box>
+            <IncidentComments incidentId={incident.incidentId} />
+          </Box>
+
+          {/* Admin reopen action — only shown for resolved incidents */}
+          {isResolved && (
+            <Box>
+              <Divider sx={{ mb: 2 }} />
+              {reopenError && (
+                <Alert severity="error" onClose={resetReopen} sx={{ mb: 1.5 }}>
+                  {getErrorMessage(reopenError)}
+                </Alert>
+              )}
+              <Button
+                variant="outlined"
+                startIcon={<LockOpenRoundedIcon />}
+                onClick={handleReopen}
+                disabled={reopening}
+                fullWidth
+              >
+                {reopening ? "Reopening…" : "Reopen Incident"}
+              </Button>
+            </Box>
+          )}
         </Stack>
       )}
     </Drawer>

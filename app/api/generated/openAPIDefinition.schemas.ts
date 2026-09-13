@@ -467,6 +467,7 @@ export const InviteContractorRequestSpecialisationsItem = {
   BLOCKED_DRAIN: 'BLOCKED_DRAIN',
   BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
   ACCIDENT: 'ACCIDENT',
+  OTHER: 'OTHER',
 } as const;
 
 export interface InviteContractorRequest {
@@ -515,7 +516,9 @@ export interface UserProfileResponse {
   email?: string;
   phoneNumber?: string;
   role?: UserProfileResponseRole;
+  municipalityName?: string;
   createdAt?: string;
+  specialisations?: string[];
 }
 
 export interface AppResponseListMessageResponse {

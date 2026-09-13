@@ -125,7 +125,7 @@ export default function SecurityMunicipalitiesPage() {
       sortable: false,
       filterable: false,
       renderCell: (params) => (
-        <Button size="small" onClick={() => setIssueFor(params.row.id)}>
+        <Button size="small" variant="outlined" color="primary" onClick={() => setIssueFor(params.row.id)}>
           Issue token
         </Button>
       ),
@@ -167,6 +167,7 @@ export default function SecurityMunicipalitiesPage() {
         params.row.status === MunicipalityTokenResponseStatus.ACTIVE ? (
           <Button
             size="small"
+            variant="outlined"
             color="error"
             disabled={revokeMutation.isPending}
             onClick={() => revokeMutation.mutate({ tokenId: params.row.id })}

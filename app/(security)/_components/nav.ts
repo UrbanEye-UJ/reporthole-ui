@@ -3,6 +3,7 @@ import HowToRegRoundedIcon from "@mui/icons-material/HowToRegRounded";
 import FactCheckRoundedIcon from "@mui/icons-material/FactCheckRounded";
 import ManageAccountsRoundedIcon from "@mui/icons-material/ManageAccountsRounded";
 import AccountBalanceRoundedIcon from "@mui/icons-material/AccountBalanceRounded";
+import MailRoundedIcon from "@mui/icons-material/MailRounded";
 
 export interface SecurityNavItem {
   id: string;
@@ -39,5 +40,11 @@ export const securityNavigation: SecurityNavItem[] = [
     label: "Manage Accounts",
     path: "/security/account",
     icon: ManageAccountsRoundedIcon,
+  },
+  {
+    id: "messages",
+    label: "Civilian Messages",
+    path: "/security/messages",
+    icon: MailRoundedIcon,
   },
 ];

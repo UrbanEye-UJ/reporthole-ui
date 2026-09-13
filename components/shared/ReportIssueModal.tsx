@@ -415,7 +415,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                         </div>
                         <p className="text-base font-semibold text-gray-900">Report Submitted</p>
                         <p className="text-sm text-gray-500 text-center">Your issue has been logged and will be reviewed shortly.</p>
-                        <button type="button" onClick={handleClose} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl text-sm transition-colors">
+                        <button type="button" onClick={handleClose} className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3.5 rounded-xl text-sm transition-colors">
                             Done
                         </button>
                     </div>
@@ -484,7 +484,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                             type="button"
                             onClick={() => confirmDuplicate.mutate({ id: duplicate.existingIncidentId! })}
                             disabled={submitting}
-                            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-3.5 rounded-xl text-sm transition-colors"
+                            className="w-full bg-gray-900 hover:bg-gray-800 disabled:opacity-50 text-white font-semibold py-3.5 rounded-xl text-sm transition-colors"
                         >
                             {submitting ? "Confirming..." : "Yes, same issue"}
                         </button>
@@ -515,9 +515,9 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                         <button
                             type="button"
                             onClick={() => setStep("ai-detect")}
-                            className="flex items-start gap-4 p-4 border-2 border-blue-200 bg-blue-50 hover:border-blue-400 hover:bg-blue-100 rounded-2xl transition-colors text-left"
+                            className="flex items-start gap-4 p-4 border-2 border-gray-900 bg-gray-50 hover:bg-gray-100 dark:border-white dark:bg-[#111111] dark:hover:bg-[#1a1a1a] rounded-2xl transition-colors text-left"
                         >
-                            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <div className="w-10 h-10 rounded-xl bg-gray-900 dark:bg-white flex items-center justify-center flex-shrink-0 mt-0.5">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
@@ -611,15 +611,15 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                         {!aiAnalyzing && aiResult && (() => {
                             const confident = (aiResult.confidence ?? 0) >= 0.80;
                             return (
-                            <div className={`${confident ? "bg-blue-50 border-blue-200" : "bg-red-50 border-red-200"} border rounded-xl p-4 flex flex-col gap-3`}>
+                            <div className={`${confident ? "bg-gray-50 border-gray-200" : "bg-red-50 border-red-200"} border rounded-xl p-4 flex flex-col gap-3`}>
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className={`text-xs font-medium uppercase tracking-wide ${confident ? "text-blue-500" : "text-red-500"}`}>AI Detected</p>
+                                        <p className={`text-xs font-medium uppercase tracking-wide ${confident ? "text-gray-500" : "text-red-500"}`}>AI Detected</p>
                                         <p className="text-base font-bold text-gray-900 mt-0.5">{(aiResult.label ?? "").replace(/_/g, " ")}</p>
                                         <p className="text-xs text-gray-500">{Math.round((aiResult.confidence ?? 0) * 100)}% confidence</p>
                                     </div>
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${confident ? "bg-blue-100" : "bg-red-100"}`}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 ${confident ? "text-blue-600" : "text-red-600"}`} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${confident ? "bg-gray-100" : "bg-red-100"}`}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 ${confident ? "text-gray-700" : "text-red-600"}`} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
                                         </svg>
                                     </div>
@@ -627,7 +627,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                                 <button
                                     type="button"
                                     onClick={acceptAiPrediction}
-                                    className={`w-full text-white font-semibold py-3 rounded-xl text-sm transition-colors ${confident ? "bg-blue-600 hover:bg-blue-700" : "bg-red-600 hover:bg-red-700"}`}
+                                    className={`w-full font-semibold py-3 rounded-xl text-sm transition-colors ${confident ? "bg-gray-900 hover:bg-gray-800 text-white" : "bg-red-600 hover:bg-red-700 text-white"}`}
                                 >
                                     Yes, that looks right
                                 </button>
@@ -849,7 +849,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                             type="button"
                             onClick={() => submitIncident()}
                             disabled={submitting || !description || !preview}
-                            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl text-sm transition-colors"
+                            className="w-full bg-gray-900 hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl text-sm transition-colors"
                         >
                             {submitting ? "Submitting..." : "Submit"}
                         </button>

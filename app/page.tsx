@@ -1,8 +1,12 @@
+"use client";
+
 import Link from "next/link";
 import LandingHeader from "./_landing/LandingHeader";
 import LandingFooter from "./_landing/LandingFooter";
 import PinIcon from "./_landing/PinIcon";
 import ContactSection from "./_landing/ContactSection";
+import LandingMapWrapper from "./_landing/LandingMapWrapper";
+import { LandingThemeProvider, useLandingTheme } from "./_landing/LandingThemeContext";
 
 /** Monospace style used for labels and stats sub-text. */
 const mono: React.CSSProperties = {
@@ -50,15 +54,31 @@ const stats = [
   { value: "Live push", label: "updates the moment status changes" },
 ];
 
-/** Full marketing landing page. */
-export default function LandingPage() {
+/** Inner page — reads from LandingThemeContext. */
+function LandingContent() {
+  const { dark } = useLandingTheme();
+
+  // ── Palette ──────────────────────────────────────────────────────────────
+  const pageBg   = dark ? "#0F0F0F" : "#F9FAFB";
+  const pageText = dark ? "#F9FAFB" : "#111111";
+  const cardBg   = dark ? "#161616" : "#FFFFFF";
+  const border   = dark ? "#2D2D2D" : "#E5E7EB";
+  const bodyText = dark ? "#9CA3AF" : "#4B5566";
+  const chipBg   = dark ? "#262626" : "#F3F4F6";
+  const chipText = dark ? "#F9FAFB" : "#111111";
+  const accentText = dark ? "#FFFFFF" : "#111111";
+
+  // Sections that stay dark in BOTH modes (hero, stats band, muni card, footer, final CTA)
+  const heroBtnPrimaryColor = "#111111"; // white bg button text always dark
+  // ─────────────────────────────────────────────────────────────────────────
+
   return (
-    <div style={{ minHeight: "100vh", background: "#F6F7F9", color: "#0E1420" }}>
+    <div style={{ minHeight: "100vh", background: pageBg, color: pageText }}>
       <LandingHeader />
 
       <main id="top">
-        {/* ── Hero ── */}
-        <section style={{ background: "#1A56F0", color: "#fff", padding: "clamp(48px, 8vw, 96px) 24px clamp(52px, 8vw, 96px)" }}>
+        {/* ── Hero — always dark ── */}
+        <section style={{ background: "#111111", color: "#fff", padding: "clamp(48px, 8vw, 96px) 24px clamp(52px, 8vw, 96px)" }}>
           <div
             style={{
               maxWidth: 1180,
@@ -78,7 +98,7 @@ export default function LandingPage() {
                   letterSpacing: "0.12em",
                   textTransform: "uppercase",
                   padding: "7px 12px",
-                  border: "1px solid rgba(255,255,255,0.45)",
+                  border: "1px solid rgba(255,255,255,0.30)",
                   borderRadius: 999,
                 }}
               >
@@ -101,7 +121,7 @@ export default function LandingPage() {
                   lineHeight: 1.55,
                   maxWidth: "30em",
                   margin: "20px 0 0",
-                  color: "#E4EAFD",
+                  color: "#9CA3AF",
                 }}
               >
                 Photograph a road issue, drop the location, and follow its status from reported to
@@ -114,7 +134,7 @@ export default function LandingPage() {
                     padding: "16px 28px",
                     borderRadius: 12,
                     background: "#fff",
-                    color: "#1A56F0",
+                    color: heroBtnPrimaryColor,
                     fontWeight: 800,
                     fontSize: 16,
                     textDecoration: "none",
@@ -128,7 +148,7 @@ export default function LandingPage() {
                   style={{
                     padding: "16px 28px",
                     borderRadius: 12,
-                    border: "1.5px solid rgba(255,255,255,0.6)",
+                    border: "1.5px solid rgba(255,255,255,0.4)",
                     color: "#fff",
                     fontWeight: 700,
                     fontSize: 16,
@@ -139,7 +159,7 @@ export default function LandingPage() {
                   Sign in
                 </Link>
               </div>
-              <p style={{ ...mono, fontSize: 12.5, color: "#C7D5FC", margin: "18px 0 0" }}>
+              <p style={{ ...mono, fontSize: 12.5, color: "#6B7280", margin: "18px 0 0" }}>
                 Free for residents · Accounts keep your reports traceable
               </p>
             </div>
@@ -152,9 +172,9 @@ export default function LandingPage() {
                   maxWidth: "100%",
                   aspectRatio: "9 / 18.5",
                   borderRadius: 34,
-                  background: "#0E1420",
+                  background: "#1C1C1C",
                   padding: 10,
-                  boxShadow: "0 28px 60px rgba(8,16,40,0.38)",
+                  boxShadow: "0 28px 60px rgba(0,0,0,0.45)",
                 }}
               >
                 <div
@@ -162,7 +182,7 @@ export default function LandingPage() {
                     width: "100%",
                     height: "100%",
                     borderRadius: 26,
-                    background: "#1A56F0",
+                    background: "#2D2D2D",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -175,8 +195,8 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── Stats band ── */}
-        <section style={{ background: "#0E1420", color: "#fff", padding: "26px 24px" }}>
+        {/* ── Stats band — always dark ── */}
+        <section style={{ background: "#111111", borderTop: "1px solid #1C1C1C", color: "#fff", padding: "26px 24px" }}>
           <div
             style={{
               maxWidth: 1180,
@@ -189,13 +209,13 @@ export default function LandingPage() {
             {stats.map((s) => (
               <div key={s.value} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <span style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-0.02em" }}>{s.value}</span>
-                <span style={{ ...mono, fontSize: 12.5, color: "#98A2B8" }}>{s.label}</span>
+                <span style={{ ...mono, fontSize: 12.5, color: "#6B7280" }}>{s.label}</span>
               </div>
             ))}
           </div>
         </section>
 
-        {/* ── How it works ── */}
+        {/* ── How it works — switches with theme ── */}
         <section id="how" style={{ padding: "clamp(48px, 7vw, 92px) 24px", maxWidth: 1180, margin: "0 auto" }}>
           <h2
             style={{
@@ -203,11 +223,12 @@ export default function LandingPage() {
               fontWeight: 800,
               letterSpacing: "-0.03em",
               margin: 0,
+              color: pageText,
             }}
           >
             Three taps from pothole to paper trail
           </h2>
-          <p style={{ fontSize: 17, color: "#4B5566", maxWidth: "38em", margin: "14px 0 0", lineHeight: 1.55 }}>
+          <p style={{ fontSize: 17, color: bodyText, maxWidth: "38em", margin: "14px 0 0", lineHeight: 1.55 }}>
             Reporthole is built for the side of the road: one hand, bad signal, two minutes.
           </p>
           <div
@@ -222,29 +243,29 @@ export default function LandingPage() {
               <div
                 key={step.num}
                 style={{
-                  background: "#fff",
-                  border: "1px solid #E3E7EE",
+                  background: cardBg,
+                  border: `1px solid ${border}`,
                   borderRadius: 18,
                   padding: 28,
                 }}
               >
-                <span style={{ ...mono, fontSize: 12.5, color: "#1A56F0" }}>{step.num}</span>
-                <h3 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em", margin: "12px 0 8px" }}>
+                <span style={{ ...mono, fontSize: 12.5, color: accentText }}>{step.num}</span>
+                <h3 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em", margin: "12px 0 8px", color: pageText }}>
                   {step.title}
                 </h3>
-                <p style={{ fontSize: 15.5, lineHeight: 1.6, color: "#4B5566", margin: 0 }}>{step.body}</p>
+                <p style={{ fontSize: 15.5, lineHeight: 1.6, color: bodyText, margin: 0 }}>{step.body}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* ── What you can report ── */}
+        {/* ── What you can report — switches with theme ── */}
         <section
           id="report"
           style={{
-            background: "#fff",
-            borderTop: "1px solid #E3E7EE",
-            borderBottom: "1px solid #E3E7EE",
+            background: cardBg,
+            borderTop: `1px solid ${border}`,
+            borderBottom: `1px solid ${border}`,
             padding: "clamp(48px, 7vw, 88px) 24px",
           }}
         >
@@ -265,11 +286,12 @@ export default function LandingPage() {
                   fontWeight: 800,
                   letterSpacing: "-0.03em",
                   margin: 0,
+                  color: pageText,
                 }}
               >
                 What you can report
               </h2>
-              <p style={{ fontSize: 17, color: "#4B5566", maxWidth: "34em", margin: "14px 0 28px", lineHeight: 1.55 }}>
+              <p style={{ fontSize: 17, color: bodyText, maxWidth: "34em", margin: "14px 0 28px", lineHeight: 1.55 }}>
                 Seven categories cover the road faults that actually get municipal work orders raised.
               </p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
@@ -279,8 +301,8 @@ export default function LandingPage() {
                     style={{
                       padding: "10px 16px",
                       borderRadius: 999,
-                      background: "#EEF3FE",
-                      color: "#1240C4",
+                      background: chipBg,
+                      color: chipText,
                       fontSize: 14.5,
                       fontWeight: 600,
                     }}
@@ -291,34 +313,26 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Map placeholder SVG */}
-            <svg
-              viewBox="0 0 520 360"
-              style={{ width: "100%", height: "auto", borderRadius: 18, display: "block", border: "1px solid #E3E7EE" }}
-              aria-label="Placeholder map of clustered incident reports"
+            {/* Live Gauteng map */}
+            <div
+              style={{
+                width: "100%",
+                aspectRatio: "520 / 360",
+                borderRadius: 18,
+                overflow: "hidden",
+                border: `1px solid ${border}`,
+              }}
             >
-              <defs>
-                <pattern id="rh-stripe-map" width="10" height="10" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
-                  <rect width="10" height="10" fill="#F1F3F8" />
-                  <rect width="4" height="10" fill="#E5E9F2" />
-                </pattern>
-              </defs>
-              <rect width="520" height="360" fill="url(#rh-stripe-map)" />
-              <text x="260" y="176" textAnchor="middle" fontFamily="IBM Plex Mono, monospace" fontSize="13" fill="#5C6880">
-                map of clustered reports
-              </text>
-              <text x="260" y="198" textAnchor="middle" fontFamily="IBM Plex Mono, monospace" fontSize="13" fill="#5C6880">
-                Gauteng, South Africa
-              </text>
-            </svg>
+              <LandingMapWrapper />
+            </div>
           </div>
         </section>
 
-        {/* ── For municipalities ── */}
+        {/* ── For municipalities — always dark ── */}
         <section id="municipalities" style={{ padding: "clamp(48px, 7vw, 92px) 24px", maxWidth: 1180, margin: "0 auto" }}>
           <div
             style={{
-              background: "#0E1420",
+              background: "#111111",
               color: "#fff",
               borderRadius: 24,
               padding: "clamp(32px, 5vw, 60px)",
@@ -339,7 +353,7 @@ export default function LandingPage() {
               >
                 For municipalities and contractors
               </h2>
-              <p style={{ fontSize: 16.5, lineHeight: 1.6, color: "#B9C2D4", margin: "16px 0 0", maxWidth: "34em" }}>
+              <p style={{ fontSize: 16.5, lineHeight: 1.6, color: "#9CA3AF", margin: "16px 0 0", maxWidth: "34em" }}>
                 Deduplicated, geotagged, photo-backed reports with a full status audit trail — ready to
                 route to the crew that fixes it.
               </p>
@@ -352,7 +366,7 @@ export default function LandingPage() {
                       width: 8,
                       height: 8,
                       borderRadius: "50%",
-                      background: "#6A97FF",
+                      background: "#9CA3AF",
                       marginTop: 8,
                       flex: "none",
                     }}
@@ -368,7 +382,7 @@ export default function LandingPage() {
                   padding: "14px 24px",
                   borderRadius: 12,
                   background: "#fff",
-                  color: "#0E1420",
+                  color: "#111111",
                   fontWeight: 800,
                   fontSize: 15.5,
                   textDecoration: "none",
@@ -384,8 +398,8 @@ export default function LandingPage() {
         {/* ── Contact ── */}
         <ContactSection />
 
-        {/* ── Final CTA ── */}
-        <section style={{ background: "#1A56F0", color: "#fff", padding: "clamp(48px, 7vw, 80px) 24px", textAlign: "center" }}>
+        {/* ── Final CTA — always dark ── */}
+        <section style={{ background: "#111111", color: "#fff", padding: "clamp(48px, 7vw, 80px) 24px", textAlign: "center" }}>
           <h2
             style={{
               fontSize: "clamp(28px, 3.6vw, 42px)",
@@ -399,7 +413,7 @@ export default function LandingPage() {
           <p
             style={{
               fontSize: 17.5,
-              color: "#DCE5FD",
+              color: "#9CA3AF",
               margin: "14px auto 30px",
               maxWidth: "34em",
               lineHeight: 1.55,
@@ -414,7 +428,7 @@ export default function LandingPage() {
                 padding: "16px 30px",
                 borderRadius: 12,
                 background: "#fff",
-                color: "#1A56F0",
+                color: "#111111",
                 fontWeight: 800,
                 fontSize: 16,
                 textDecoration: "none",
@@ -428,7 +442,7 @@ export default function LandingPage() {
               style={{
                 padding: "16px 30px",
                 borderRadius: 12,
-                border: "1.5px solid rgba(255,255,255,0.6)",
+                border: "1.5px solid rgba(255,255,255,0.4)",
                 color: "#fff",
                 fontWeight: 700,
                 fontSize: 16,
@@ -444,5 +458,14 @@ export default function LandingPage() {
 
       <LandingFooter />
     </div>
+  );
+}
+
+/** Full marketing landing page — wraps content in the landing theme provider. */
+export default function LandingPage() {
+  return (
+    <LandingThemeProvider>
+      <LandingContent />
+    </LandingThemeProvider>
   );
 }

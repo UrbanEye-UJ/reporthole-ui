@@ -39,7 +39,7 @@ function VerifyEmailContent() {
 
                 {status === "verifying" && (
                     <div className="text-center flex flex-col items-center gap-4">
-                        <svg className="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin h-10 w-10 text-gray-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                         </svg>
@@ -60,7 +60,7 @@ function VerifyEmailContent() {
                         </div>
                         <Link
                             href="/register"
-                            className="w-full block text-center bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors text-white font-semibold rounded-xl py-3.5 text-sm"
+                            className="w-full block text-center bg-gray-900 hover:bg-gray-800 active:bg-gray-700 transition-colors text-white font-semibold rounded-xl py-3.5 text-sm"
                         >
                             Re-register
                         </Link>
@@ -77,7 +77,7 @@ function VerifyEmailContent() {
                         </div>
                         <Link
                             href="/login"
-                            className="w-full block text-center bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors text-white font-semibold rounded-xl py-3.5 text-sm"
+                            className="w-full block text-center bg-gray-900 hover:bg-gray-800 active:bg-gray-700 transition-colors text-white font-semibold rounded-xl py-3.5 text-sm"
                         >
                             Back to login
                         </Link>
@@ -99,7 +99,7 @@ function VerifyEmailContent() {
                         </div>
                         <Link
                             href="/login"
-                            className="w-full block text-center bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors text-white font-semibold rounded-xl py-3.5 text-sm"
+                            className="w-full block text-center bg-gray-900 hover:bg-gray-800 active:bg-gray-700 transition-colors text-white font-semibold rounded-xl py-3.5 text-sm"
                         >
                             Go to login
                         </Link>
