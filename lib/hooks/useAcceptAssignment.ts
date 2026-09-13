@@ -2,32 +2,18 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { apiClient } from "@/lib/axios";
-import type { IncidentWithStatus } from "@/lib/hooks/useRecentIncidents";
+import { acceptAssignment } from "@/app/api/generated/incidents/incidents";
+import { getGetRecentIncidentsQueryKey } from "@/app/api/generated/incidents/incidents";
 import { MY_ASSIGNMENTS_QUERY_KEY } from "@/lib/hooks/useMyAssignments";
 
-interface AppResponseIncidentWithStatus {
-  data?: IncidentWithStatus;
-  message?: string;
-  status?: number;
-  timestamp?: string;
-}
-
-// Hand-written to match the orval-generated hook shape — POST /incidents/{id}/accept
-// isn't in the OpenAPI spec's generated client yet.
-export const acceptAssignment = (incidentId: string) =>
-  apiClient<AppResponseIncidentWithStatus>({
-    url: `/incidents/${incidentId}/accept`,
-    method: "POST",
-  });
-
+/** Accepts an incident assignment, advancing it from ASSIGNED to IN_PROGRESS. */
 export const useAcceptAssignment = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (incidentId: string) => acceptAssignment(incidentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: MY_ASSIGNMENTS_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: ["/incidents/recent"] });
+      queryClient.invalidateQueries({ queryKey: getGetRecentIncidentsQueryKey() });
     },
   });
 };

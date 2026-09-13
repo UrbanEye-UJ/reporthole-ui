@@ -1,40 +1,33 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+/**
+ * Thin wrapper around the orval-generated useGetRecentIncidents hook.
+ */
 
-import { apiClient } from "@/lib/axios";
+import {
+  useGetRecentIncidents as useGetRecentIncidentsGenerated,
+  getGetRecentIncidentsQueryKey,
+} from "@/app/api/generated/incidents/incidents";
 import type {
-  AppResponseListIncidentResponseDTO,
   IncidentResponseDTO,
+  AppResponseListIncidentResponseDTO,
 } from "@/app/api/generated/openAPIDefinition.schemas";
 
+/** Union of all possible incident status strings — used throughout the admin and contractor UIs. */
 export type AssignmentStatus = "REPORTED" | "VERIFIED" | "ASSIGNED" | "IN_PROGRESS" | "RESOLVED";
 
-// The generated IncidentResponseDTO doesn't have `status` yet — it's a new backend field
-// (derived from the incident's AssignmentWorkflow) not reflected in the OpenAPI spec until
-// `npm run generate:api` is rerun. Extend it locally in the meantime.
-export interface IncidentWithStatus extends IncidentResponseDTO {
-  status?: AssignmentStatus;
-}
+/** IncidentResponseDTO with status narrowed to AssignmentStatus for convenience. */
+export type IncidentWithStatus = IncidentResponseDTO & { status?: AssignmentStatus };
 
-export interface AppResponseListIncidentWithStatus extends Omit<AppResponseListIncidentResponseDTO, "data"> {
+export type AppResponseListIncidentWithStatus = Omit<AppResponseListIncidentResponseDTO, "data"> & {
   data?: IncidentWithStatus[];
-}
+};
 
-// Hand-written to match the orval-generated hook shape (see app/api/generated/incidents/incidents.ts).
-// GET /incidents/recent isn't in the OpenAPI spec's generated client yet — once `npm run generate:api`
-// is rerun against the updated backend, this can be replaced with a generated `useGetRecentIncidents`.
-export const getRecentIncidents = (limit = 10, signal?: AbortSignal) =>
-  apiClient<AppResponseListIncidentWithStatus>({
-    url: "/incidents/recent",
-    method: "GET",
-    params: { limit },
-    signal,
-  });
+export const getGetRecentIncidentsKey = (limit?: number) =>
+  getGetRecentIncidentsQueryKey({ limit });
 
 export const useGetRecentIncidents = (limit = 10) =>
-  useQuery({
-    queryKey: ["/incidents/recent", limit] as const,
-    queryFn: ({ signal }) => getRecentIncidents(limit, signal),
-    refetchInterval: 60_000,
-  });
+  useGetRecentIncidentsGenerated(
+    { limit },
+    { query: { refetchInterval: 60_000 } },
+  );

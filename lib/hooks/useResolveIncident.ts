@@ -2,44 +2,30 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { apiClient } from "@/lib/axios";
-import type { IncidentWithStatus } from "@/lib/hooks/useRecentIncidents";
-import { MY_ASSIGNMENTS_QUERY_KEY } from "@/lib/hooks/useMyAssignments";
+import { resolveIncident } from "@/app/api/generated/incidents/incidents";
+import { getGetRecentIncidentsQueryKey } from "@/app/api/generated/incidents/incidents";
 import { getGetContractorsQueryKey } from "@/app/api/generated/admin-contractors/admin-contractors";
-import { INCIDENT_STATS_QUERY_KEY } from "@/lib/hooks/useIncidentStats";
+import { getGetIncidentStatsQueryKey } from "@/app/api/generated/incidents/incidents";
+import { MY_ASSIGNMENTS_QUERY_KEY } from "@/lib/hooks/useMyAssignments";
 
-interface ResolveIncidentRequest {
-  note: string;
-  photoBase64: string;
-}
-
-interface AppResponseIncidentWithStatus {
-  data?: IncidentWithStatus;
-  message?: string;
-  status?: number;
-  timestamp?: string;
-}
-
-// Hand-written to match the orval-generated hook shape — POST /incidents/{id}/resolve
-// isn't in the OpenAPI spec's generated client yet.
-export const resolveIncident = (incidentId: string, data: ResolveIncidentRequest) =>
-  apiClient<AppResponseIncidentWithStatus>({
-    url: `/incidents/${incidentId}/resolve`,
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    data,
-  });
-
+/** Resolves an IN_PROGRESS incident, advancing it to RESOLVED. */
 export const useResolveIncident = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ incidentId, note, photoBase64 }: { incidentId: string; note: string; photoBase64: string }) =>
-      resolveIncident(incidentId, { note, photoBase64 }),
+    mutationFn: ({
+      incidentId,
+      note,
+      photoBase64,
+    }: {
+      incidentId: string;
+      note: string;
+      photoBase64: string;
+    }) => resolveIncident(incidentId, { note, photoBase64 }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: MY_ASSIGNMENTS_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: ["/incidents/recent"] });
+      queryClient.invalidateQueries({ queryKey: getGetRecentIncidentsQueryKey() });
       queryClient.invalidateQueries({ queryKey: getGetContractorsQueryKey() });
-      queryClient.invalidateQueries({ queryKey: INCIDENT_STATS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: getGetIncidentStatsQueryKey() });
     },
   });
 };

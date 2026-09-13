@@ -481,12 +481,12 @@ export default function CivilianDashboard() {
                                                 {n.message}
                                             </p>
                                             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                                                {new Date(n.createdAt).toLocaleDateString("en-ZA", {
+                                                {n.createdAt ? new Date(n.createdAt).toLocaleDateString("en-ZA", {
                                                     day: "numeric",
                                                     month: "short",
                                                     hour: "2-digit",
                                                     minute: "2-digit",
-                                                })}
+                                                }) : ""}
                                             </p>
                                         </div>
                                     </div>

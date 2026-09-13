@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -82,16 +82,6 @@ export default function ProfilePage() {
 
     const { data, refetch, isLoading } = useGetProfile({ query: { staleTime: 0 } });
     const profile = data?.data;
-
-    useEffect(() => {
-        if (profile) {
-            setEditValues({
-                firstName: profile.firstName ?? "",
-                lastName: profile.lastName ?? "",
-                phoneNumber: profile.phoneNumber ?? "",
-            });
-        }
-    }, [profile]);
 
     const { mutate: updateProfile, isPending: isSaving } = useUpdateProfile({
         mutation: {
@@ -278,8 +268,18 @@ export default function ProfilePage() {
                                 </p>
                             )}
 
-                            <button type="button" onClick={() => setEditing(true)}
-                                className="w-full bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 text-white font-semibold py-3 rounded-xl text-sm transition-colors">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setEditValues({
+                                        firstName: profile?.firstName ?? "",
+                                        lastName: profile?.lastName ?? "",
+                                        phoneNumber: profile?.phoneNumber ?? "",
+                                    });
+                                    setEditing(true);
+                                }}
+                                className="w-full bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
+                            >
                                 Edit profile
                             </button>
                         </>

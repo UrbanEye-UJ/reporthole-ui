@@ -80,7 +80,7 @@ export default function SecurityMessagesPage() {
                                     <Typography variant="subtitle2" sx={{ fontWeight: msg.read ? 400 : 700 }}>
                                         {msg.senderName ?? "Unknown Sender"}
                                     </Typography>
-                                    <Stack direction="row" spacing={1} alignItems="center">
+                                    <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                                         {!msg.read && (
                                             <Chip
                                                 icon={<MarkEmailUnreadRoundedIcon />}

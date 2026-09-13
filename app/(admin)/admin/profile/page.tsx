@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -38,15 +38,6 @@ export default function AdminProfilePage() {
   const { data, refetch, isLoading } = useGetProfile({ query: { staleTime: 0 } });
   const profile = data?.data;
 
-  useEffect(() => {
-    if (profile) {
-      setEditValues({
-        firstName: profile.firstName ?? "",
-        lastName: profile.lastName ?? "",
-        phoneNumber: profile.phoneNumber ?? "",
-      });
-    }
-  }, [profile]);
 
   const { mutate: updateProfile, isPending: isSaving } = useUpdateProfile({
     mutation: {
@@ -147,7 +138,19 @@ export default function AdminProfilePage() {
               <Divider />
               <ProfileRow label="Member since" value={formatDate(profile?.createdAt)} />
 
-              <Button fullWidth variant="contained" sx={{ mt: 1 }} onClick={() => setEditing(true)}>
+              <Button
+                  fullWidth
+                  variant="contained"
+                  sx={{ mt: 1 }}
+                  onClick={() => {
+                    setEditValues({
+                      firstName: profile?.firstName ?? "",
+                      lastName: profile?.lastName ?? "",
+                      phoneNumber: profile?.phoneNumber ?? "",
+                    });
+                    setEditing(true);
+                  }}
+              >
                 Edit profile
               </Button>
             </Stack>

@@ -13,6 +13,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "ci:test": "npm run lint && npm test -- --ci --passWithNoTests && npm run build",
     "generate:api": "orval --config orval.config.ts"
   },
   "dependencies": {

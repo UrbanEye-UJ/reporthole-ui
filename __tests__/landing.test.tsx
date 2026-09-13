@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import LandingPage from "@/app/page";
 
 // ContactSection uses React Query — mock it so landing page tests don't need a QueryClientProvider
-jest.mock("@/app/_landing/ContactSection", () => () => <section data-testid="contact-section" />);
+jest.mock("@/app/_landing/ContactSection", () => function MockContactSection(){return <section data-testid="contact-section" />});
 
 describe("LandingPage", () => {
     it("renders the app name", () => {

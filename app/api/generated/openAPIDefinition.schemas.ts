@@ -4,6 +4,18 @@
  * OpenAPI definition
  * OpenAPI spec version: v0
  */
+export interface VerifyPasswordRequest {
+  /** @minLength 1 */
+  password: string;
+}
+
+export interface AppResponseVoid {
+  data?: unknown;
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
 export interface SendMessageRequest {
   /**
    * @minLength 0
@@ -15,13 +27,6 @@ export interface SendMessageRequest {
    * @maxLength 2000
    */
   content: string;
-}
-
-export interface AppResponseVoid {
-  data?: unknown;
-  message?: string;
-  status?: number;
-  timestamp?: string;
 }
 
 export interface ContactMessageRequest {
@@ -93,6 +98,7 @@ export const IncidentResponseDTOIncidentType = {
   BLOCKED_DRAIN: 'BLOCKED_DRAIN',
   BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
   ACCIDENT: 'ACCIDENT',
+  OTHER: 'OTHER',
 } as const;
 
 export type IncidentResponseDTOSource = typeof IncidentResponseDTOSource[keyof typeof IncidentResponseDTOSource];
@@ -134,6 +140,8 @@ export interface IncidentResponseDTO {
   existingIncidentId?: string;
   status?: IncidentResponseDTOStatus;
   workflowHistory?: WorkflowEntryDTO[];
+  aiGenerated?: boolean;
+  aiConfidence?: number;
 }
 
 export type WorkflowEntryDTOStatus = typeof WorkflowEntryDTOStatus[keyof typeof WorkflowEntryDTOStatus];
@@ -162,12 +170,40 @@ export interface ResolveIncidentRequest {
   photoBase64: string;
 }
 
+export interface RejectAssignmentRequest {
+  /** @minLength 1 */
+  reason: string;
+}
+
 export interface ProgressUpdateRequest {
   /**
    * @minLength 0
    * @maxLength 255
    */
   note: string;
+}
+
+export interface CreateCommentRequest {
+  /**
+   * @minLength 0
+   * @maxLength 500
+   */
+  content: string;
+}
+
+export interface AppResponseIncidentCommentResponse {
+  data?: IncidentCommentResponse;
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export interface IncidentCommentResponse {
+  id?: string;
+  content?: string;
+  createdAt?: string;
+  authorName?: string;
+  authorRole?: string;
 }
 
 export interface AssignIncidentRequest {
@@ -186,6 +222,7 @@ export const IncidentRequestDTOIncidentType = {
   BLOCKED_DRAIN: 'BLOCKED_DRAIN',
   BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
   ACCIDENT: 'ACCIDENT',
+  OTHER: 'OTHER',
 } as const;
 
 export type IncidentRequestDTOSource = typeof IncidentRequestDTOSource[keyof typeof IncidentRequestDTOSource];
@@ -208,6 +245,7 @@ export interface IncidentRequestDTO {
   imageBase64: string;
   forceCreate?: boolean;
   locationAddress?: string;
+  confidence?: number;
 }
 
 export interface AppResponseDeviceTokenResponse {
@@ -255,6 +293,7 @@ export const ContractorResponseSpecialisationsItem = {
   BLOCKED_DRAIN: 'BLOCKED_DRAIN',
   BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
   ACCIDENT: 'ACCIDENT',
+  OTHER: 'OTHER',
 } as const;
 
 export interface ContractorResponse {
@@ -509,6 +548,21 @@ export const UserProfileResponseRole = {
   SECURITY_ADMIN: 'SECURITY_ADMIN',
 } as const;
 
+export type UserProfileResponseSpecialisationsItem = typeof UserProfileResponseSpecialisationsItem[keyof typeof UserProfileResponseSpecialisationsItem];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UserProfileResponseSpecialisationsItem = {
+  POTHOLE: 'POTHOLE',
+  CRACK: 'CRACK',
+  FADED_MARKINGS: 'FADED_MARKINGS',
+  DAMAGED_SIGN: 'DAMAGED_SIGN',
+  BLOCKED_DRAIN: 'BLOCKED_DRAIN',
+  BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
+  ACCIDENT: 'ACCIDENT',
+  OTHER: 'OTHER',
+} as const;
+
 export interface UserProfileResponse {
   userId?: string;
   firstName?: string;
@@ -518,7 +572,54 @@ export interface UserProfileResponse {
   role?: UserProfileResponseRole;
   municipalityName?: string;
   createdAt?: string;
-  specialisations?: string[];
+  specialisations?: UserProfileResponseSpecialisationsItem[];
+}
+
+export type UpdateSpecialisationsRequestSpecialisationsItem = typeof UpdateSpecialisationsRequestSpecialisationsItem[keyof typeof UpdateSpecialisationsRequestSpecialisationsItem];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UpdateSpecialisationsRequestSpecialisationsItem = {
+  POTHOLE: 'POTHOLE',
+  CRACK: 'CRACK',
+  FADED_MARKINGS: 'FADED_MARKINGS',
+  DAMAGED_SIGN: 'DAMAGED_SIGN',
+  BLOCKED_DRAIN: 'BLOCKED_DRAIN',
+  BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
+  ACCIDENT: 'ACCIDENT',
+  OTHER: 'OTHER',
+} as const;
+
+export interface UpdateSpecialisationsRequest {
+  /** @minItems 1 */
+  specialisations: UpdateSpecialisationsRequestSpecialisationsItem[];
+}
+
+export interface AppResponseListNotificationResponse {
+  data?: NotificationResponse[];
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export interface NotificationResponse {
+  id?: string;
+  message?: string;
+  read?: boolean;
+  createdAt?: string;
+}
+
+export interface AppResponseLong {
+  data?: number;
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export type SseEmitterTimeout = number | null;
+
+export interface SseEmitter {
+  timeout?: SseEmitterTimeout;
 }
 
 export interface AppResponseListMessageResponse {
@@ -549,19 +650,11 @@ export interface MessageResponse {
   createdAt?: string;
 }
 
-export interface AppResponseListEscalatedFrameDTO {
-  data?: EscalatedFrameDTO[];
+export interface AppResponseListIncidentCommentResponse {
+  data?: IncidentCommentResponse[];
   message?: string;
   status?: number;
   timestamp?: string;
-}
-
-export interface EscalatedFrameDTO {
-  frameId?: string;
-  label?: string;
-  confidence?: number;
-  createdAt?: string;
-  imageBase64?: string;
 }
 
 export interface AppResponseIncidentStatsDTO {
@@ -583,10 +676,19 @@ export interface AppResponseListIncidentResponseDTO {
   timestamp?: string;
 }
 
-export type SseEmitterTimeout = number | null;
+export interface AppResponseListIncidentClusterDTO {
+  data?: IncidentClusterDTO[];
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
 
-export interface SseEmitter {
-  timeout?: SseEmitterTimeout;
+export interface IncidentClusterDTO {
+  clusterIndex?: number;
+  centroidLatitude?: number;
+  centroidLongitude?: number;
+  size?: number;
+  incidentIds?: string[];
 }
 
 export interface AppResponseListCivilianSummaryResponse {
@@ -674,6 +776,7 @@ export const AuditEntryResponseAction = {
   ACCOUNT_REACTIVATED: 'ACCOUNT_REACTIVATED',
   SESSIONS_REVOKED: 'SESSIONS_REVOKED',
   USER_LOGIN: 'USER_LOGIN',
+  USER_REGISTERED: 'USER_REGISTERED',
 } as const;
 
 export interface AuditEntryResponse {
@@ -796,6 +899,27 @@ export const SearchMyIncidentsType = {
   BLOCKED_DRAIN: 'BLOCKED_DRAIN',
   BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
   ACCIDENT: 'ACCIDENT',
+  OTHER: 'OTHER',
+} as const;
+
+export type GetIncidentClustersParams = {
+k?: number;
+type?: GetIncidentClustersType;
+};
+
+export type GetIncidentClustersType = typeof GetIncidentClustersType[keyof typeof GetIncidentClustersType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetIncidentClustersType = {
+  POTHOLE: 'POTHOLE',
+  CRACK: 'CRACK',
+  FADED_MARKINGS: 'FADED_MARKINGS',
+  DAMAGED_SIGN: 'DAMAGED_SIGN',
+  BLOCKED_DRAIN: 'BLOCKED_DRAIN',
+  BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
+  ACCIDENT: 'ACCIDENT',
+  OTHER: 'OTHER',
 } as const;
 
 export type ListAuditParams = {
