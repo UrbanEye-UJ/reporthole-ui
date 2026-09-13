@@ -1,30 +1,17 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+/**
+ * Thin wrapper around the orval-generated useGetIncidentStats hook.
+ */
 
-import { apiClient } from "@/lib/axios";
+import {
+  useGetIncidentStats as useGetIncidentStatsGenerated,
+  getGetIncidentStatsQueryKey,
+} from "@/app/api/generated/incidents/incidents";
+import type { IncidentStatsDTO } from "@/app/api/generated/openAPIDefinition.schemas";
 
-export interface IncidentStats {
-  totalIncidents: number;
-  resolvedIncidents: number;
-}
+export type { IncidentStatsDTO as IncidentStats };
 
-interface AppResponseIncidentStats {
-  data?: IncidentStats;
-  message?: string;
-  status?: number;
-  timestamp?: string;
-}
+export const INCIDENT_STATS_QUERY_KEY = getGetIncidentStatsQueryKey();
 
-export const INCIDENT_STATS_QUERY_KEY = ["/incidents/stats"] as const;
-
-// Hand-written to match the orval-generated hook shape — GET /incidents/stats
-// isn't in the OpenAPI spec's generated client yet.
-export const getIncidentStats = (signal?: AbortSignal) =>
-  apiClient<AppResponseIncidentStats>({ url: "/incidents/stats", method: "GET", signal });
-
-export const useGetIncidentStats = () =>
-  useQuery({
-    queryKey: INCIDENT_STATS_QUERY_KEY,
-    queryFn: ({ signal }) => getIncidentStats(signal),
-  });
+export const useGetIncidentStats = () => useGetIncidentStatsGenerated();

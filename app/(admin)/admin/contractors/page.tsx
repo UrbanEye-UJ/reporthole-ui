@@ -74,7 +74,7 @@ export default function ContractorsPage() {
         const [first, ...rest] = specs;
         if (!first) return null;
         return (
-          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ py: 1 }}>
+            <Stack direction="row" spacing={0.5} sx={{ py: 1, alignItems: "center" }}>
             <Chip label={formatSpecialisation(first)} size="small" />
             {rest.length > 0 && (
               <Tooltip

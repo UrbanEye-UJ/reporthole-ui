@@ -25,7 +25,10 @@ import type {
 
 import type {
   AppResponseUserProfileResponse,
-  UpdateProfileRequest
+  AppResponseVoid,
+  UpdateProfileRequest,
+  UpdateSpecialisationsRequest,
+  VerifyPasswordRequest
 } from '../openAPIDefinition.schemas';
 
 import { apiClient } from '../../../../lib/axios';
@@ -34,6 +37,71 @@ import { apiClient } from '../../../../lib/axios';
 
 
 /**
+ * Confirms the current user's password without changing session state. Used by the UI to gate access to sensitive profile fields.
+ * @summary Verify password
+ */
+export const verifyPassword = (
+    verifyPasswordRequest: VerifyPasswordRequest,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseVoid>(
+      {url: `/users/verify-password`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: verifyPasswordRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getVerifyPasswordMutationOptions = <TError = AppResponseVoid | AppResponseVoid,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyPassword>>, TError,{data: VerifyPasswordRequest}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof verifyPassword>>, TError,{data: VerifyPasswordRequest}, TContext> => {
+
+const mutationKey = ['verifyPassword'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyPassword>>, {data: VerifyPasswordRequest}> = (props) => {
+          const {data} = props ?? {};
+
+          return  verifyPassword(data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof verifyPassword>>>
+    export type VerifyPasswordMutationBody = VerifyPasswordRequest
+    export type VerifyPasswordMutationError = AppResponseVoid | AppResponseVoid
+
+    /**
+ * @summary Verify password
+ */
+export const useVerifyPassword = <TError = AppResponseVoid | AppResponseVoid,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyPassword>>, TError,{data: VerifyPasswordRequest}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof verifyPassword>>,
+        TError,
+        {data: VerifyPasswordRequest},
+        TContext
+      > => {
+
+      const mutationOptions = getVerifyPasswordMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
  * Returns the authenticated user's profile details.
  * @summary Get profile
  */
@@ -248,6 +316,70 @@ export const useUpdateProfile = <TError = AppResponseUserProfileResponse | AppRe
       > => {
 
       const mutationOptions = getUpdateProfileMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * Replaces the authenticated contractor's specialisation set. Use IssueType.OTHER to mark a contractor as able to handle any incident type. Returns 403 if the caller is not a CONTRACTOR.
+ * @summary Update specialisations
+ */
+export const updateSpecialisations = (
+    updateSpecialisationsRequest: UpdateSpecialisationsRequest,
+ ) => {
+      
+      
+      return apiClient<AppResponseUserProfileResponse>(
+      {url: `/users/profile/specialisations`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: updateSpecialisationsRequest
+    },
+      );
+    }
+  
+
+
+export const getUpdateSpecialisationsMutationOptions = <TError = AppResponseUserProfileResponse | AppResponseUserProfileResponse | AppResponseUserProfileResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSpecialisations>>, TError,{data: UpdateSpecialisationsRequest}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof updateSpecialisations>>, TError,{data: UpdateSpecialisationsRequest}, TContext> => {
+
+const mutationKey = ['updateSpecialisations'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSpecialisations>>, {data: UpdateSpecialisationsRequest}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateSpecialisations(data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSpecialisationsMutationResult = NonNullable<Awaited<ReturnType<typeof updateSpecialisations>>>
+    export type UpdateSpecialisationsMutationBody = UpdateSpecialisationsRequest
+    export type UpdateSpecialisationsMutationError = AppResponseUserProfileResponse | AppResponseUserProfileResponse | AppResponseUserProfileResponse
+
+    /**
+ * @summary Update specialisations
+ */
+export const useUpdateSpecialisations = <TError = AppResponseUserProfileResponse | AppResponseUserProfileResponse | AppResponseUserProfileResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSpecialisations>>, TError,{data: UpdateSpecialisationsRequest}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateSpecialisations>>,
+        TError,
+        {data: UpdateSpecialisationsRequest},
+        TContext
+      > => {
+
+      const mutationOptions = getUpdateSpecialisationsMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

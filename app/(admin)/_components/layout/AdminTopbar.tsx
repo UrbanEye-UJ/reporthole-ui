@@ -234,12 +234,12 @@ const AdminTopbar = () => {
                       {n.message}
                     </Typography>
                     <Typography variant="caption" color="text.disabled" sx={{ mt: 0.25, display: "block" }}>
-                      {new Date(n.createdAt).toLocaleDateString("en-ZA", {
+                      {n.createdAt ? new Date(n.createdAt).toLocaleDateString("en-ZA", {
                         day: "numeric",
                         month: "short",
                         hour: "2-digit",
                         minute: "2-digit",
-                      })}
+                      }) : ""}
                     </Typography>
                   </Box>
                 </Box>

@@ -258,7 +258,7 @@ export function useGetSecurityAdminMessages<TData = Awaited<ReturnType<typeof ge
 
 
 /**
- * Returns all CIVILIAN_COMPLAINT messages, newest first. Accessible to ADMIN and SECURITY_ADMIN roles.
+ * Returns all CIVILIAN_COMPLAINT messages, newest first. SECURITY_ADMIN only.
  * @summary List civilian complaint messages
  */
 export const getAdminMessages = (

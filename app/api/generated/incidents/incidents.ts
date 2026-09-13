@@ -24,14 +24,20 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AppResponseIncidentCommentResponse,
   AppResponseIncidentResponseDTO,
   AppResponseIncidentStatsDTO,
+  AppResponseListIncidentClusterDTO,
+  AppResponseListIncidentCommentResponse,
   AppResponseListIncidentResponseDTO,
   AssignIncidentRequest,
+  CreateCommentRequest,
+  GetIncidentClustersParams,
   GetNearbyIncidentsParams,
   GetRecentIncidentsParams,
   IncidentRequestDTO,
   ProgressUpdateRequest,
+  RejectAssignmentRequest,
   ResolveIncidentRequest,
   SearchMyIncidentsParams,
   SseEmitter
@@ -235,17 +241,83 @@ export const useResolveIncident = <TError = AppResponseIncidentResponseDTO | App
       return useMutation(mutationOptions, queryClient);
     }
     /**
- * Called by the assigned contractor to reject the incident. The assignment is removed from the contractor and the incident reverts to VERIFIED so an admin can assign it to someone else.
- * @summary Reject assignment
+ * Admin-only: reverts a RESOLVED incident back to VERIFIED and removes the existing assignment so it can be reassigned to a contractor. Civilians are notified of the status change.
+ * @summary Reopen a resolved incident
  */
-export const rejectAssignment = (
+export const reopenIncident = (
     id: string,
  signal?: AbortSignal
 ) => {
       
       
       return apiClient<AppResponseIncidentResponseDTO>(
-      {url: `/incidents/${id}/reject`, method: 'POST', signal
+      {url: `/incidents/${id}/reopen`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getReopenIncidentMutationOptions = <TError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reopenIncident>>, TError,{id: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof reopenIncident>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['reopenIncident'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reopenIncident>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  reopenIncident(id,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReopenIncidentMutationResult = NonNullable<Awaited<ReturnType<typeof reopenIncident>>>
+    
+    export type ReopenIncidentMutationError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO
+
+    /**
+ * @summary Reopen a resolved incident
+ */
+export const useReopenIncident = <TError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reopenIncident>>, TError,{id: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reopenIncident>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+
+      const mutationOptions = getReopenIncidentMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * Called by the assigned contractor to reject the incident, giving a required reason. The assignment is removed from the contractor and the incident reverts to VERIFIED so an admin can assign it to someone else.
+ * @summary Reject assignment
+ */
+export const rejectAssignment = (
+    id: string,
+    rejectAssignmentRequest: RejectAssignmentRequest,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseIncidentResponseDTO>(
+      {url: `/incidents/${id}/reject`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: rejectAssignmentRequest, signal
     },
       );
     }
@@ -253,8 +325,8 @@ export const rejectAssignment = (
 
 
 export const getRejectAssignmentMutationOptions = <TError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectAssignment>>, TError,{id: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof rejectAssignment>>, TError,{id: string}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectAssignment>>, TError,{id: string;data: RejectAssignmentRequest}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof rejectAssignment>>, TError,{id: string;data: RejectAssignmentRequest}, TContext> => {
 
 const mutationKey = ['rejectAssignment'];
 const {mutation: mutationOptions} = options ?
@@ -266,10 +338,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectAssignment>>, {id: string}> = (props) => {
-          const {id} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectAssignment>>, {id: string;data: RejectAssignmentRequest}> = (props) => {
+          const {id,data} = props ?? {};
 
-          return  rejectAssignment(id,)
+          return  rejectAssignment(id,data,)
         }
 
         
@@ -278,18 +350,18 @@ const {mutation: mutationOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type RejectAssignmentMutationResult = NonNullable<Awaited<ReturnType<typeof rejectAssignment>>>
-    
+    export type RejectAssignmentMutationBody = RejectAssignmentRequest
     export type RejectAssignmentMutationError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO
 
     /**
  * @summary Reject assignment
  */
 export const useRejectAssignment = <TError = AppResponseIncidentResponseDTO | AppResponseIncidentResponseDTO,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectAssignment>>, TError,{id: string}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectAssignment>>, TError,{id: string;data: RejectAssignmentRequest}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof rejectAssignment>>,
         TError,
-        {id: string},
+        {id: string;data: RejectAssignmentRequest},
         TContext
       > => {
 
@@ -423,6 +495,164 @@ export const useConfirmDuplicate = <TError = AppResponseIncidentResponseDTO,
       > => {
 
       const mutationOptions = getConfirmDuplicateMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * Returns all comments for the given incident, oldest first. Open to any authenticated user.
+ * @summary Get comments
+ */
+export const getComments = (
+    id: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseListIncidentCommentResponse>(
+      {url: `/incidents/${id}/comments`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getGetCommentsQueryKey = (id?: string,) => {
+    return [
+    `/incidents/${id}/comments`
+    ] as const;
+    }
+
+    
+export const getGetCommentsQueryOptions = <TData = Awaited<ReturnType<typeof getComments>>, TError = AppResponseListIncidentCommentResponse>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCommentsQueryKey(id);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getComments>>> = ({ signal }) => getComments(id, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetCommentsQueryResult = NonNullable<Awaited<ReturnType<typeof getComments>>>
+export type GetCommentsQueryError = AppResponseListIncidentCommentResponse
+
+
+export function useGetComments<TData = Awaited<ReturnType<typeof getComments>>, TError = AppResponseListIncidentCommentResponse>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getComments>>,
+          TError,
+          Awaited<ReturnType<typeof getComments>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetComments<TData = Awaited<ReturnType<typeof getComments>>, TError = AppResponseListIncidentCommentResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getComments>>,
+          TError,
+          Awaited<ReturnType<typeof getComments>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetComments<TData = Awaited<ReturnType<typeof getComments>>, TError = AppResponseListIncidentCommentResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get comments
+ */
+
+export function useGetComments<TData = Awaited<ReturnType<typeof getComments>>, TError = AppResponseListIncidentCommentResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getComments>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetCommentsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
+ * Posts a comment on behalf of the authenticated user. Any role may comment.
+ * @summary Post comment
+ */
+export const addComment = (
+    id: string,
+    createCommentRequest: CreateCommentRequest,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseIncidentCommentResponse>(
+      {url: `/incidents/${id}/comments`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: createCommentRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getAddCommentMutationOptions = <TError = AppResponseIncidentCommentResponse | AppResponseIncidentCommentResponse | AppResponseIncidentCommentResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addComment>>, TError,{id: string;data: CreateCommentRequest}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof addComment>>, TError,{id: string;data: CreateCommentRequest}, TContext> => {
+
+const mutationKey = ['addComment'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addComment>>, {id: string;data: CreateCommentRequest}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addComment(id,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddCommentMutationResult = NonNullable<Awaited<ReturnType<typeof addComment>>>
+    export type AddCommentMutationBody = CreateCommentRequest
+    export type AddCommentMutationError = AppResponseIncidentCommentResponse | AppResponseIncidentCommentResponse | AppResponseIncidentCommentResponse
+
+    /**
+ * @summary Post comment
+ */
+export const useAddComment = <TError = AppResponseIncidentCommentResponse | AppResponseIncidentCommentResponse | AppResponseIncidentCommentResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addComment>>, TError,{id: string;data: CreateCommentRequest}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof addComment>>,
+        TError,
+        {id: string;data: CreateCommentRequest},
+        TContext
+      > => {
+
+      const mutationOptions = getAddCommentMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
@@ -960,6 +1190,98 @@ export function useGetRecentIncidents<TData = Awaited<ReturnType<typeof getRecen
 
 
 /**
+ * Returns AI-generated incidents whose detection confidence fell below the auto-approval threshold, so they were left as REPORTED instead of being auto-verified. Admin only.
+ * @summary Get AI incidents pending review
+ */
+export const getIncidentsPendingAiReview = (
+    
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseListIncidentResponseDTO>(
+      {url: `/incidents/pending-review`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getGetIncidentsPendingAiReviewQueryKey = () => {
+    return [
+    `/incidents/pending-review`
+    ] as const;
+    }
+
+    
+export const getGetIncidentsPendingAiReviewQueryOptions = <TData = Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError = AppResponseListIncidentResponseDTO>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetIncidentsPendingAiReviewQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIncidentsPendingAiReview>>> = ({ signal }) => getIncidentsPendingAiReview(signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetIncidentsPendingAiReviewQueryResult = NonNullable<Awaited<ReturnType<typeof getIncidentsPendingAiReview>>>
+export type GetIncidentsPendingAiReviewQueryError = AppResponseListIncidentResponseDTO
+
+
+export function useGetIncidentsPendingAiReview<TData = Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError = AppResponseListIncidentResponseDTO>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getIncidentsPendingAiReview>>,
+          TError,
+          Awaited<ReturnType<typeof getIncidentsPendingAiReview>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetIncidentsPendingAiReview<TData = Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError = AppResponseListIncidentResponseDTO>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getIncidentsPendingAiReview>>,
+          TError,
+          Awaited<ReturnType<typeof getIncidentsPendingAiReview>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetIncidentsPendingAiReview<TData = Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError = AppResponseListIncidentResponseDTO>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get AI incidents pending review
+ */
+
+export function useGetIncidentsPendingAiReview<TData = Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError = AppResponseListIncidentResponseDTO>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentsPendingAiReview>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetIncidentsPendingAiReviewQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
  * Returns non-deleted incidents within radiusMeters of the given point, closest first — shown to a civilian before they submit a report so they can avoid creating a duplicate.
  * @summary Get nearby incidents
  */
@@ -1411,6 +1733,99 @@ export function useSubscribeToIncidentEvents<TData = Awaited<ReturnType<typeof s
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSubscribeToIncidentEventsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
+ * Groups non-deleted incidents into up to k clusters of nearby locations using K-Means, optionally restricted to a single issue type. Intended for admin dashboard hotspot maps.
+ * @summary Cluster incidents by location
+ */
+export const getIncidentClusters = (
+    params?: GetIncidentClustersParams,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseListIncidentClusterDTO>(
+      {url: `/incidents/clusters`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+  
+
+
+
+export const getGetIncidentClustersQueryKey = (params?: GetIncidentClustersParams,) => {
+    return [
+    `/incidents/clusters`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getGetIncidentClustersQueryOptions = <TData = Awaited<ReturnType<typeof getIncidentClusters>>, TError = AppResponseListIncidentClusterDTO>(params?: GetIncidentClustersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentClusters>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetIncidentClustersQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIncidentClusters>>> = ({ signal }) => getIncidentClusters(params, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIncidentClusters>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetIncidentClustersQueryResult = NonNullable<Awaited<ReturnType<typeof getIncidentClusters>>>
+export type GetIncidentClustersQueryError = AppResponseListIncidentClusterDTO
+
+
+export function useGetIncidentClusters<TData = Awaited<ReturnType<typeof getIncidentClusters>>, TError = AppResponseListIncidentClusterDTO>(
+ params: undefined |  GetIncidentClustersParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentClusters>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getIncidentClusters>>,
+          TError,
+          Awaited<ReturnType<typeof getIncidentClusters>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetIncidentClusters<TData = Awaited<ReturnType<typeof getIncidentClusters>>, TError = AppResponseListIncidentClusterDTO>(
+ params?: GetIncidentClustersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentClusters>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getIncidentClusters>>,
+          TError,
+          Awaited<ReturnType<typeof getIncidentClusters>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetIncidentClusters<TData = Awaited<ReturnType<typeof getIncidentClusters>>, TError = AppResponseListIncidentClusterDTO>(
+ params?: GetIncidentClustersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentClusters>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Cluster incidents by location
+ */
+
+export function useGetIncidentClusters<TData = Awaited<ReturnType<typeof getIncidentClusters>>, TError = AppResponseListIncidentClusterDTO>(
+ params?: GetIncidentClustersParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentClusters>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetIncidentClustersQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

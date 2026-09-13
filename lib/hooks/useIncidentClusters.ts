@@ -1,31 +1,24 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/axios";
+/**
+ * Thin wrapper around the orval-generated useGetIncidentClusters hook.
+ */
 
-export interface IncidentCluster {
-    clusterIndex: number;
-    centroidLatitude: number;
-    centroidLongitude: number;
-    /** Number of incidents in this cluster. */
-    size: number;
-    incidentIds: string[];
-}
+import {
+  useGetIncidentClusters as useGetIncidentClustersGenerated,
+} from "@/app/api/generated/incidents/incidents";
+import type { IncidentClusterDTO } from "@/app/api/generated/openAPIDefinition.schemas";
 
-interface AppResponse<T> {
-    data?: T;
-}
+export type { IncidentClusterDTO as IncidentCluster };
 
-// Hand-written to match the orval-generated hook shape — GET /incidents/clusters.
+/** Fetches K-means incident clusters. k defaults to 5. */
 export const useGetIncidentClusters = (k = 5, type?: string) =>
-    useQuery({
-        queryKey: ["/incidents/clusters", k, type] as const,
-        queryFn: () =>
-            apiClient<AppResponse<IncidentCluster[]>>({
-                url: "/incidents/clusters",
-                method: "GET",
-                params: { k, ...(type ? { type } : {}) },
-            }),
+  useGetIncidentClustersGenerated(
+    { k, ...(type ? { type: type as never } : {}) },
+    {
+      query: {
         select: (res) => res.data ?? [],
         refetchInterval: 60_000,
-    });
+      },
+    },
+  );

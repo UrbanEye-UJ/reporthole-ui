@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 
-import {
-  useGetIncidentComments,
-  usePostIncidentComment,
-} from "@/lib/hooks/useIncidentComments";
+import { useGetComments, useAddComment } from "@/app/api/generated/incidents/incidents";
+import type { IncidentCommentResponse } from "@/app/api/generated/openAPIDefinition.schemas";
 import { getErrorMessage } from "@/lib/getErrorMessage";
 
 const ROLE_LABEL: Record<string, string> = {
@@ -36,17 +34,23 @@ export default function IncidentComments({ incidentId }: IncidentCommentsProps) 
   const [draft, setDraft] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const { data: comments = [], isLoading } = useGetIncidentComments(incidentId);
-  const { mutate: post, isPending } = usePostIncidentComment(incidentId);
+  const { data, isLoading } = useGetComments(incidentId ?? "", {
+    query: { enabled: !!incidentId },
+  });
+  const comments: IncidentCommentResponse[] = data?.data ?? [];
+
+  const { mutate: post, isPending } = useAddComment({
+    mutation: {
+      onSuccess: () => setDraft(""),
+      onError: (err) => setSubmitError(getErrorMessage(err)),
+    },
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!draft.trim()) return;
+    if (!draft.trim() || !incidentId) return;
     setSubmitError(null);
-    post(draft.trim(), {
-      onSuccess: () => setDraft(""),
-      onError: (err) => setSubmitError(getErrorMessage(err)),
-    });
+    post({ id: incidentId, data: { content: draft.trim() } });
   };
 
   return (
@@ -70,11 +74,11 @@ export default function IncidentComments({ incidentId }: IncidentCommentsProps) 
                 <span className="text-xs font-semibold text-gray-800">
                   {c.authorName}
                   <span className="ml-1.5 text-[10px] font-normal text-gray-400">
-                    ({ROLE_LABEL[c.authorRole] ?? c.authorRole})
+                    ({ROLE_LABEL[c.authorRole ?? ""] ?? c.authorRole})
                   </span>
                 </span>
                 <span className="text-[10px] text-gray-400 whitespace-nowrap">
-                  {formatTime(c.createdAt)}
+                  {c.createdAt ? formatTime(c.createdAt) : ""}
                 </span>
               </div>
               <p className="text-xs text-gray-700 leading-snug">{c.content}</p>

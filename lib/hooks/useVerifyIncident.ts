@@ -2,30 +2,16 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { apiClient } from "@/lib/axios";
-import type { IncidentWithStatus } from "@/lib/hooks/useRecentIncidents";
+import { verifyIncident } from "@/app/api/generated/incidents/incidents";
+import { getGetRecentIncidentsQueryKey } from "@/app/api/generated/incidents/incidents";
 
-interface AppResponseIncidentWithStatus {
-  data?: IncidentWithStatus;
-  message?: string;
-  status?: number;
-  timestamp?: string;
-}
-
-// Hand-written to match the orval-generated hook shape — POST /incidents/{id}/verify
-// isn't in the OpenAPI spec's generated client yet.
-export const verifyIncident = (incidentId: string) =>
-  apiClient<AppResponseIncidentWithStatus>({
-    url: `/incidents/${incidentId}/verify`,
-    method: "POST",
-  });
-
+/** Verifies an incident, advancing it from REPORTED to VERIFIED. */
 export const useVerifyIncident = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (incidentId: string) => verifyIncident(incidentId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/incidents/recent"] });
+      queryClient.invalidateQueries({ queryKey: getGetRecentIncidentsQueryKey() });
     },
   });
 };

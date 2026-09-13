@@ -162,25 +162,32 @@ const IncidentMapContent = ({ view, municipalityName }: Props) => {
       })}
 
       {/* K-means hotspot view */}
-      {view === "clusters" && clusters.map((cluster) => (
-        <CircleMarker
-          key={cluster.clusterIndex}
-          center={[cluster.centroidLatitude, cluster.centroidLongitude]}
-          radius={clusterRadius(cluster.size)}
-          pathOptions={{
-            color: clusterColor(cluster.size),
-            fillColor: clusterColor(cluster.size),
-            fillOpacity: 0.45,
-            weight: 2,
-          }}
-        >
-          <Popup>
-            <strong>Hotspot — {cluster.size} incident{cluster.size !== 1 ? "s" : ""}</strong>
-            <br />
-            Lat {cluster.centroidLatitude.toFixed(4)}, Lng {cluster.centroidLongitude.toFixed(4)}
-          </Popup>
-        </CircleMarker>
-      ))}
+      {view === "clusters" && clusters
+        .filter((c) => c.centroidLatitude != null && c.centroidLongitude != null)
+        .map((cluster) => {
+          const lat = cluster.centroidLatitude!;
+          const lng = cluster.centroidLongitude!;
+          const size = cluster.size ?? 0;
+          return (
+            <CircleMarker
+              key={cluster.clusterIndex}
+              center={[lat, lng]}
+              radius={clusterRadius(size)}
+              pathOptions={{
+                color: clusterColor(size),
+                fillColor: clusterColor(size),
+                fillOpacity: 0.45,
+                weight: 2,
+              }}
+            >
+              <Popup>
+                <strong>Hotspot — {size} incident{size !== 1 ? "s" : ""}</strong>
+                <br />
+                Lat {lat.toFixed(4)}, Lng {lng.toFixed(4)}
+              </Popup>
+            </CircleMarker>
+          );
+        })}
     </MapContainer>
   );
 };

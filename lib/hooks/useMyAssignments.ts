@@ -1,20 +1,16 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+/**
+ * Thin wrapper around the orval-generated useGetMyAssignments hook.
+ */
 
-import { apiClient } from "@/lib/axios";
-import type { AppResponseListIncidentWithStatus } from "@/lib/hooks/useRecentIncidents";
+import {
+  useGetMyAssignments as useGetMyAssignmentsGenerated,
+  getGetMyAssignmentsQueryKey,
+} from "@/app/api/generated/incidents/incidents";
 
-export const MY_ASSIGNMENTS_QUERY_KEY = ["/incidents/my-assignments"] as const;
+export const MY_ASSIGNMENTS_QUERY_KEY = getGetMyAssignmentsQueryKey();
 
-// Hand-written to match the orval-generated hook shape — GET /incidents/my-assignments
-// isn't in the OpenAPI spec's generated client yet.
-export const getMyAssignments = (signal?: AbortSignal) =>
-  apiClient<AppResponseListIncidentWithStatus>({ url: "/incidents/my-assignments", method: "GET", signal });
-
+/** Returns all incidents currently assigned to the authenticated contractor. */
 export const useGetMyAssignments = () =>
-  useQuery({
-    queryKey: MY_ASSIGNMENTS_QUERY_KEY,
-    queryFn: ({ signal }) => getMyAssignments(signal),
-    refetchInterval: 60_000,
-  });
+  useGetMyAssignmentsGenerated({ query: { refetchInterval: 60_000 } });
