@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AuthCard from "@/components/shared/Authcard";
 import LogoPin from "@/components/shared/Logopin";
@@ -24,9 +24,11 @@ function ContractorRegisterForm() {
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    useEffect(() => {
-        if (!token) setError("This invite link is invalid or has expired. Please ask your admin to resend the invitation.");
-    }, [token]);
+    const displayError = error ?? (
+        !token
+            ? "This invite link is invalid or has expired. Please ask your admin to resend the invitation."
+            : null
+    );
 
     const { mutate: completeRegistration } = useCompleteRegistration({
         mutation: {
@@ -156,8 +158,8 @@ function ContractorRegisterForm() {
                     icon={lockIcon}
                 />
 
-                {error && (
-                    <p className="text-sm text-red-500 text-center">{error}</p>
+                {displayError && (
+                    <p className="text-sm text-red-500 text-center">{displayError}</p>
                 )}
             </div>
 

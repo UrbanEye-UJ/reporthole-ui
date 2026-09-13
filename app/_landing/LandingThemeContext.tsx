@@ -5,7 +5,7 @@
  * Persists the user's preference to localStorage so it survives navigation.
  */
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useState } from "react";
 
 interface LandingThemeCtx {
   dark: boolean;
@@ -15,11 +15,11 @@ interface LandingThemeCtx {
 const Ctx = createContext<LandingThemeCtx>({ dark: false, toggle: () => {} });
 
 export function LandingThemeProvider({ children }: { children: React.ReactNode }) {
-  const [dark, setDark] = useState(false);
+    const [dark, setDark] = useState(() => {
+        if (typeof window === "undefined") return false;
+        return localStorage.getItem("rh-landing-theme") === "dark";
+    });
 
-  useEffect(() => {
-    if (localStorage.getItem("rh-landing-theme") === "dark") setDark(true);
-  }, []);
 
   const toggle = () =>
     setDark((d) => {
