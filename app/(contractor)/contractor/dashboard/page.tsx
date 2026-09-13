@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 
 import StatusCard from "@/components/shared/StatusCard";
 import ResolveIncidentModal from "@/components/contractor/ResolveIncidentModal";
+import RejectAssignmentModal from "@/components/contractor/RejectAssignmentModal";
 import { useGetMyAssignments } from "@/lib/hooks/useMyAssignments";
 import { useAcceptAssignment } from "@/lib/hooks/useAcceptAssignment";
-import { useRejectAssignment } from "@/lib/hooks/useRejectAssignment";
 import { getErrorMessage } from "@/lib/getErrorMessage";
 import type { AssignmentStatus, IncidentWithStatus } from "@/lib/hooks/useRecentIncidents";
 import { useContractorTheme } from "../../_context/ContractorThemeContext";
@@ -43,6 +43,7 @@ export default function ContractorDashboard() {
   const { darkMode, toggle: toggleTheme } = useContractorTheme();
   const [role] = useState(() => (typeof window !== "undefined" ? getCookie("reporthole_role") : ""));
   const [resolveTarget, setResolveTarget] = useState<IncidentWithStatus | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<IncidentWithStatus | null>(null);
 
   const { data, isLoading } = useGetMyAssignments();
   const assignments = useMemo(() => data?.data ?? [], [data]);
@@ -50,21 +51,11 @@ export default function ContractorDashboard() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionTargetId, setActionTargetId] = useState<string | null>(null);
   const { mutate: accept, isPending: accepting } = useAcceptAssignment();
-  const { mutate: reject, isPending: rejecting } = useRejectAssignment();
 
   const handleAccept = (incidentId: string) => {
     setActionError(null);
     setActionTargetId(incidentId);
     accept(incidentId, {
-      onError: (err) => setActionError(getErrorMessage(err)),
-      onSettled: () => setActionTargetId(null),
-    });
-  };
-
-  const handleReject = (incidentId: string) => {
-    setActionError(null);
-    setActionTargetId(incidentId);
-    reject(incidentId, {
       onError: (err) => setActionError(getErrorMessage(err)),
       onSettled: () => setActionTargetId(null),
     });
@@ -158,7 +149,7 @@ export default function ContractorDashboard() {
               const meta = STATUS_META[status];
               const isAssigned = status === "ASSIGNED";
               const isInProgress = status === "IN_PROGRESS";
-              const isActing = actionTargetId === incident.incidentId && (accepting || rejecting);
+              const isActing = actionTargetId === incident.incidentId && accepting;
 
               return (
                 <div
@@ -191,11 +182,11 @@ export default function ContractorDashboard() {
                       <>
                         <button
                           type="button"
-                          onClick={() => handleReject(incident.incidentId ?? "")}
+                          onClick={() => setRejectTarget(incident)}
                           disabled={isActing}
                           className="flex-1 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 disabled:opacity-50 text-red-700 dark:text-red-300 font-semibold py-2.5 rounded-xl text-sm transition-colors"
                         >
-                          {isActing && rejecting ? "Rejecting..." : "Reject"}
+                          Reject
                         </button>
                         <button
                           type="button"
@@ -229,6 +220,13 @@ export default function ContractorDashboard() {
         onClose={() => setResolveTarget(null)}
         incidentId={resolveTarget?.incidentId ?? ""}
         incidentLabel={`${formatType(resolveTarget?.incidentType)} — ${resolveTarget?.locationAddress || "Unknown location"}`}
+      />
+
+      <RejectAssignmentModal
+        visible={!!rejectTarget}
+        onClose={() => setRejectTarget(null)}
+        incidentId={rejectTarget?.incidentId ?? ""}
+        incidentLabel={`${formatType(rejectTarget?.incidentType)} — ${rejectTarget?.locationAddress || "Unknown location"}`}
       />
     </main>
   );
