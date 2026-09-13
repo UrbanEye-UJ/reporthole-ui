@@ -2,6 +2,7 @@ import Link from "next/link";
 import LandingHeader from "./_landing/LandingHeader";
 import LandingFooter from "./_landing/LandingFooter";
 import PinIcon from "./_landing/PinIcon";
+import ContactSection from "./_landing/ContactSection";
 
 /** Monospace style used for labels and stats sub-text. */
 const mono: React.CSSProperties = {
@@ -379,6 +380,9 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        {/* ── Contact ── */}
+        <ContactSection />
 
         {/* ── Final CTA ── */}
         <section style={{ background: "#1A56F0", color: "#fff", padding: "clamp(48px, 7vw, 80px) 24px", textAlign: "center" }}>

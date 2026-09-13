@@ -16,9 +16,9 @@ const redirectUrl = (response: Response) =>
 
 describe("proxy", () => {
     describe("unauthenticated user", () => {
-        it("redirects to login when accessing a protected route", () => {
+        it("redirects to the landing page when accessing a protected route", () => {
             const response = proxy(makeRequest("/civilian/dashboard"));
-            expect(redirectUrl(response)).toContain("/login");
+            expect(redirectUrl(response)).toContain("/");
         });
 
         it("allows access to /login", () => {
@@ -38,6 +38,11 @@ describe("proxy", () => {
 
         it("allows access to /reset-password", () => {
             const response = proxy(makeRequest("/reset-password"));
+            expect(response.status).toBe(200);
+        });
+
+        it("allows access to /contractors/register (contractor invite link)", () => {
+            const response = proxy(makeRequest("/contractors/register?token=abc123"));
             expect(response.status).toBe(200);
         });
 

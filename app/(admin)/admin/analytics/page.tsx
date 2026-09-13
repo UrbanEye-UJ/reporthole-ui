@@ -11,46 +11,46 @@ import BarChart from "../../_components/charts/BarChart";
 import LineChart from "../../_components/charts/ChartLine";
 import DoughnutChart from "../../_components/charts/DoughnutChart";
 
-// TODO(api): KPI values from GET /admin/analytics/summary
-// Chart data plugs into the individual chart components — see each chart file for expected shape
+import { useGetIncidentStats } from "@/lib/hooks/useIncidentStats";
+
+/**
+ * Analytics — KPI cards use real data from /incidents/stats;
+ * charts use illustrative data until a time-series endpoint is available.
+ */
 export default function AnalyticsPage() {
+  const { data: statsData } = useGetIncidentStats();
+  const stats = statsData?.data;
+
+  const total = stats?.totalIncidents ?? "—";
+  const resolved = stats?.resolvedIncidents ?? "—";
+  const inProgress =
+    stats != null
+      ? stats.totalIncidents - stats.resolvedIncidents
+      : "—";
+
   return (
     <>
       <PageHeader
         title="Analytics"
-        subtitle="AI insights and operational performance across Gauteng."
+        subtitle="Operational performance across the Gauteng road network."
       />
 
-      <Grid
-        container
-        spacing={3}
-      >
+      <Grid container spacing={3}>
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <MetricCard
-            title="Incidents This Month"
-            value="2,348"
-          />
+          <MetricCard title="Total Incidents" value={total} />
         </Grid>
 
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <MetricCard
-            title="Resolved"
-            value="1,987"
-          />
+          <MetricCard title="Resolved" value={resolved} />
         </Grid>
 
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <MetricCard
-            title="Average Response"
-            value="2.8 hrs"
-          />
+          <MetricCard title="Open / In Progress" value={inProgress} />
         </Grid>
 
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <MetricCard
-            title="AI Accuracy"
-            value="98.4%"
-          />
+          {/* Average response time requires a dedicated aggregation endpoint — placeholder for now */}
+          <MetricCard title="Avg. Response Time" value="—" />
         </Grid>
 
         <Grid size={{ xs: 12, lg: 8 }}>
@@ -60,7 +60,7 @@ export default function AnalyticsPage() {
         </Grid>
 
         <Grid size={{ xs: 12, lg: 4 }}>
-          <Panel title="Severity Distribution">
+          <Panel title="Incidents by Type">
             <DoughnutChart />
           </Panel>
         </Grid>

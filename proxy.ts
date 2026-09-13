@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server";
 const PUBLIC_EXACT = new Set(["/"]);
 // /offline is the service worker's fallback page (see app/sw.ts) — reachable regardless of
 // auth state, since it's shown whenever a navigation fails offline, session or not.
-const PUBLIC_PREFIXES = ["/login", "/register", "/verify", "/forgot-password", "/reset-password", "/offline"];
+const PUBLIC_PREFIXES = ["/login", "/register", "/verify", "/forgot-password", "/reset-password", "/offline", "/contractors/register"];
 
 const ROLE_DASHBOARDS: Record<string, string> = {
     CIVILIAN: "/civilian/dashboard",

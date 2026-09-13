@@ -52,9 +52,9 @@ describe("axios interceptors", () => {
             navigateSpy.mockRestore();
         });
 
-        it("redirects to /login on 401", async () => {
+        it("redirects to / on 401 when no token was present", async () => {
             await responseErrorInterceptor({ response: { status: 401 } }).catch(() => {});
-            expect(navigateSpy).toHaveBeenCalledWith("/login");
+            expect(navigateSpy).toHaveBeenCalledWith("/");
         });
 
         it("does not redirect on non-401 errors", async () => {

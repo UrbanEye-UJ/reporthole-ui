@@ -319,18 +319,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                 setAiError("No road damage detected in this image. Try a clearer photo or report manually.");
                 return;
             }
-            const detection = data.detection;
-            // Skip confirmation screen for high-confidence detections — go straight to the form.
-            if ((detection.confidence ?? 0) >= 0.75) {
-                const issueType = inferredLabelToIssueType(detection.label ?? "");
-                setType(issueType);
-                setDescription(`AI detected: ${(detection.label ?? "").replace(/_/g, " ")} at ${Math.round((detection.confidence ?? 0) * 100)}% confidence.`);
-                setFile(selected);
-                setPreview(objectUrl);
-                setStep("form");
-            } else {
-                setAiResult(detection);
-            }
+            setAiResult(data.detection);
         } catch {
             setAiError("Could not reach the analysis service. You can still report manually.");
         } finally {
@@ -597,7 +586,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
 
                         {/* Prediction result */}
                         {!aiAnalyzing && aiResult && (() => {
-                            const confident = (aiResult.confidence ?? 0) >= 0.75;
+                            const confident = (aiResult.confidence ?? 0) >= 0.80;
                             return (
                             <div className={`${confident ? "bg-blue-50 border-blue-200" : "bg-red-50 border-red-200"} border rounded-xl p-4 flex flex-col gap-3`}>
                                 <div className="flex items-center justify-between">

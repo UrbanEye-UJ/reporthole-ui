@@ -6,9 +6,8 @@ import MapRoundedIcon from "@mui/icons-material/MapRounded";
 import EngineeringRoundedIcon from "@mui/icons-material/EngineeringRounded";
 import PeopleRoundedIcon from "@mui/icons-material/PeopleRounded";
 import AnalyticsRoundedIcon from "@mui/icons-material/AnalyticsRounded";
-import DescriptionRoundedIcon from "@mui/icons-material/DescriptionRounded";
-import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
-import SmartToyRoundedIcon from "@mui/icons-material/SmartToyRounded";
+import MailRoundedIcon from "@mui/icons-material/MailRounded";
+import AccountCircleRoundedIcon from "@mui/icons-material/AccountCircleRounded";
 
 export interface NavigationItem {
   id: string;
@@ -33,7 +32,7 @@ export const navigation: NavigationItem[] = [
   },
   {
     id: "infrastructure",
-    label: "Infrastructure",
+    label: "District Overview",
     path: "/admin/infrastructure",
     icon: MapRoundedIcon,
   },
@@ -45,7 +44,7 @@ export const navigation: NavigationItem[] = [
   },
   {
     id: "citizens",
-    label: "Citizens",
+    label: "Civilians",
     path: "/admin/citizens",
     icon: PeopleRoundedIcon,
   },
@@ -56,21 +55,15 @@ export const navigation: NavigationItem[] = [
     icon: AnalyticsRoundedIcon,
   },
   {
-    id: "ai-review",
-    label: "AI Review",
-    path: "/admin/ai-review",
-    icon: SmartToyRoundedIcon,
-  },
-  {
-    id: "reports",
-    label: "Reports",
+    id: "messages",
+    label: "Messages",
     path: "/admin/reports",
-    icon: DescriptionRoundedIcon,
+    icon: MailRoundedIcon,
   },
   {
-    id: "settings",
-    label: "Settings",
-    path: "/admin/settings",
-    icon: SettingsRoundedIcon,
+    id: "profile",
+    label: "My Profile",
+    path: "/admin/profile",
+    icon: AccountCircleRoundedIcon,
   },
 ];

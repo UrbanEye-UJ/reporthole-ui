@@ -345,6 +345,7 @@ export default function CivilianDashboard() {
                         ))
                     )}
                 </div>
+
             </div>
 
             <ReportIssueModal

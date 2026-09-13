@@ -4,6 +4,49 @@
  * OpenAPI definition
  * OpenAPI spec version: v0
  */
+export interface SendMessageRequest {
+  /**
+   * @minLength 0
+   * @maxLength 200
+   */
+  subject?: string;
+  /**
+   * @minLength 0
+   * @maxLength 2000
+   */
+  content: string;
+}
+
+export interface AppResponseVoid {
+  data?: unknown;
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export interface ContactMessageRequest {
+  /**
+   * @minLength 0
+   * @maxLength 200
+   */
+  name: string;
+  /**
+   * @minLength 0
+   * @maxLength 320
+   */
+  email: string;
+  /**
+   * @minLength 0
+   * @maxLength 200
+   */
+  subject?: string;
+  /**
+   * @minLength 0
+   * @maxLength 2000
+   */
+  content: string;
+}
+
 export interface DetectionDTO {
   label?: string;
   confidence?: number;
@@ -226,13 +269,6 @@ export interface ContractorResponse {
   specialisations?: ContractorResponseSpecialisationsItem[];
 }
 
-export interface AppResponseVoid {
-  data?: unknown;
-  message?: string;
-  status?: number;
-  timestamp?: string;
-}
-
 export interface ResetPasswordRequest {
   /** @minLength 1 */
   token: string;
@@ -371,7 +407,6 @@ export interface IssueTokenRequest {
    * @maxLength 500
    */
   note?: string;
-  /** Optional email address to send the issued token to. */
   recipientEmail?: string;
 }
 
@@ -483,6 +518,49 @@ export interface UserProfileResponse {
   createdAt?: string;
 }
 
+export interface AppResponseListMessageResponse {
+  data?: MessageResponse[];
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export type MessageResponseCategory = typeof MessageResponseCategory[keyof typeof MessageResponseCategory];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MessageResponseCategory = {
+  CIVILIAN_COMPLAINT: 'CIVILIAN_COMPLAINT',
+  CONTACT_US: 'CONTACT_US',
+} as const;
+
+export interface MessageResponse {
+  id?: string;
+  senderUserId?: string;
+  senderName?: string;
+  senderEmail?: string;
+  subject?: string;
+  content?: string;
+  category?: MessageResponseCategory;
+  read?: boolean;
+  createdAt?: string;
+}
+
+export interface AppResponseListEscalatedFrameDTO {
+  data?: EscalatedFrameDTO[];
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export interface EscalatedFrameDTO {
+  frameId?: string;
+  label?: string;
+  confidence?: number;
+  createdAt?: string;
+  imageBase64?: string;
+}
+
 export interface AppResponseIncidentStatsDTO {
   data?: IncidentStatsDTO;
   message?: string;
@@ -506,6 +584,34 @@ export type SseEmitterTimeout = number | null;
 
 export interface SseEmitter {
   timeout?: SseEmitterTimeout;
+}
+
+export interface AppResponseListCivilianSummaryResponse {
+  data?: CivilianSummaryResponse[];
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export type CivilianSummaryResponseStatus = typeof CivilianSummaryResponseStatus[keyof typeof CivilianSummaryResponseStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CivilianSummaryResponseStatus = {
+  PENDING_VERIFICATION: 'PENDING_VERIFICATION',
+  ACTIVE: 'ACTIVE',
+  LOCKED: 'LOCKED',
+  SUSPENDED: 'SUSPENDED',
+  DELETED: 'DELETED',
+} as const;
+
+export interface CivilianSummaryResponse {
+  userId?: string;
+  maskedName?: string;
+  maskedEmail?: string;
+  incidentCount?: number;
+  status?: CivilianSummaryResponseStatus;
+  createdAt?: string;
 }
 
 export interface AppResponseListSecurityUserResponse {

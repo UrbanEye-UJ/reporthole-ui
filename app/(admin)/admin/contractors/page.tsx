@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import { Button, Chip, Grid, Stack } from "@mui/material";
+import { Button, Chip, Grid, Stack, Tooltip } from "@mui/material";
 
 import EngineeringRoundedIcon from "@mui/icons-material/EngineeringRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
@@ -76,11 +76,12 @@ export default function ContractorsPage() {
           sx={{ flexWrap: "wrap", py: 1 }}
         >
           {(params.row.specialisations as string[]).map((s) => (
-            <Chip
-              key={s}
-              label={formatSpecialisation(s)}
-              size="small"
-            />
+            <Tooltip key={s} title={formatSpecialisation(s)} placement="top">
+              <Chip
+                label={formatSpecialisation(s)}
+                size="small"
+              />
+            </Tooltip>
           ))}
         </Stack>
       ),

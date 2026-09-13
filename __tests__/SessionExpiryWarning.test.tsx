@@ -71,14 +71,14 @@ describe("SessionExpiryWarning", () => {
 
             await act(async () => { jest.advanceTimersByTime(5000); });
 
-            expect(mockPush).toHaveBeenCalledWith("/login");
+            expect(mockPush).toHaveBeenCalledWith("/");
         });
 
         it("redirects immediately when Continue to login is clicked", () => {
             setCookie(makeJwt(Math.floor(Date.now() / 1000) + 10));
             render(<SessionExpiryWarning />);
-            fireEvent.click(screen.getByRole("button", { name: /continue to login/i }));
-            expect(mockPush).toHaveBeenCalledWith("/login");
+            fireEvent.click(screen.getByRole("button", { name: /go to home/i }));
+            expect(mockPush).toHaveBeenCalledWith("/");
         });
     });
 
@@ -106,7 +106,7 @@ describe("SessionExpiryWarning", () => {
 
             await act(async () => { jest.advanceTimersByTime(15_000); });
 
-            expect(mockPush).toHaveBeenCalledWith("/login");
+            expect(mockPush).toHaveBeenCalledWith("/");
         });
 
         it("redirects immediately when Continue to login is clicked", async () => {
@@ -116,8 +116,8 @@ describe("SessionExpiryWarning", () => {
                 window.dispatchEvent(new CustomEvent("session-invalid"));
             });
 
-            fireEvent.click(screen.getByRole("button", { name: /continue to login/i }));
-            expect(mockPush).toHaveBeenCalledWith("/login");
+            fireEvent.click(screen.getByRole("button", { name: /go to home/i }));
+            expect(mockPush).toHaveBeenCalledWith("/");
         });
     });
 });

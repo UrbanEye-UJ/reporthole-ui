@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import AuthCard from "@/components/shared/Authcard";
 import LogoPin from "@/components/shared/Logopin";
 import InputField from "@/components/shared/Inputfield";
@@ -10,6 +10,8 @@ import { useLogin } from "@/app/api/generated/authentication/authentication";
 
 export default function LoginPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const contractorRegistered = searchParams.get("contractor") === "registered";
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -69,6 +71,12 @@ export default function LoginPage() {
     return (
         <AuthCard>
             <LogoPin />
+
+            {contractorRegistered && (
+                <div className="w-full rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-center">
+                    <p className="text-sm text-green-700 font-medium">Account created! Sign in with your new credentials.</p>
+                </div>
+            )}
 
             <div className="text-center">
                 <h1 className="text-3xl font-bold text-gray-900">Welcome Back</h1>

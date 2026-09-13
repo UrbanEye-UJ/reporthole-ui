@@ -56,10 +56,11 @@ jest.mock("@/app/api/generated/municipalities/municipalities", () => ({
         },
         isPending: false,
     }),
-    useIssueToken: ({ mutation }: { mutation: { onSuccess?: () => void } }) => ({
+    useIssueToken: ({ mutation }: { mutation: { onSuccess?: (res: unknown) => void } }) => ({
         mutate: (p: unknown) => {
             mockIssue(p);
-            mutation.onSuccess?.();
+            // The component reads res.data?.token from the success response
+            mutation.onSuccess?.({ data: { token: "MUNI-MOCK-TOKEN" } });
         },
         isPending: false,
     }),

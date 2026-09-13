@@ -2,91 +2,72 @@
 
 import "leaflet/dist/leaflet.css";
 
-import {
-  MapContainer,
-  Marker,
-  Popup,
-  TileLayer,
-} from "react-leaflet";
-
+import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import L, { type LatLngTuple } from "leaflet";
 import MapControls from "./MapControls";
+import { useGetRecentIncidents } from "@/app/api/generated/incidents/incidents";
 
-const center: LatLngTuple = [-26.2041, 28.0473];
+const CENTER: LatLngTuple = [-26.2041, 28.0473];
 
-// TODO(api): replace with data from GET /admin/infrastructure/assets
-// Expected shape: { id: number; name: string; type: string; position: [number, number] }[]
-const assets = [
-  {
-    id: 1,
-    name: "N1 North",
-    type: "Highway",
-    position: [-26.2041, 28.0473] as LatLngTuple,
-  },
-  {
-    id: 2,
-    name: "R21",
-    type: "Regional Road",
-    position: [-25.9206, 28.2069] as LatLngTuple,
-  },
-  {
-    id: 3,
-    name: "M1",
-    type: "Urban Road",
-    position: [-26.1703, 28.0416] as LatLngTuple,
-  },
-  {
-    id: 4,
-    name: "N3",
-    type: "Highway",
-    position: [-26.1502, 28.1405] as LatLngTuple,
-  },
-];
-
+/** Standard blue Leaflet pin — one icon instance shared across all markers. */
 const markerIcon = new L.Icon({
-  iconUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
 });
 
+function formatType(type?: string) {
+    return type ? type.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()) : "Unknown";
+}
+
 const GautengMapContent = () => {
-  return (
-    <MapContainer
-      center={center}
-      zoom={9}
-      scrollWheelZoom
-      style={{
-        height: "650px",
-        width: "100%",
-        borderRadius: "20px",
-      }}
-    >
-      <TileLayer
-        attribution="&copy; OpenStreetMap contributors"
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <MapControls />
+    // Fetch up to 200 most recent incidents — enough to give a meaningful geographic spread.
+    const { data } = useGetRecentIncidents({ limit: 200 });
+    const incidents = data?.data ?? [];
 
-      {assets.map((asset) => (
-        <Marker
-          key={asset.id}
-          position={asset.position}
-          icon={markerIcon}
+    // Keep only incidents that have valid coordinates.
+    const pinnable = incidents.filter(
+        (i) => typeof i.latitude === "number" && typeof i.longitude === "number"
+    );
+
+    return (
+        <MapContainer
+            center={CENTER}
+            zoom={9}
+            scrollWheelZoom
+            style={{ height: "650px", width: "100%", borderRadius: "20px" }}
         >
-          <Popup>
-            <strong>{asset.name}</strong>
+            <TileLayer
+                attribution="&copy; OpenStreetMap contributors"
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <MapControls />
 
-            <br />
+            {pinnable.map((incident) => (
+                <Marker
+                    key={incident.incidentId}
+                    position={[incident.latitude!, incident.longitude!]}
+                    icon={markerIcon}
+                >
+                    <Popup>
+                        <strong>{formatType(incident.incidentType)}</strong>
+                        <br />
+                        Status: {incident.status ?? "—"}
+                        <br />
+                        Reports: {incident.reportCount ?? 1}
+                    </Popup>
+                </Marker>
+            ))}
 
-            {asset.type}
-          </Popup>
-        </Marker>
-      ))}
-    </MapContainer>
-  );
+            {pinnable.length === 0 && (
+                // Invisible marker at centre just to keep the map interactive when empty.
+                // No actual pin rendered — the map itself communicates "no data" visually.
+                <></>
+            )}
+        </MapContainer>
+    );
 };
 
 export default GautengMapContent;
