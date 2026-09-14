@@ -10,7 +10,11 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
+  InputLabel,
   MenuItem,
+  Select,
+  type SelectChangeEvent,
   Snackbar,
   Stack,
   TextField,
@@ -19,6 +23,7 @@ import {
 
 import { PageHeader, Panel } from "../../_components/ui";
 import DataTable from "../../_components/DataTable";
+import RevealAccountDialog from "../../_components/RevealAccountDialog";
 
 import {
   useForceLogout,
@@ -31,12 +36,15 @@ import {
 } from "@/app/api/generated/security-admin/security-admin";
 import {
   GrantRoleRequestRole,
+  SecurityUserResponseRole,
   type SecurityUserResponse,
 } from "@/app/api/generated/openAPIDefinition.schemas";
 import { getErrorMessage } from "@/lib/getErrorMessage";
 import { useQueryClient } from "@tanstack/react-query";
 
 import type { GridColDef } from "@mui/x-data-grid";
+
+const ALL_ROLES = "all";
 
 type Step = "menu" | "grant" | "revoke" | "suspend" | "reactivate" | "forceLogout";
 
@@ -78,6 +86,26 @@ export default function SecurityAccountPage() {
   const [reason, setReason] = useState("");
   const [role, setRole] = useState<GrantRoleRequestRole>(GrantRoleRequestRole.ADMIN);
   const [toast, setToast] = useState<{ severity: "success" | "error"; text: string } | null>(null);
+
+  // Search and role filter. Name/email are masked server-side (see SecurityUserResponse), so
+  // search only matches whatever's actually visible: the unmasked first name, the masked
+  // email's first character + domain, or the full user id — never the hidden PII itself.
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>(ALL_ROLES);
+  const [revealTarget, setRevealTarget] = useState<SecurityUserResponse | null>(null);
+
+  const filteredUsers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return users.filter((u) => {
+      if (roleFilter !== ALL_ROLES && u.role !== roleFilter) return false;
+      if (!q) return true;
+      return (
+        (u.name ?? "").toLowerCase().includes(q) ||
+        (u.email ?? "").toLowerCase().includes(q) ||
+        (u.userId ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [users, search, roleFilter]);
 
   const selected: SecurityUserResponse | null = useMemo(
     () => users.find((u) => u.userId === selectedId) ?? null,
@@ -137,7 +165,7 @@ export default function SecurityAccountPage() {
     }
   };
 
-  const rows = users.map((u) => ({
+  const rows = filteredUsers.map((u) => ({
     id: u.userId ?? "",
     name: u.name ?? "",
     email: u.email ?? "",
@@ -177,15 +205,26 @@ export default function SecurityAccountPage() {
     },
     { field: "id", headerName: "User ID", width: 300 },
     {
-      field: "manage",
+      field: "actions",
       headerName: "",
-      width: 110,
+      width: 170,
       sortable: false,
       filterable: false,
       renderCell: (params) => (
-        <Button size="small" onClick={() => openManage(params.row.id)}>
-          Manage
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button
+            size="small"
+            onClick={() => {
+              const user = users.find((u) => u.userId === params.row.id);
+              if (user) setRevealTarget(user);
+            }}
+          >
+            View
+          </Button>
+          <Button size="small" onClick={() => openManage(params.row.id)}>
+            Manage
+          </Button>
+        </Stack>
       ),
     },
   ];
@@ -199,9 +238,40 @@ export default function SecurityAccountPage() {
         subtitle="Select an account, then act on it. Every action needs a reason and is recorded on the audit trail."
       />
 
-      <Panel title={`Users (${users.length})`}>
+      <Panel title={`Users (${filteredUsers.length}${filteredUsers.length !== users.length ? ` of ${users.length}` : ""})`}>
+        <Stack direction="row" spacing={2} sx={{ mb: 2, flexWrap: "wrap" }}>
+          <TextField
+            size="small"
+            label="Search"
+            placeholder="Name, email, or user ID"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            sx={{ minWidth: 260 }}
+          />
+          <FormControl size="small" sx={{ minWidth: 180 }}>
+            <InputLabel id="account-role-filter-label">Role</InputLabel>
+            <Select
+              labelId="account-role-filter-label"
+              label="Role"
+              value={roleFilter}
+              onChange={(e: SelectChangeEvent) => setRoleFilter(e.target.value)}
+            >
+              <MenuItem value={ALL_ROLES}>All roles</MenuItem>
+              {Object.values(SecurityUserResponseRole).map((r) => (
+                <MenuItem key={r} value={r}>{r}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Stack>
         <DataTable rows={rows} columns={columns} loading={isLoading} height={560} />
       </Panel>
+
+      <RevealAccountDialog
+        open={revealTarget !== null}
+        onClose={() => setRevealTarget(null)}
+        userId={revealTarget?.userId ?? null}
+        maskedName={revealTarget?.name ?? ""}
+      />
 
       <Dialog open={selected !== null} onClose={close} fullWidth maxWidth="xs">
         {selected && (

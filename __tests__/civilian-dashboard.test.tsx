@@ -1,6 +1,10 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import CivilianDashboard from "@/app/(civilian)/civilian/dashboard/page";
+
+jest.mock("@/app/api/generated/authentication/authentication", () => ({
+    logout: jest.fn().mockResolvedValue(undefined),
+}));
 
 // Stub EventSource so the SSE useEffect doesn't crash in jsdom
 const mockEventSource = {
@@ -88,10 +92,10 @@ describe("CivilianDashboard", () => {
     });
 
     describe("logout", () => {
-        it("redirects to /login on logout", () => {
+        it("redirects to /login on logout", async () => {
             renderWithClient(<CivilianDashboard />);
             fireEvent.click(screen.getByLabelText("Logout"));
-            expect(mockPush).toHaveBeenCalledWith("/login");
+            await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/login"));
         });
     });
 

@@ -215,4 +215,38 @@ describe("IncidentDetailModal", () => {
         fireEvent.click(screen.getByText("Still broken? Report it"));
         expect(onStillUnresolved).toHaveBeenCalledWith("abc-123");
     });
+
+    it("does not show the status updates section when there is no workflow history", () => {
+        render(
+            <QueryClientProvider client={queryClient}>
+                <IncidentDetailModal issue={issue} onClose={jest.fn()} />
+            </QueryClientProvider>
+        );
+        expect(screen.queryByText("Status updates")).not.toBeInTheDocument();
+    });
+
+    it("shows a contractor's rejection reason in the status updates section", () => {
+        render(
+            <QueryClientProvider client={queryClient}>
+                <IncidentDetailModal
+                    issue={{
+                        ...issue,
+                        workflowHistory: [
+                            {
+                                status: "VERIFIED",
+                                notes: "Rejected by Con Tractor — needs reassignment. Reason: Wrong address",
+                                updatedBy: "Con Tractor",
+                                updatedDate: "2026-06-16T10:00:00",
+                            },
+                        ],
+                    }}
+                    onClose={jest.fn()}
+                />
+            </QueryClientProvider>
+        );
+        expect(screen.getByText("Status updates")).toBeInTheDocument();
+        expect(
+            screen.getByText("Rejected by Con Tractor — needs reassignment. Reason: Wrong address")
+        ).toBeInTheDocument();
+    });
 });

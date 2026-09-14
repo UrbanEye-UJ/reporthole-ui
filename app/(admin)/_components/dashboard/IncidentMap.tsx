@@ -22,12 +22,12 @@ const IncidentMapContent = dynamic(() => import("./IncidentMapContent"), {
 /**
  * Incident Map panel for the Operations Center.
  * Owns the view-mode toggle (Incidents / Hotspots) and passes the admin's
- * municipality name to the map content for zone overlay rendering.
+ * municipality boundary to the map content for the zone overlay.
  */
 const IncidentMap = () => {
   const [view, setView] = useState<MapView>("pins");
   const { data } = useGetProfile({ query: { staleTime: 1000 * 60 * 5 } });
-  const municipalityName = data?.data?.municipalityName;
+  const boundary = data?.data?.municipalityBoundary;
 
   return (
     <Panel>
@@ -65,7 +65,7 @@ const IncidentMap = () => {
         </ToggleButtonGroup>
       </Box>
 
-      <IncidentMapContent view={view} municipalityName={municipalityName} />
+      <IncidentMapContent view={view} boundary={boundary} />
     </Panel>
   );
 };

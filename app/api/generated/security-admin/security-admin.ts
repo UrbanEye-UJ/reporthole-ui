@@ -26,10 +26,13 @@ import type {
 import type {
   AccountActionRequest,
   AppResponseListAuditEntryResponse,
+  AppResponseListAuditLogEntryResponse,
   AppResponseListSecurityUserResponse,
+  AppResponseRevealAccountResponse,
   AppResponseVoid,
   GrantRoleRequest,
-  ListAuditParams
+  ListAuditParams,
+  RevealAccountRequest
 } from '../openAPIDefinition.schemas';
 
 import { apiClient } from '../../../../lib/axios';
@@ -232,6 +235,72 @@ export const useRevokeRole = <TError = AppResponseVoid | AppResponseVoid | AppRe
       > => {
 
       const mutationOptions = getRevokeRoleMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * Returns the account's decrypted name and email after verifying the calling security admin's own current password as a step-up re-authentication check. Writes a PII_REVEALED audit row. Security admin only.
+ * @summary Reveal an account's decrypted PII
+ */
+export const reveal = (
+    userId: string,
+    revealAccountRequest: RevealAccountRequest,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseRevealAccountResponse>(
+      {url: `/admin/security/users/${userId}/reveal`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: revealAccountRequest, signal
+    },
+      );
+    }
+  
+
+
+export const getRevealMutationOptions = <TError = AppResponseRevealAccountResponse | AppResponseRevealAccountResponse | AppResponseRevealAccountResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reveal>>, TError,{userId: string;data: RevealAccountRequest}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof reveal>>, TError,{userId: string;data: RevealAccountRequest}, TContext> => {
+
+const mutationKey = ['reveal'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reveal>>, {userId: string;data: RevealAccountRequest}> = (props) => {
+          const {userId,data} = props ?? {};
+
+          return  reveal(userId,data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevealMutationResult = NonNullable<Awaited<ReturnType<typeof reveal>>>
+    export type RevealMutationBody = RevealAccountRequest
+    export type RevealMutationError = AppResponseRevealAccountResponse | AppResponseRevealAccountResponse | AppResponseRevealAccountResponse
+
+    /**
+ * @summary Reveal an account's decrypted PII
+ */
+export const useReveal = <TError = AppResponseRevealAccountResponse | AppResponseRevealAccountResponse | AppResponseRevealAccountResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reveal>>, TError,{userId: string;data: RevealAccountRequest}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reveal>>,
+        TError,
+        {userId: string;data: RevealAccountRequest},
+        TContext
+      > => {
+
+      const mutationOptions = getRevealMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
@@ -542,6 +611,98 @@ export function useListAudit<TData = Awaited<ReturnType<typeof listAudit>>, TErr
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getListAuditQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
+ * Returns every recorded state-changing action that isn't an identity/accountability action already covered by GET /audit — contractor invites, PII reveals, municipality and token management, admin-application decisions, specialisation changes, comments and messages. Newest first, append-only. Security admin only.
+ * @summary Read the general-purpose audit log
+ */
+export const listAuditLog = (
+    
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseListAuditLogEntryResponse>(
+      {url: `/admin/security/audit-log`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getListAuditLogQueryKey = () => {
+    return [
+    `/admin/security/audit-log`
+    ] as const;
+    }
+
+    
+export const getListAuditLogQueryOptions = <TData = Awaited<ReturnType<typeof listAuditLog>>, TError = AppResponseListAuditLogEntryResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAuditLog>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAuditLogQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAuditLog>>> = ({ signal }) => listAuditLog(signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAuditLog>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListAuditLogQueryResult = NonNullable<Awaited<ReturnType<typeof listAuditLog>>>
+export type ListAuditLogQueryError = AppResponseListAuditLogEntryResponse
+
+
+export function useListAuditLog<TData = Awaited<ReturnType<typeof listAuditLog>>, TError = AppResponseListAuditLogEntryResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAuditLog>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAuditLog>>,
+          TError,
+          Awaited<ReturnType<typeof listAuditLog>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListAuditLog<TData = Awaited<ReturnType<typeof listAuditLog>>, TError = AppResponseListAuditLogEntryResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAuditLog>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listAuditLog>>,
+          TError,
+          Awaited<ReturnType<typeof listAuditLog>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListAuditLog<TData = Awaited<ReturnType<typeof listAuditLog>>, TError = AppResponseListAuditLogEntryResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAuditLog>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Read the general-purpose audit log
+ */
+
+export function useListAuditLog<TData = Awaited<ReturnType<typeof listAuditLog>>, TError = AppResponseListAuditLogEntryResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listAuditLog>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListAuditLogQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
