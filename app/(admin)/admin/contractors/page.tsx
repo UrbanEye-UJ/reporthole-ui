@@ -21,8 +21,8 @@ import { useGetContractors } from "@/app/api/generated/admin-contractors/admin-c
 
 import type { GridColDef } from "@mui/x-data-grid";
 
-// TODO(api): "Completed Repairs" and "Average SLA" need a dedicated backend aggregation
-// endpoint (counting RESOLVED assignments platform-wide) — left as placeholders for now.
+// TODO(api): "Completed Repairs" needs a dedicated backend aggregation endpoint
+// (counting RESOLVED assignments platform-wide) — left as a placeholder for now.
 
 export default function ContractorsPage() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -134,7 +134,7 @@ export default function ContractorsPage() {
         container
         spacing={3}
       >
-        <Grid size={{ xs: 12, md: 3 }}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <MetricCard
             title="Registered Contractors"
             value={contractors.length}
@@ -142,23 +142,16 @@ export default function ContractorsPage() {
           />
         </Grid>
 
-        <Grid size={{ xs: 12, md: 3 }}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <MetricCard
             title="Active Contracts"
             value={activeContracts}
           />
         </Grid>
 
-        <Grid size={{ xs: 12, md: 3 }}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <MetricCard
             title="Completed Repairs"
-            value="—"
-          />
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 3 }}>
-          <MetricCard
-            title="Average SLA"
             value="—"
           />
         </Grid>

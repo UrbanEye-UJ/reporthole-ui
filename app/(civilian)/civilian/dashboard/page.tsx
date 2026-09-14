@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import StatusCard from "@/components/shared/StatusCard";
 import IssueCard from "@/components/shared/IssueCard";
@@ -63,6 +64,7 @@ const SEARCH_TYPES = Object.values(SearchMyIncidentsType);
 
 export default function CivilianDashboard() {
     const handleLogout = useLogout();
+    const queryClient = useQueryClient();
     const { darkMode, toggle: toggleTheme } = useCivilianTheme();
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
@@ -129,7 +131,16 @@ export default function CivilianDashboard() {
         const token = getCookie("reporthole_token");
         if (!token) return;
         const es = new EventSource(`/api/incidents/events?token=${token}`);
-        es.addEventListener("incident-updated", () => { refetch(); });
+        es.addEventListener("incident-updated", () => {
+            refetch();
+            // Also covers a new comment on whichever incident's comment list is currently
+            // mounted (e.g. the open detail modal) — comments don't have their own SSE event
+            // type, they ride on the same "incident-updated" push.
+            queryClient.invalidateQueries({
+                predicate: (query) =>
+                    typeof query.queryKey[0] === "string" && query.queryKey[0].includes("/comments"),
+            });
+        });
         es.addEventListener("notification", () => { refetchNotifications(); });
         es.onerror = () => { es.close(); refetch(); };
         return () => { es.close(); };
@@ -150,7 +161,7 @@ export default function CivilianDashboard() {
     const inProgress = allIncidents.filter((i) => i.status === "in_progress").length;
 
     return (
-        <main className="min-h-screen bg-white dark:bg-[#0F0F0F] transition-colors duration-300">
+        <main className="min-h-screen bg-white dark:bg-[#191919] transition-colors duration-300">
             <div className="max-w-lg mx-auto px-4 py-6 flex flex-col gap-5">
 
                 {/* Header */}
@@ -243,13 +254,13 @@ export default function CivilianDashboard() {
                 </div>
 
                 {/* Tab bar */}
-                <div className="flex gap-1 bg-gray-100 dark:bg-[#161616] rounded-xl p-1">
+                <div className="flex gap-1 bg-gray-100 dark:bg-[#202020] rounded-xl p-1">
                     <button
                         type="button"
                         onClick={() => setActiveTab("my")}
                         className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${
                             activeTab === "my"
-                                ? "bg-white dark:bg-[#0F0F0F] text-gray-900 dark:text-white shadow-sm"
+                                ? "bg-white dark:bg-[#191919] text-gray-900 dark:text-white shadow-sm"
                                 : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                         }`}
                     >
@@ -260,7 +271,7 @@ export default function CivilianDashboard() {
                         onClick={() => setActiveTab("nearby")}
                         className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5 ${
                             activeTab === "nearby"
-                                ? "bg-white dark:bg-[#0F0F0F] text-gray-900 dark:text-white shadow-sm"
+                                ? "bg-white dark:bg-[#191919] text-gray-900 dark:text-white shadow-sm"
                                 : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                         }`}
                     >
@@ -287,7 +298,7 @@ export default function CivilianDashboard() {
                                     placeholder="Search by description or location..."
                                     value={searchKeyword}
                                     onChange={(e) => setSearchKeyword(e.target.value)}
-                                    className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500 transition-colors"
+                                    className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-500 transition-colors"
                                 />
                             </div>
                             <select
@@ -438,8 +449,8 @@ export default function CivilianDashboard() {
                         onClick={() => setNotifOpen(false)}
                     />
                     {/* Panel */}
-                    <div className="fixed top-0 right-0 h-full w-80 max-w-full bg-white dark:bg-[#161616] border-l border-gray-200 dark:border-[#2D2D2D] z-50 flex flex-col">
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-[#2D2D2D]">
+                    <div className="fixed top-0 right-0 h-full w-80 max-w-full bg-white dark:bg-[#202020] border-l border-gray-200 dark:border-[#2F2F2F] z-50 flex flex-col">
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-[#2F2F2F]">
                             <div>
                                 <p className="text-base font-bold text-gray-900 dark:text-white">Notifications</p>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">Your incident activity</p>
@@ -455,7 +466,7 @@ export default function CivilianDashboard() {
                                 </svg>
                             </button>
                         </div>
-                        <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-[#2D2D2D]">
+                        <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-[#2F2F2F]">
                             {notifications.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400 dark:text-gray-500 py-16">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">

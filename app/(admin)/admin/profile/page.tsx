@@ -7,20 +7,30 @@ import {
   Alert,
   Box,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
+  IconButton,
+  InputAdornment,
   Paper,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
+import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
+import VisibilityOffRoundedIcon from "@mui/icons-material/VisibilityOffRounded";
 
 import {
   useGetProfile,
   useUpdateProfile,
   useDeleteAccount,
+  useVerifyPassword,
 } from "@/app/api/generated/user-profile/user-profile";
 
 import PageHeader from "../../_components/ui/PageHeader";
+import { maskName, maskEmail, maskPhone } from "@/lib/piiMask";
 
 type EditState = { firstName: string; lastName: string; phoneNumber: string };
 
@@ -35,8 +45,28 @@ export default function AdminProfilePage() {
   const [editValues, setEditValues] = useState<EditState>({ firstName: "", lastName: "", phoneNumber: "" });
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  // Sensitive-field reveal state — once verified the values are visible for this session
+  const [revealed, setRevealed] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [showPasswordInput, setShowPasswordInput] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+
   const { data, refetch, isLoading } = useGetProfile({ query: { staleTime: 0 } });
   const profile = data?.data;
+
+  const { mutate: verifyPassword, isPending: verifying } = useVerifyPassword({
+    mutation: {
+      onSuccess: () => {
+        setRevealed(true);
+        setShowPasswordDialog(false);
+        setPasswordInput("");
+        setVerifyError(null);
+        setShowPasswordInput(false);
+      },
+      onError: () => setVerifyError("Incorrect password. Please try again."),
+    },
+  });
 
 
   const { mutate: updateProfile, isPending: isSaving } = useUpdateProfile({
@@ -72,8 +102,17 @@ export default function AdminProfilePage() {
     deleteAccount();
   };
 
+  const handleRevealSubmit = () => {
+    if (!passwordInput.trim()) { setVerifyError("Please enter your password."); return; }
+    verifyPassword({ data: { password: passwordInput } });
+  };
+
   const formatDate = (iso?: string) =>
     iso ? new Date(iso).toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" }) : "—";
+
+  const fullName = `${profile?.firstName ?? ""} ${profile?.lastName ?? ""}`.trim() || "—";
+  const email = profile?.email ?? "—";
+  const phone = profile?.phoneNumber ?? "—";
 
   if (isLoading) {
     return (
@@ -87,7 +126,7 @@ export default function AdminProfilePage() {
     <>
       <PageHeader title="My Profile" subtitle="View and update your account details." />
 
-      <Stack spacing={3} sx={{ maxWidth: 560 }}>
+      <Stack spacing={3} sx={{ maxWidth: 560, mx: "auto" }}>
 
         {/* Profile card */}
         <Paper elevation={0} sx={{ p: 3 }}>
@@ -126,17 +165,44 @@ export default function AdminProfilePage() {
             </Stack>
           ) : (
             <Stack spacing={2}>
-              <ProfileRow label="Name" value={`${profile?.firstName ?? ""} ${profile?.lastName ?? ""}`.trim() || "—"} />
+              <SensitiveRow
+                label="Name"
+                value={fullName}
+                masked={fullName === "—" ? fullName : maskName(fullName)}
+                revealed={revealed}
+                onReveal={() => setShowPasswordDialog(true)}
+                onHide={() => setRevealed(false)}
+              />
               <Divider />
-              <ProfileRow label="Email" value={profile?.email ?? "—"} />
+              <SensitiveRow
+                label="Email"
+                value={email}
+                masked={email === "—" ? email : maskEmail(email)}
+                revealed={revealed}
+                onReveal={() => setShowPasswordDialog(true)}
+                onHide={() => setRevealed(false)}
+              />
               <Divider />
-              <ProfileRow label="Phone" value={profile?.phoneNumber ?? "—"} />
+              <SensitiveRow
+                label="Phone"
+                value={phone}
+                masked={phone === "—" ? phone : maskPhone(phone)}
+                revealed={revealed}
+                onReveal={() => setShowPasswordDialog(true)}
+                onHide={() => setRevealed(false)}
+              />
               <Divider />
               <ProfileRow label="Role" value={profile?.role ?? "—"} />
               <Divider />
               <ProfileRow label="Municipality" value={profile?.municipalityName ?? "—"} />
               <Divider />
               <ProfileRow label="Member since" value={formatDate(profile?.createdAt)} />
+
+              {!revealed && (
+                <Typography variant="caption" color="text.disabled" sx={{ textAlign: "center" }}>
+                  Click the eye icon next to a field to reveal sensitive information.
+                </Typography>
+              )}
 
               <Button
                   fullWidth
@@ -192,6 +258,60 @@ export default function AdminProfilePage() {
           </Paper>
         )}
       </Stack>
+
+      <Dialog
+        open={showPasswordDialog}
+        onClose={() => { setShowPasswordDialog(false); setPasswordInput(""); setVerifyError(null); setShowPasswordInput(false); }}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Confirm your identity</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              Enter your password to reveal sensitive profile information.
+            </Typography>
+            {verifyError && <Alert severity="error">{verifyError}</Alert>}
+            <TextField
+              label="Your password"
+              type={showPasswordInput ? "text" : "password"}
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleRevealSubmit()}
+              fullWidth
+              autoFocus
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPasswordInput((v) => !v)}
+                        edge="end"
+                        size="small"
+                        aria-label={showPasswordInput ? "Hide password" : "Show password"}
+                      >
+                        {showPasswordInput ? <VisibilityOffRoundedIcon fontSize="small" /> : <VisibilityRoundedIcon fontSize="small" />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button onClick={() => { setShowPasswordDialog(false); setPasswordInput(""); setVerifyError(null); setShowPasswordInput(false); }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            disabled={verifying || !passwordInput.trim()}
+            onClick={handleRevealSubmit}
+          >
+            {verifying ? "Verifying…" : "Reveal"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
@@ -205,6 +325,37 @@ function ProfileRow({ label, value }: { label: string; value: string }) {
       <Typography variant="body2" sx={{ textAlign: "right" }}>
         {value}
       </Typography>
+    </Box>
+  );
+}
+
+interface SensitiveRowProps {
+  label: string;
+  value: string;
+  masked: string;
+  revealed: boolean;
+  onReveal: () => void;
+  onHide: () => void;
+}
+
+function SensitiveRow({ label, value, masked, revealed, onReveal, onHide }: SensitiveRowProps) {
+  return (
+    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, flexShrink: 0 }}>
+        {label}
+      </Typography>
+      <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+        <Typography variant="body2" sx={{ textAlign: "right" }}>
+          {revealed ? value : masked}
+        </Typography>
+        <IconButton
+          size="small"
+          onClick={revealed ? onHide : onReveal}
+          aria-label={revealed ? `Hide ${label}` : `Show ${label}`}
+        >
+          {revealed ? <VisibilityOffRoundedIcon fontSize="small" /> : <VisibilityRoundedIcon fontSize="small" />}
+        </IconButton>
+      </Stack>
     </Box>
   );
 }

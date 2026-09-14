@@ -25,11 +25,11 @@ export default function LandingHeader() {
   const { dark, toggle } = useLandingTheme();
 
   const headerBg   = dark ? "rgba(15,15,15,0.96)"  : "rgba(255,255,255,0.96)";
-  const headerText = dark ? "#F9FAFB" : "#0E1420";
-  const borderCol  = dark ? "#2D2D2D" : "#E3E7EE";
+  const headerText = dark ? "#E9E9E7" : "#0E1420";
+  const borderCol  = dark ? "#2F2F2F" : "#E3E7EE";
   const navColor   = dark ? "#9CA3AF" : "#414A5C";
-  const btnBg      = dark ? "#FFFFFF" : "#111111";
-  const btnColor   = dark ? "#111111" : "#FFFFFF";
+  const btnBg      = dark ? "#FFFFFF" : "#191919";
+  const btnColor   = dark ? "#191919" : "#FFFFFF";
 
   return (
     <header
@@ -65,14 +65,14 @@ export default function LandingHeader() {
               width: 32,
               height: 32,
               borderRadius: "50%",
-              background: dark ? "#FFFFFF" : "#111111",
+              background: dark ? "#FFFFFF" : "#191919",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               flex: "none",
             }}
           >
-            <PinIcon size={17} color={dark ? "#111111" : "#FFFFFF"} />
+            <PinIcon size={17} color={dark ? "#191919" : "#FFFFFF"} />
           </span>
           <span style={{ fontSize: 19, fontWeight: 800, letterSpacing: "-0.02em" }}>Reporthole</span>
         </Link>
@@ -156,7 +156,7 @@ export default function LandingHeader() {
       {menuOpen && (
         <div
           className="rh-mobile-menu"
-          style={{ borderTop: `1px solid ${borderCol}`, background: dark ? "#0F0F0F" : "#fff" }}
+          style={{ borderTop: `1px solid ${borderCol}`, background: dark ? "#191919" : "#fff" }}
         >
           <div style={{ display: "flex", justifyContent: "flex-end", padding: "10px 20px 0" }}>
             <button

@@ -34,6 +34,7 @@ import {
   useSuspend,
   getListUsersQueryKey,
 } from "@/app/api/generated/security-admin/security-admin";
+import { useList as useListMunicipalities } from "@/app/api/generated/municipalities/municipalities";
 import {
   GrantRoleRequestRole,
   SecurityUserResponseRole,
@@ -85,7 +86,12 @@ export default function SecurityAccountPage() {
   const [step, setStep] = useState<Step>("menu");
   const [reason, setReason] = useState("");
   const [role, setRole] = useState<GrantRoleRequestRole>(GrantRoleRequestRole.ADMIN);
+  const [municipalityId, setMunicipalityId] = useState("");
   const [toast, setToast] = useState<{ severity: "success" | "error"; text: string } | null>(null);
+
+  const { data: municipalitiesData } = useListMunicipalities();
+  const municipalities = useMemo(() => municipalitiesData?.data ?? [], [municipalitiesData]);
+  const municipalityRequired = step === "grant" && role === GrantRoleRequestRole.ADMIN;
 
   // Search and role filter. Name/email are masked server-side (see SecurityUserResponse), so
   // search only matches whatever's actually visible: the unmasked first name, the masked
@@ -116,12 +122,14 @@ export default function SecurityAccountPage() {
     setSelectedId(id);
     setStep("menu");
     setReason("");
+    setMunicipalityId("");
   };
 
   const close = () => {
     setSelectedId(null);
     setStep("menu");
     setReason("");
+    setMunicipalityId("");
   };
 
   const onError = (error: unknown) =>
@@ -146,9 +154,13 @@ export default function SecurityAccountPage() {
     const id = selected.userId;
     const r = reason.trim();
     if (!r) return;
+    if (municipalityRequired && !municipalityId) return;
     switch (step) {
       case "grant":
-        grant.mutate({ userId: id, data: { role, reason: r } });
+        grant.mutate({
+          userId: id,
+          data: { role, municipalityId: municipalityRequired ? municipalityId : undefined, reason: r },
+        });
         break;
       case "revoke":
         revoke.mutate({ userId: id, data: { reason: r } });
@@ -308,11 +320,31 @@ export default function SecurityAccountPage() {
                     select
                     label="Role"
                     value={role}
-                    onChange={(e) => setRole(e.target.value as GrantRoleRequestRole)}
+                    onChange={(e) => {
+                      setRole(e.target.value as GrantRoleRequestRole);
+                      setMunicipalityId("");
+                    }}
                   >
                     {Object.values(GrantRoleRequestRole).map((r) => (
                       <MenuItem key={r} value={r}>
                         {r}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                )}
+
+                {municipalityRequired && (
+                  <TextField
+                    select
+                    label="Municipality"
+                    value={municipalityId}
+                    onChange={(e) => setMunicipalityId(e.target.value)}
+                    required
+                    helperText="Which municipality this admin is scoped to"
+                  >
+                    {municipalities.map((m) => (
+                      <MenuItem key={m.id} value={m.id}>
+                        {m.name}
                       </MenuItem>
                     ))}
                   </TextField>
@@ -340,7 +372,7 @@ export default function SecurityAccountPage() {
                   <Button
                     variant="contained"
                     color={step === "suspend" || step === "forceLogout" ? "error" : "primary"}
-                    disabled={!reason.trim() || pending}
+                    disabled={!reason.trim() || pending || (municipalityRequired && !municipalityId)}
                     onClick={submit}
                   >
                     Confirm

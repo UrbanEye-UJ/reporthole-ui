@@ -3,8 +3,6 @@ import type { SvgIconComponent } from "@mui/icons-material";
 import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
 import ReportRoundedIcon from "@mui/icons-material/ReportRounded";
 import EngineeringRoundedIcon from "@mui/icons-material/EngineeringRounded";
-import PeopleRoundedIcon from "@mui/icons-material/PeopleRounded";
-import MailRoundedIcon from "@mui/icons-material/MailRounded";
 import AccountCircleRoundedIcon from "@mui/icons-material/AccountCircleRounded";
 
 export interface NavigationItem {
@@ -33,18 +31,6 @@ export const navigation: NavigationItem[] = [
     label: "Contractors",
     path: "/admin/contractors",
     icon: EngineeringRoundedIcon,
-  },
-  {
-    id: "citizens",
-    label: "Civilians",
-    path: "/admin/citizens",
-    icon: PeopleRoundedIcon,
-  },
-  {
-    id: "messages",
-    label: "Messages",
-    path: "/admin/reports",
-    icon: MailRoundedIcon,
   },
   {
     id: "profile",

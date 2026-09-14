@@ -258,7 +258,7 @@ export function useGetSecurityAdminMessages<TData = Awaited<ReturnType<typeof ge
 
 
 /**
- * Returns all USER_MESSAGE entries, newest first — sent by any authenticated user (civilian, contractor, or admin), not civilians alone. ADMIN or SECURITY_ADMIN.
+ * Returns all USER_MESSAGE entries, newest first — sent by any authenticated user (civilian, contractor, or admin), not civilians alone. SECURITY_ADMIN only — these aren't scoped to any municipality, so a municipal ADMIN has no reason to read them.
  * @summary List messages from users
  */
 export const getAdminMessages = (

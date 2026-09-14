@@ -1,11 +1,8 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, type ReactNode } from "react";
+
+import { usePersistedDarkMode } from "@/lib/hooks/usePersistedDarkMode";
 
 interface CivilianThemeContextValue {
   darkMode: boolean;
@@ -18,18 +15,7 @@ const CivilianThemeContext = createContext<CivilianThemeContextValue>({
 });
 
 export function CivilianThemeProvider({ children }: { children: ReactNode }) {
-  const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("civilian-theme") === "dark";
-  });
-
-  const toggle = () => {
-    setDarkMode((current) => {
-      const next = !current;
-      localStorage.setItem("civilian-theme", next ? "dark" : "light");
-      return next;
-    });
-  };
+  const { darkMode, toggle } = usePersistedDarkMode("civilian-theme");
 
   return (
     <CivilianThemeContext.Provider value={{ darkMode, toggle }}>

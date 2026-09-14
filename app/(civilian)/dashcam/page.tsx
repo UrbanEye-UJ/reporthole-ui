@@ -355,7 +355,7 @@ export default function DashcamPage() {
             <main className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
                 <div className="bg-white rounded-2xl shadow-sm p-6 w-full max-w-sm flex flex-col gap-4">
                     <div>
-                        <h1 className="text-lg font-bold text-blue-600">Reporthole Dashcam</h1>
+                        <h1 className="text-lg font-bold text-gray-900">Reporthole Dashcam</h1>
                         <p className="text-sm text-gray-500 mt-1">
                             Enter your device token to begin. Generate one from your account while logged in.
                         </p>
@@ -366,14 +366,14 @@ export default function DashcamPage() {
                         onChange={(e) => setTokenInput(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleTokenSubmit()}
                         placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                        className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-400"
                     />
                     {isLoggedIn && (
                         <button
                             type="button"
                             onClick={() => generateToken()}
                             disabled={isGenerating}
-                            className="w-full border border-blue-200 hover:bg-blue-50 disabled:opacity-40 text-blue-600 font-semibold py-2.5 rounded-xl text-sm transition-colors"
+                            className="w-full border border-gray-300 hover:bg-gray-50 disabled:opacity-40 text-gray-900 font-semibold py-2.5 rounded-xl text-sm transition-colors"
                         >
                             {isGenerating ? "Generating…" : "Generate token for this device"}
                         </button>
@@ -382,7 +382,7 @@ export default function DashcamPage() {
                         type="button"
                         onClick={handleTokenSubmit}
                         disabled={!tokenInput.trim()}
-                        className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
+                        className="bg-gray-900 hover:bg-gray-800 active:bg-gray-700 disabled:opacity-40 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
                     >
                         Start Dashcam
                     </button>
@@ -444,7 +444,9 @@ export default function DashcamPage() {
                         type="button"
                         onClick={isActive ? stopCamera : startCamera}
                         className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                            isActive ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"
+                            isActive
+                                ? "bg-red-600 hover:bg-red-700 text-white"
+                                : "bg-white hover:bg-gray-100 text-gray-900"
                         }`}
                     >
                         {isActive ? "Stop" : "Start"}

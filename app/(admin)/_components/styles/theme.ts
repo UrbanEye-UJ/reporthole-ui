@@ -64,10 +64,20 @@ export function createAdminTheme(mode: AdminThemeMode) {
     typography,
 
     components: {
+      // AppBar is built on top of Paper internally, so it inherits MuiPaper's
+      // borderRadius below unless overridden here — nav chrome should be square.
+      MuiAppBar: {
+        styleOverrides: {
+          root: {
+            borderRadius: 0,
+          },
+        },
+      },
+
       MuiPaper: {
         styleOverrides: {
           root: {
-            borderRadius: "12px",
+            borderRadius: radius.md,
             background: palette.surface.primary,
             border: `1px solid ${palette.border}`,
             backgroundImage: "none",
@@ -83,7 +93,7 @@ export function createAdminTheme(mode: AdminThemeMode) {
       MuiCard: {
         styleOverrides: {
           root: {
-            borderRadius: "12px",
+            borderRadius: radius.md,
             background: palette.surface.primary,
             backgroundImage: "none",
             border: `1px solid ${palette.border}`,
@@ -124,7 +134,8 @@ export function createAdminTheme(mode: AdminThemeMode) {
       MuiIconButton: {
         styleOverrides: {
           root: {
-            borderRadius: radius.round,
+            // Notion's chrome buttons are subtly-rounded squares, not circles.
+            borderRadius: radius.sm,
             transition: ".2s",
 
             "&:hover": {
@@ -144,12 +155,14 @@ export function createAdminTheme(mode: AdminThemeMode) {
               background: palette.glass.hover,
             },
 
+            // Notion's selected list item is a soft gray highlight with the
+            // same text color as the rest — not a black/white inversion.
             "&.Mui-selected": {
-              background: palette.glass.active,
-              color: isDark ? "#111111" : "#FFFFFF",
+              background: palette.background.tertiary,
+              color: palette.text.primary,
 
               "&:hover": {
-                background: isDark ? "#E5E7EB" : "#374151",
+                background: palette.background.tertiary,
               },
             },
           },

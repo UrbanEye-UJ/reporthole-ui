@@ -16,11 +16,11 @@ export default function ContactSection() {
   const [content, setContent] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  const inputBorder = dark ? "#2D2D2D" : "#e5e7eb";
-  const inputBg     = dark ? "#161616" : "#fff";
-  const inputColor  = dark ? "#F9FAFB" : "#111827";
+  const inputBorder = dark ? "#2F2F2F" : "#e5e7eb";
+  const inputBg     = dark ? "#202020" : "#fff";
+  const inputColor  = dark ? "#E9E9E7" : "#111827";
   const labelColor  = dark ? "#9CA3AF" : "#374151";
-  const headingCol  = dark ? "#F9FAFB" : "#111111";
+  const headingCol  = dark ? "#E9E9E7" : "#191919";
   const subColor    = dark ? "#6B7280" : "#6b7280";
 
   const { mutate: sendContact, isPending } = useContact({
@@ -188,8 +188,8 @@ export default function ContactSection() {
             style={{
               padding: "15px 32px",
               borderRadius: 12,
-              background: dark ? "#FFFFFF" : "#111111",
-              color: dark ? "#111111" : "#fff",
+              background: dark ? "#FFFFFF" : "#191919",
+              color: dark ? "#191919" : "#fff",
               fontWeight: 800,
               fontSize: 16,
               border: "none",

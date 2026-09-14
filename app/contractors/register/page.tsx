@@ -143,7 +143,7 @@ function ContractorRegisterForm() {
                     onChange={(e) => setPassword(e.target.value)}
                     icon={lockIcon}
                 />
-                <p className="text-xs text-gray-400 -mt-1">
+                <p className="text-xs text-gray-500 -mt-1">
                     Min. 8 characters · at least 1 number · at least 1 special character (!@#$%…)
                 </p>
 
@@ -159,7 +159,7 @@ function ContractorRegisterForm() {
                 />
 
                 {displayError && (
-                    <p className="text-sm text-red-500 text-center">{displayError}</p>
+                    <p className="text-sm text-red-600 text-center">{displayError}</p>
                 )}
             </div>
 

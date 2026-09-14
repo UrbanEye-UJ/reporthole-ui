@@ -160,7 +160,7 @@ export default function RegisterPage() {
                         </svg>
                     }
                 />
-                <p className="text-xs text-gray-400 -mt-1">
+                <p className="text-xs text-gray-500 -mt-1">
                     Min. 8 characters · at least 1 number · at least 1 special character (!@#$%…)
                 </p>
 
@@ -191,12 +191,12 @@ export default function RegisterPage() {
                         </svg>
                     }
                 />
-                <p className="text-xs text-gray-400 -mt-1">
+                <p className="text-xs text-gray-500 -mt-1">
                     Have an invite token? Enter it here to register as an admin or contractor.
                 </p>
 
                 {error && (
-                    <p className="text-sm text-red-500 text-center">{error}</p>
+                    <p className="text-sm text-red-600 text-center">{error}</p>
                 )}
             </div>
 

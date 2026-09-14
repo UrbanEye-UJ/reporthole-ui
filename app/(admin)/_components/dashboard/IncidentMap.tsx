@@ -28,13 +28,21 @@ const IncidentMap = () => {
   const [view, setView] = useState<MapView>("pins");
   const { data } = useGetProfile({ query: { staleTime: 1000 * 60 * 5 } });
   const boundary = data?.data?.municipalityBoundary;
+  const municipalityName = data?.data?.municipalityName;
 
   return (
     <Panel>
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 3 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: ".3px" }}>
-          Incident Map
-        </Typography>
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: ".3px" }}>
+            Incident Map
+          </Typography>
+          {municipalityName && (
+            <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.25 }}>
+              {municipalityName}
+            </Typography>
+          )}
+        </Box>
 
         <ToggleButtonGroup
           value={view}

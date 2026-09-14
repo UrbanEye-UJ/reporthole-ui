@@ -48,6 +48,15 @@ jest.mock("@tanstack/react-query", () => ({
     useQueryClient: () => ({ invalidateQueries: jest.fn() }),
 }));
 
+const MUNICIPALITY = "22222222-2222-2222-2222-222222222222";
+
+jest.mock("@/app/api/generated/municipalities/municipalities", () => ({
+    useList: () => ({
+        data: { data: [{ id: MUNICIPALITY, name: "City of Johannesburg Metropolitan" }] },
+        isLoading: false,
+    }),
+}));
+
 const mockReveal = jest.fn();
 
 jest.mock("@/app/api/generated/security-admin/security-admin", () => ({
@@ -105,17 +114,29 @@ describe("SecurityAccountPage", () => {
         });
     });
 
-    it("grants a selected role with a reason", () => {
+    it("grants ADMIN with a municipality and a reason", () => {
+        render(<SecurityAccountPage />);
+        openManage();
+        fireEvent.click(screen.getByRole("button", { name: /Grant \/ change role/i }));
+        fireEvent.change(screen.getByLabelText(/Reason/i), { target: { value: "promotion" } });
+        fireEvent.mouseDown(screen.getByLabelText(/Municipality/i));
+        fireEvent.click(screen.getByRole("option", { name: "City of Johannesburg Metropolitan" }));
+        fireEvent.click(screen.getByRole("button", { name: /^Confirm$/i }));
+
+        expect(mutations.grant).toHaveBeenCalledWith({
+            userId: TARGET,
+            data: { role: "ADMIN", municipalityId: MUNICIPALITY, reason: "promotion" },
+        });
+    });
+
+    it("does not submit granting ADMIN without a municipality selected", () => {
         render(<SecurityAccountPage />);
         openManage();
         fireEvent.click(screen.getByRole("button", { name: /Grant \/ change role/i }));
         fireEvent.change(screen.getByLabelText(/Reason/i), { target: { value: "promotion" } });
         fireEvent.click(screen.getByRole("button", { name: /^Confirm$/i }));
 
-        expect(mutations.grant).toHaveBeenCalledWith({
-            userId: TARGET,
-            data: { role: "ADMIN", reason: "promotion" },
-        });
+        expect(mutations.grant).not.toHaveBeenCalled();
     });
 
     it("does not submit an action without a reason", () => {
