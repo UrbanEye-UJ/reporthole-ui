@@ -111,6 +111,41 @@ export default function IncidentDetailModal({ issue, onClose, onDelete, currentU
                     </div>
                 </div>
 
+                {/* Status history — includes contractor rejection reasons and progress notes */}
+                {issue.workflowHistory && issue.workflowHistory.filter((entry) => entry.notes).length > 0 && (
+                    <div className="border-t border-gray-100 pt-3 flex flex-col gap-2">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                            Status updates
+                        </p>
+                        <div className="flex flex-col gap-2 max-h-40 overflow-y-auto pr-1">
+                            {issue.workflowHistory
+                                .filter((entry) => entry.notes)
+                                .slice()
+                                .reverse()
+                                .map((entry, i) => (
+                                    <div key={i} className="bg-gray-50 rounded-xl px-3 py-2.5">
+                                        <div className="flex items-center justify-between gap-2 mb-1">
+                                            <span className="text-xs font-semibold text-gray-800">
+                                                {STATUS_LABELS[entry.status?.toLowerCase() ?? ""] ?? entry.status}
+                                                {entry.updatedBy && (
+                                                    <span className="ml-1.5 text-[10px] font-normal text-gray-400">
+                                                        by {entry.updatedBy}
+                                                    </span>
+                                                )}
+                                            </span>
+                                            {entry.updatedDate && (
+                                                <span className="text-[10px] text-gray-400 whitespace-nowrap">
+                                                    {new Date(entry.updatedDate).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-gray-700 leading-snug">{entry.notes}</p>
+                                    </div>
+                                ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Comments section */}
                 <div className="border-t border-gray-100 pt-3">
                     <IncidentComments incidentId={issue.id} />

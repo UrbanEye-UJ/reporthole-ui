@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 import StatusCard from "@/components/shared/StatusCard";
@@ -15,6 +14,7 @@ import { useAcceptAssignment } from "@/lib/hooks/useAcceptAssignment";
 import { getErrorMessage } from "@/lib/getErrorMessage";
 import type { AssignmentStatus, IncidentWithStatus } from "@/lib/hooks/useRecentIncidents";
 import { useContractorTheme } from "../../_context/ContractorThemeContext";
+import { useLogout } from "@/lib/hooks/useLogout";
 import {
   useNotifications,
   useUnreadNotificationCount,
@@ -48,7 +48,7 @@ const directionsUrl = (lat?: number, lng?: number) =>
   `https://www.google.com/maps/dir/?api=1&destination=${lat ?? 0},${lng ?? 0}`;
 
 export default function ContractorDashboard() {
-  const router = useRouter();
+  const handleLogout = useLogout();
   const { darkMode, toggle: toggleTheme } = useContractorTheme();
   const [role] = useState(() => (typeof window !== "undefined" ? getCookie("reporthole_role") : ""));
   const [resolveTarget, setResolveTarget] = useState<IncidentWithStatus | null>(null);
@@ -102,13 +102,6 @@ export default function ContractorDashboard() {
   const total = assignments.length;
   const resolved = assignments.filter((a) => a.status === "RESOLVED").length;
   const pending = total - resolved;
-
-  const handleLogout = () => {
-    document.cookie = "reporthole_token=; path=/; max-age=0";
-    document.cookie = "reporthole_role=; path=/; max-age=0";
-    document.cookie = "reporthole_user_id=; path=/; max-age=0";
-    router.push("/login");
-  };
 
   return (
     <main className="min-h-screen bg-white dark:bg-[#0F0F0F] transition-colors duration-300">

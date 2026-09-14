@@ -11,13 +11,30 @@ import { useTheme } from "@mui/material/styles";
 import { useGetRecentIncidents, type AssignmentStatus } from "@/lib/hooks/useRecentIncidents";
 import { useGetIncidentClusters } from "@/lib/hooks/useIncidentClusters";
 import type { MunicipalityBoundaryResponse } from "@/app/api/generated/openAPIDefinition.schemas";
-import { formatIncidentType, STATUS_MAP } from "../tables/incidentColumns";
-import type { Status } from "../ui/StatusBadge";
-import type { MapView } from "./IncidentMap";
 
 /** Violet fill for the municipality boundary overlay — kept distinct from the theme's primary
  * color, which is near-white in dark mode and invisible against the OSM tile background. */
 const ZONE_COLOR = "#8B5CF6";
+
+export type SecurityMapView = "pins" | "clusters";
+
+type Status = "Open" | "Assigned" | "In Progress" | "Resolved";
+
+// REPORTED and VERIFIED both read as "Open" since neither has been assigned to a contractor yet
+// — same vocabulary as the admin dashboard's incident table, kept as a local copy rather than an
+// import so this route group has no coupling to the operational admin UI (see _components/ui.tsx).
+const STATUS_MAP: Record<AssignmentStatus, Status> = {
+  REPORTED: "Open",
+  VERIFIED: "Open",
+  ASSIGNED: "Assigned",
+  IN_PROGRESS: "In Progress",
+  RESOLVED: "Resolved",
+};
+
+const formatIncidentType = (type?: string) =>
+  type
+    ? type.toLowerCase().split("_").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ")
+    : "Unknown";
 
 const buildPinIcon = (color: string) =>
   L.divIcon({
@@ -35,7 +52,7 @@ const buildPinIcon = (color: string) =>
 function clusterColor(size: number): string {
   if (size >= 20) return "#EF4444";
   if (size >= 10) return "#F59E0B";
-  if (size >= 5)  return "#3B82F6";
+  if (size >= 5) return "#3B82F6";
   return "#22C55E";
 }
 
@@ -45,21 +62,23 @@ function clusterRadius(size: number): number {
 }
 
 interface Props {
-  view: MapView;
-  /** Real Municipal Demarcation Board boundary for the map's municipality, for the zone overlay. */
-  boundary?: MunicipalityBoundaryResponse | null;
-  /** When provided, restricts both pins and clusters to this municipality (SECURITY_ADMIN map view). */
+  view: SecurityMapView;
+  /** When omitted, incidents and clusters across every municipality are shown. */
   municipalityId?: string;
+  /** Real Municipal Demarcation Board boundary for the selected municipality, from the
+   * municipalities list response — undefined when "all municipalities" is selected, or when
+   * that municipality has no boundary data on file yet. */
+  boundary?: MunicipalityBoundaryResponse | null;
+  /** When omitted, incidents and clusters of every issue type are shown. */
+  issueType?: string;
 }
 
 /**
- * Leaflet map content for the Operations Center and the SECURITY_ADMIN map view.
- * Two view modes:
- *   - **pins**: one status-coloured marker per incident
- *   - **clusters**: K-means hotspot circles coloured by density
- * Also overlays the selected municipality's zone as a translucent polygon.
+ * Leaflet map content for the SECURITY_ADMIN map view — unlike the operational admin
+ * dashboard's map (scoped to one admin's own municipality), this shows whichever
+ * municipality (or all of them) the security admin has picked from the page filter.
  */
-const IncidentMapContent = ({ view, boundary, municipalityId }: Props) => {
+const SecurityIncidentMap = ({ view, municipalityId, boundary, issueType }: Props) => {
   const theme = useTheme();
 
   const { data } = useGetRecentIncidents(200, municipalityId);
@@ -67,11 +86,14 @@ const IncidentMapContent = ({ view, boundary, municipalityId }: Props) => {
     () => (data?.data ?? []).filter(
       (i): i is typeof i & { incidentId: string; latitude: number; longitude: number } =>
         i.incidentId != null && i.latitude != null && i.longitude != null
+        // GET /incidents/recent has no issue-type filter, so pins apply it client-side —
+        // clusters below filter server-side instead, which keeps hotspot centroids correct.
+        && (!issueType || i.incidentType === issueType)
     ),
-    [data]
+    [data, issueType]
   );
 
-  const { data: clusters = [] } = useGetIncidentClusters(7, undefined, municipalityId);
+  const { data: clusters = [] } = useGetIncidentClusters(7, issueType, municipalityId);
 
   const markerIcons = useMemo<Record<Status, L.DivIcon>>(
     () => ({
@@ -79,9 +101,6 @@ const IncidentMapContent = ({ view, boundary, municipalityId }: Props) => {
       Assigned: buildPinIcon(theme.palette.warning.main),
       "In Progress": buildPinIcon(theme.palette.info.main),
       Resolved: buildPinIcon(theme.palette.success.main),
-      Critical: buildPinIcon(theme.palette.error.main),
-      Offline: buildPinIcon(theme.palette.text.disabled),
-      Online: buildPinIcon(theme.palette.success.main),
     }),
     [theme]
   );
@@ -89,16 +108,16 @@ const IncidentMapContent = ({ view, boundary, municipalityId }: Props) => {
   return (
     <MapContainer
       center={[-26.2041, 28.0473]}
-      zoom={10}
+      zoom={9}
       scrollWheelZoom
-      style={{ width: "100%", height: "500px", borderRadius: "16px" }}
+      style={{ width: "100%", height: "600px", borderRadius: "16px" }}
     >
       <TileLayer
         attribution="&copy; OpenStreetMap contributors"
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      {/* Municipality boundary overlay */}
+      {/* Municipality boundary overlay — only when a single municipality is selected */}
       {boundary && (
         <GeoJSON
           key={municipalityId}
@@ -107,7 +126,6 @@ const IncidentMapContent = ({ view, boundary, municipalityId }: Props) => {
         />
       )}
 
-      {/* Incident pins view */}
       {view === "pins" && incidents.map((incident) => {
         const status: Status = STATUS_MAP[(incident.status ?? "REPORTED") as AssignmentStatus] ?? "Open";
         return (
@@ -127,7 +145,6 @@ const IncidentMapContent = ({ view, boundary, municipalityId }: Props) => {
         );
       })}
 
-      {/* K-means hotspot view */}
       {view === "clusters" && clusters
         .filter((c) => c.centroidLatitude != null && c.centroidLongitude != null)
         .map((cluster) => {
@@ -147,9 +164,7 @@ const IncidentMapContent = ({ view, boundary, municipalityId }: Props) => {
               }}
             >
               <Popup>
-                <strong>Hotspot — {size} incident{size !== 1 ? "s" : ""}</strong>
-                <br />
-                Lat {lat.toFixed(4)}, Lng {lng.toFixed(4)}
+                <strong>{size} incident{size === 1 ? "" : "s"}</strong>
               </Popup>
             </CircleMarker>
           );
@@ -158,4 +173,4 @@ const IncidentMapContent = ({ view, boundary, municipalityId }: Props) => {
   );
 };
 
-export default IncidentMapContent;
+export default SecurityIncidentMap;

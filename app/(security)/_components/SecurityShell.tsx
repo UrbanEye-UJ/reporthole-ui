@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 import { Box, Button, IconButton, Tooltip, Typography } from "@mui/material";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
@@ -11,6 +11,7 @@ import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
 import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
 
 import { securityNavigation } from "./nav";
+import { useLogout } from "@/lib/hooks/useLogout";
 
 /**
  * Chrome for the security-admin surface: a fixed sidebar of the three
@@ -27,15 +28,8 @@ interface Props {
 
 export default function SecurityShell({ children, mode, toggleMode }: Props) {
   const pathname = usePathname();
-  const router = useRouter();
+  const handleLogout = useLogout();
   const isDark = mode === "dark";
-
-  const handleLogout = () => {
-    document.cookie = "reporthole_token=; path=/; max-age=0";
-    document.cookie = "reporthole_role=; path=/; max-age=0";
-    document.cookie = "reporthole_user_id=; path=/; max-age=0";
-    router.push("/login");
-  };
 
   return (
     <Box

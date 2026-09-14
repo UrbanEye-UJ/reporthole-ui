@@ -1,12 +1,21 @@
 "use client";
 
-import { DataGrid, type GridColDef, type GridRowsProp } from "@mui/x-data-grid";
+import { DataGrid, type GridColDef, type GridPaginationModel, type GridRowsProp } from "@mui/x-data-grid";
 
 interface DataTableProps {
   rows: GridRowsProp;
   columns: GridColDef[];
   loading?: boolean;
   height?: number;
+  /**
+   * "server" hands pagination control to the caller (via `paginationModel` +
+   * `onPaginationModelChange` + `rowCount`) — for a table backed by a paginated API rather
+   * than a full in-memory row set. Defaults to "client" (paginate whatever `rows` holds).
+   */
+  paginationMode?: "client" | "server";
+  paginationModel?: GridPaginationModel;
+  onPaginationModelChange?: (model: GridPaginationModel) => void;
+  rowCount?: number;
 }
 
 /**
@@ -21,6 +30,10 @@ export default function DataTable({
   columns,
   loading = false,
   height = 560,
+  paginationMode = "client",
+  paginationModel,
+  onPaginationModelChange,
+  rowCount,
 }: DataTableProps) {
   return (
     <DataGrid
@@ -28,8 +41,13 @@ export default function DataTable({
       columns={columns}
       loading={loading}
       disableRowSelectionOnClick
-      pageSizeOptions={[10, 25, 50, 100]}
-      initialState={{ pagination: { paginationModel: { pageSize: 25, page: 0 } } }}
+      paginationMode={paginationMode}
+      {...(paginationMode === "server"
+        ? { paginationModel, onPaginationModelChange, rowCount, pageSizeOptions: [50] }
+        : {
+            pageSizeOptions: [10, 25, 50, 100],
+            initialState: { pagination: { paginationModel: { pageSize: 25, page: 0 } } },
+          })}
       sx={{
         border: "none",
         "& .MuiDataGrid-columnHeaders": { fontWeight: 700 },

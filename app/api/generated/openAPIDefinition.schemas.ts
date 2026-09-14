@@ -411,6 +411,23 @@ export interface GrantRoleRequest {
   reason: string;
 }
 
+export interface RevealAccountRequest {
+  /** @minLength 1 */
+  password: string;
+}
+
+export interface AppResponseRevealAccountResponse {
+  data?: RevealAccountResponse;
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export interface RevealAccountResponse {
+  name?: string;
+  email?: string;
+}
+
 export interface CreateMunicipalityRequest {
   /**
    * @minLength 0
@@ -431,12 +448,18 @@ export interface AppResponseMunicipalityResponse {
   timestamp?: string;
 }
 
+export interface MunicipalityBoundaryResponse {
+  type?: string;
+  coordinates?: number[][][][];
+}
+
 export interface MunicipalityResponse {
   id?: string;
   name?: string;
   province?: string;
   tokenCount?: number;
   createdAt?: string;
+  boundary?: MunicipalityBoundaryResponse;
 }
 
 export interface IssueTokenRequest {
@@ -573,6 +596,7 @@ export interface UserProfileResponse {
   municipalityName?: string;
   createdAt?: string;
   specialisations?: UserProfileResponseSpecialisationsItem[];
+  municipalityBoundary?: MunicipalityBoundaryResponse;
 }
 
 export type UpdateSpecialisationsRequestSpecialisationsItem = typeof UpdateSpecialisationsRequestSpecialisationsItem[keyof typeof UpdateSpecialisationsRequestSpecialisationsItem];
@@ -629,12 +653,23 @@ export interface AppResponseListMessageResponse {
   timestamp?: string;
 }
 
+export type MessageResponseSenderRole = typeof MessageResponseSenderRole[keyof typeof MessageResponseSenderRole];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MessageResponseSenderRole = {
+  CIVILIAN: 'CIVILIAN',
+  CONTRACTOR: 'CONTRACTOR',
+  ADMIN: 'ADMIN',
+  SECURITY_ADMIN: 'SECURITY_ADMIN',
+} as const;
+
 export type MessageResponseCategory = typeof MessageResponseCategory[keyof typeof MessageResponseCategory];
 
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const MessageResponseCategory = {
-  CIVILIAN_COMPLAINT: 'CIVILIAN_COMPLAINT',
+  USER_MESSAGE: 'USER_MESSAGE',
   CONTACT_US: 'CONTACT_US',
 } as const;
 
@@ -643,6 +678,7 @@ export interface MessageResponse {
   senderUserId?: string;
   senderName?: string;
   senderEmail?: string;
+  senderRole?: MessageResponseSenderRole;
   subject?: string;
   content?: string;
   category?: MessageResponseCategory;
@@ -667,6 +703,20 @@ export interface AppResponseIncidentStatsDTO {
 export interface IncidentStatsDTO {
   totalIncidents?: number;
   resolvedIncidents?: number;
+}
+
+export interface AppResponseIncidentPageResponse {
+  data?: IncidentPageResponse;
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export interface IncidentPageResponse {
+  content?: IncidentResponseDTO[];
+  totalElements?: number;
+  page?: number;
+  size?: number;
 }
 
 export interface AppResponseListIncidentResponseDTO {
@@ -777,6 +827,8 @@ export const AuditEntryResponseAction = {
   SESSIONS_REVOKED: 'SESSIONS_REVOKED',
   USER_LOGIN: 'USER_LOGIN',
   USER_REGISTERED: 'USER_REGISTERED',
+  PII_REVEALED: 'PII_REVEALED',
+  ACCOUNT_LOCKED: 'ACCOUNT_LOCKED',
 } as const;
 
 export interface AuditEntryResponse {
@@ -789,6 +841,24 @@ export interface AuditEntryResponse {
   fromValue?: string;
   toValue?: string;
   reason?: string;
+  createdAt?: string;
+}
+
+export interface AppResponseListAuditLogEntryResponse {
+  data?: AuditLogEntryResponse[];
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export interface AuditLogEntryResponse {
+  id?: string;
+  action?: string;
+  actorId?: string;
+  actorName?: string;
+  entityType?: string;
+  entityId?: string;
+  summary?: string;
   createdAt?: string;
 }
 
@@ -872,8 +942,31 @@ export const ListApplicationsStatus = {
   REJECTED: 'REJECTED',
 } as const;
 
+export type SearchIncidentsParams = {
+municipalityId?: string;
+type?: SearchIncidentsType;
+page?: number;
+size?: number;
+};
+
+export type SearchIncidentsType = typeof SearchIncidentsType[keyof typeof SearchIncidentsType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SearchIncidentsType = {
+  POTHOLE: 'POTHOLE',
+  CRACK: 'CRACK',
+  FADED_MARKINGS: 'FADED_MARKINGS',
+  DAMAGED_SIGN: 'DAMAGED_SIGN',
+  BLOCKED_DRAIN: 'BLOCKED_DRAIN',
+  BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
+  ACCIDENT: 'ACCIDENT',
+  OTHER: 'OTHER',
+} as const;
+
 export type GetRecentIncidentsParams = {
 limit?: number;
+municipalityId?: string;
 };
 
 export type GetNearbyIncidentsParams = {
@@ -905,6 +998,7 @@ export const SearchMyIncidentsType = {
 export type GetIncidentClustersParams = {
 k?: number;
 type?: GetIncidentClustersType;
+municipalityId?: string;
 };
 
 export type GetIncidentClustersType = typeof GetIncidentClustersType[keyof typeof GetIncidentClustersType];

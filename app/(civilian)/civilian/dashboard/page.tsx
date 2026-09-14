@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import StatusCard from "@/components/shared/StatusCard";
 import IssueCard from "@/components/shared/IssueCard";
@@ -18,6 +17,7 @@ import {
 import { Issue, Status } from "@/app/types/issue";
 import { IncidentResponseDTO, SearchMyIncidentsType } from "@/app/api/generated/openAPIDefinition.schemas";
 import { useCivilianTheme } from "../../_context/CivilianThemeContext";
+import { useLogout } from "@/lib/hooks/useLogout";
 import {
     useNotifications,
     useUnreadNotificationCount,
@@ -55,13 +55,14 @@ function toIssue(dto: IncidentResponseDTO): Issue {
         status: mapStatus(dto.status),
         image: dto.imageUrl ?? "",
         reporterCount: dto.reporterCount ?? 1,
+        workflowHistory: dto.workflowHistory,
     };
 }
 
 const SEARCH_TYPES = Object.values(SearchMyIncidentsType);
 
 export default function CivilianDashboard() {
-    const router = useRouter();
+    const handleLogout = useLogout();
     const { darkMode, toggle: toggleTheme } = useCivilianTheme();
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
@@ -147,13 +148,6 @@ export default function CivilianDashboard() {
 
     const resolved = allIncidents.filter((i) => i.status === "resolved").length;
     const inProgress = allIncidents.filter((i) => i.status === "in_progress").length;
-
-    const handleLogout = () => {
-        document.cookie = "reporthole_token=; path=/; max-age=0";
-        document.cookie = "reporthole_role=; path=/; max-age=0";
-        document.cookie = "reporthole_user_id=; path=/; max-age=0";
-        router.push("/login");
-    };
 
     return (
         <main className="min-h-screen bg-white dark:bg-[#0F0F0F] transition-colors duration-300">

@@ -25,6 +25,7 @@ import type {
 
 import type {
   AppResponseIncidentCommentResponse,
+  AppResponseIncidentPageResponse,
   AppResponseIncidentResponseDTO,
   AppResponseIncidentStatsDTO,
   AppResponseListIncidentClusterDTO,
@@ -39,6 +40,7 @@ import type {
   ProgressUpdateRequest,
   RejectAssignmentRequest,
   ResolveIncidentRequest,
+  SearchIncidentsParams,
   SearchMyIncidentsParams,
   SseEmitter
 } from '../openAPIDefinition.schemas';
@@ -1097,7 +1099,100 @@ export function useGetIncidentStats<TData = Awaited<ReturnType<typeof getInciden
 
 
 /**
- * Returns the most recently logged incidents across all users, ordered by date descending. Intended for admin dashboards.
+ * Returns one page of incidents, newest first, optionally filtered by municipality and/or issue type. Used by the SECURITY_ADMIN incidents table, which needs real server-side pagination rather than the capped flat list from GET /recent.
+ * @summary Paginated, filterable incident search
+ */
+export const searchIncidents = (
+    params?: SearchIncidentsParams,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseIncidentPageResponse>(
+      {url: `/incidents/search`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+  
+
+
+
+export const getSearchIncidentsQueryKey = (params?: SearchIncidentsParams,) => {
+    return [
+    `/incidents/search`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getSearchIncidentsQueryOptions = <TData = Awaited<ReturnType<typeof searchIncidents>>, TError = unknown>(params?: SearchIncidentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof searchIncidents>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchIncidentsQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchIncidents>>> = ({ signal }) => searchIncidents(params, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchIncidents>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SearchIncidentsQueryResult = NonNullable<Awaited<ReturnType<typeof searchIncidents>>>
+export type SearchIncidentsQueryError = unknown
+
+
+export function useSearchIncidents<TData = Awaited<ReturnType<typeof searchIncidents>>, TError = unknown>(
+ params: undefined |  SearchIncidentsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof searchIncidents>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof searchIncidents>>,
+          TError,
+          Awaited<ReturnType<typeof searchIncidents>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSearchIncidents<TData = Awaited<ReturnType<typeof searchIncidents>>, TError = unknown>(
+ params?: SearchIncidentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof searchIncidents>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof searchIncidents>>,
+          TError,
+          Awaited<ReturnType<typeof searchIncidents>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSearchIncidents<TData = Awaited<ReturnType<typeof searchIncidents>>, TError = unknown>(
+ params?: SearchIncidentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof searchIncidents>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Paginated, filterable incident search
+ */
+
+export function useSearchIncidents<TData = Awaited<ReturnType<typeof searchIncidents>>, TError = unknown>(
+ params?: SearchIncidentsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof searchIncidents>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSearchIncidentsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
+ * Returns the most recently logged incidents, ordered by date descending. Intended for admin dashboards. Optionally restricted to a single municipality with ?municipalityId= — used by the SECURITY_ADMIN map view; an ADMIN caller is otherwise auto-scoped to their own municipality regardless of this parameter's absence.
  * @summary Get recent incidents
  */
 export const getRecentIncidents = (
@@ -1744,7 +1839,7 @@ export function useSubscribeToIncidentEvents<TData = Awaited<ReturnType<typeof s
 
 
 /**
- * Groups non-deleted incidents into up to k clusters of nearby locations using K-Means, optionally restricted to a single issue type. Intended for admin dashboard hotspot maps.
+ * Groups non-deleted incidents into up to k clusters of nearby locations using K-Means, optionally restricted to a single issue type and/or a single municipality with ?municipalityId=. Intended for admin dashboard and SECURITY_ADMIN map-view hotspot maps.
  * @summary Cluster incidents by location
  */
 export const getIncidentClusters = (

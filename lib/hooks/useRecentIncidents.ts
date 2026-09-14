@@ -23,11 +23,15 @@ export type AppResponseListIncidentWithStatus = Omit<AppResponseListIncidentResp
   data?: IncidentWithStatus[];
 };
 
-export const getGetRecentIncidentsKey = (limit?: number) =>
-  getGetRecentIncidentsQueryKey({ limit });
+export const getGetRecentIncidentsKey = (limit?: number, municipalityId?: string) =>
+  getGetRecentIncidentsQueryKey({ limit, municipalityId });
 
-export const useGetRecentIncidents = (limit = 10) =>
+/**
+ * @param municipalityId when provided, restricts results to that municipality — used by the
+ *   SECURITY_ADMIN map view; an ADMIN's own dashboard omits it and is auto-scoped server-side.
+ */
+export const useGetRecentIncidents = (limit = 10, municipalityId?: string) =>
   useGetRecentIncidentsGenerated(
-    { limit },
+    { limit, ...(municipalityId ? { municipalityId } : {}) },
     { query: { refetchInterval: 60_000 } },
   );
