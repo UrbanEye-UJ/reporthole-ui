@@ -14,11 +14,11 @@ import { securityNavigation } from "./nav";
 import { useLogout } from "@/lib/hooks/useLogout";
 
 /**
- * Chrome for the security-admin surface: a fixed sidebar of the three
- * capability screens plus a top bar with a sign-out control.
+ * Chrome for the security-admin surface: a fixed sidebar of capability
+ * screens plus a top bar with a theme toggle and sign-out control.
  *
- * Intentionally simpler than the operational `AdminShell` (no collapse, no
- * theme toggle) — this surface is used rarely and by few people.
+ * Intentionally simpler than the operational `AdminShell` (no collapse) —
+ * this surface is used rarely and by few people.
  */
 interface Props {
   children: ReactNode;
@@ -82,12 +82,15 @@ export default function SecurityShell({ children, mode, toggleMode }: Props) {
                   gap: 1.5,
                   px: 1.5,
                   py: 1.15,
-                  borderRadius: 1.5,
+                  borderRadius: "6px",
                   textDecoration: "none",
-                  color: active ? (isDark ? "#111111" : "#FFFFFF") : "text.secondary",
-                  bgcolor: active ? (isDark ? "#FFFFFF" : "#111111") : "transparent",
+                  // Notion's selected sidebar item is a soft gray highlight with
+                  // the same text color as the rest — not a black/white inversion.
+                  color: active ? "text.primary" : "text.secondary",
+                  bgcolor: active ? (isDark ? "#2A2A2A" : "#EDECEA") : "transparent",
                   fontWeight: active ? 600 : 500,
-                  "&:hover": { bgcolor: active ? (isDark ? "#E5E7EB" : "#2D2D2D") : (isDark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)") },
+                  "&:hover": { bgcolor: active ? (isDark ? "#2A2A2A" : "#EDECEA") : (isDark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)") },
+                  transition: "background-color .15s ease",
                 }}
               >
                 <Icon fontSize="small" />

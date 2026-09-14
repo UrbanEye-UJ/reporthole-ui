@@ -9,10 +9,14 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
+  InputAdornment,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
+import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
+import VisibilityOffRoundedIcon from "@mui/icons-material/VisibilityOffRounded";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -34,15 +38,16 @@ interface RevealEmailDialogProps {
 }
 
 /**
- * Step-up re-authentication dialog for viewing a contractor's decrypted email.
+ * Step-up re-authentication dialog for viewing a contractor's decrypted email and phone number.
  *
- * The contractors table always shows the masked email from GET /admin/contractors —
- * this dialog is the only path to the full address, and requires the calling admin
- * to re-enter their own password. The revealed value lives only in this component's
- * local state and is discarded when the dialog closes.
+ * The contractors table always shows the masked email and phone from GET /admin/contractors —
+ * this dialog is the only path to the full values, and requires the calling admin to re-enter
+ * their own password. The revealed values live only in this component's local state and are
+ * discarded when the dialog closes.
  */
 const RevealEmailDialog = ({ open, onClose, contractorId, contractorName }: RevealEmailDialogProps) => {
-  const [revealedEmail, setRevealedEmail] = useState<string | null>(null);
+  const [revealed, setRevealed] = useState<{ email: string; phoneNumber: string } | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     control,
@@ -59,7 +64,8 @@ const RevealEmailDialog = ({ open, onClose, contractorId, contractorName }: Reve
   const handleClose = () => {
     reset();
     resetMutation();
-    setRevealedEmail(null);
+    setRevealed(null);
+    setShowPassword(false);
     onClose();
   };
 
@@ -67,7 +73,10 @@ const RevealEmailDialog = ({ open, onClose, contractorId, contractorName }: Reve
     if (!contractorId) return;
     mutate(
       { id: contractorId, data: { password: values.password } },
-      { onSuccess: (res) => setRevealedEmail(res.data?.email ?? null) }
+      {
+        onSuccess: (res) =>
+          setRevealed({ email: res.data?.email ?? "—", phoneNumber: res.data?.phoneNumber ?? "—" }),
+      }
     );
   };
 
@@ -78,12 +87,21 @@ const RevealEmailDialog = ({ open, onClose, contractorId, contractorName }: Reve
       fullWidth
       maxWidth="xs"
     >
-      <DialogTitle>View email — {contractorName}</DialogTitle>
+      <DialogTitle>View contact details — {contractorName}</DialogTitle>
 
-      {revealedEmail ? (
+      {revealed ? (
         <>
           <DialogContent>
-            <Typography sx={{ wordBreak: "break-all" }}>{revealedEmail}</Typography>
+            <Stack spacing={1.5}>
+              <div>
+                <Typography variant="caption" color="text.secondary">Email</Typography>
+                <Typography sx={{ wordBreak: "break-all" }}>{revealed.email}</Typography>
+              </div>
+              <div>
+                <Typography variant="caption" color="text.secondary">Phone</Typography>
+                <Typography>{revealed.phoneNumber}</Typography>
+              </div>
+            </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3 }}>
             <Button
@@ -105,7 +123,7 @@ const RevealEmailDialog = ({ open, onClose, contractorId, contractorName }: Reve
                 variant="body2"
                 color="text.secondary"
               >
-                Re-enter your password to view this contractor&apos;s email address.
+                Re-enter your password to view this contractor&apos;s email and phone number.
               </Typography>
 
               {error && <Alert severity="error">{getErrorMessage(error, "Incorrect password.")}</Alert>}
@@ -117,11 +135,27 @@ const RevealEmailDialog = ({ open, onClose, contractorId, contractorName }: Reve
                   <TextField
                     {...field}
                     label="Your password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     fullWidth
                     autoFocus
                     error={!!errors.password}
                     helperText={errors.password?.message}
+                    slotProps={{
+                      input: {
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              onClick={() => setShowPassword((v) => !v)}
+                              edge="end"
+                              size="small"
+                              aria-label={showPassword ? "Hide password" : "Show password"}
+                            >
+                              {showPassword ? <VisibilityOffRoundedIcon fontSize="small" /> : <VisibilityRoundedIcon fontSize="small" />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
                   />
                 )}
               />
@@ -134,7 +168,7 @@ const RevealEmailDialog = ({ open, onClose, contractorId, contractorName }: Reve
               variant="contained"
               disabled={isPending}
             >
-              {isPending ? "Verifying..." : "View Email"}
+              {isPending ? "Verifying..." : "View Details"}
             </Button>
           </DialogActions>
         </form>

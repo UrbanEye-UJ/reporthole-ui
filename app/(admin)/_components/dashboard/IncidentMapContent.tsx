@@ -1,12 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 import "leaflet/dist/leaflet.css";
 
-import { MapContainer, Marker, Popup, TileLayer, CircleMarker, GeoJSON } from "react-leaflet";
+import { MapContainer, Marker, Popup, TileLayer, CircleMarker, GeoJSON, Polygon, useMap } from "react-leaflet";
 import L from "leaflet";
 import { useTheme } from "@mui/material/styles";
+
+/** Red outline + translucent red tint for the area outside the municipality boundary. */
+const BORDER_COLOR = "#EF4444";
 
 import { useGetRecentIncidents, type AssignmentStatus } from "@/lib/hooks/useRecentIncidents";
 import { useGetIncidentClusters } from "@/lib/hooks/useIncidentClusters";
@@ -14,10 +17,6 @@ import type { MunicipalityBoundaryResponse } from "@/app/api/generated/openAPIDe
 import { formatIncidentType, STATUS_MAP } from "../tables/incidentColumns";
 import type { Status } from "../ui/StatusBadge";
 import type { MapView } from "./IncidentMap";
-
-/** Violet fill for the municipality boundary overlay — kept distinct from the theme's primary
- * color, which is near-white in dark mode and invisible against the OSM tile background. */
-const ZONE_COLOR = "#8B5CF6";
 
 const buildPinIcon = (color: string) =>
   L.divIcon({
@@ -43,6 +42,85 @@ function clusterColor(size: number): string {
 function clusterRadius(size: number): number {
   return Math.min(55, Math.max(18, Math.sqrt(size) * 12));
 }
+
+/** Flattens a MultiPolygon's [lon, lat] positions into Leaflet [lat, lng] pairs. */
+function boundaryToLatLngs(boundary: MunicipalityBoundaryResponse): L.LatLngExpression[] {
+  const latLngs: L.LatLngExpression[] = [];
+  (boundary.coordinates ?? []).forEach((polygon) =>
+    polygon.forEach((ring) =>
+      ring.forEach(([lng, lat]) => latLngs.push([lat, lng]))
+    )
+  );
+  return latLngs;
+}
+
+/** Each ring of a MultiPolygon as its own Leaflet [lat, lng] ring (one per polygon part). */
+function boundaryToRings(boundary: MunicipalityBoundaryResponse): L.LatLngExpression[][] {
+  const rings: L.LatLngExpression[][] = [];
+  (boundary.coordinates ?? []).forEach((polygon) =>
+    polygon.forEach((ring) => rings.push(ring.map(([lng, lat]): L.LatLngExpression => [lat, lng])))
+  );
+  return rings;
+}
+
+/** Shoelace signed area — sign gives a ring's winding direction (only the sign matters here). */
+function signedArea(ring: L.LatLngExpression[]): number {
+  let sum = 0;
+  for (let i = 0; i < ring.length; i++) {
+    const [y1, x1] = ring[i] as [number, number];
+    const [y2, x2] = ring[(i + 1) % ring.length] as [number, number];
+    sum += x1 * y2 - x2 * y1;
+  }
+  return sum;
+}
+
+const WORLD_RING: L.LatLngExpression[] = [[-85, -180], [85, -180], [85, 180], [-85, 180]];
+
+/**
+ * Builds a "world minus boundary" ring set for tinting everything outside the municipality.
+ * A Leaflet polygon's holes only render as holes when their winding is opposite the outer
+ * ring's, so each boundary ring is flipped if needed to guarantee that.
+ */
+function buildOutsideRings(boundary: MunicipalityBoundaryResponse): L.LatLngExpression[][] {
+  const outerSign = Math.sign(signedArea(WORLD_RING));
+  const holes = boundaryToRings(boundary).map((ring) =>
+    Math.sign(signedArea(ring)) === outerSign ? [...ring].reverse() : ring
+  );
+  return [WORLD_RING, ...holes];
+}
+
+/**
+ * Frames the map to the municipality boundary on load and locks panning/zooming so the
+ * admin can't scroll or zoom out past their own municipality.
+ *
+ * Uses a "cover" fit rather than Leaflet's default "contain" fit: it zooms in until the
+ * boundary fills the entire panel (cropping the longer edge), instead of shrinking to fit
+ * the whole boundary with letterboxed space around it.
+ */
+const LockToBoundary = ({ boundary }: { boundary: MunicipalityBoundaryResponse }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    const latLngs = boundaryToLatLngs(boundary);
+    if (latLngs.length === 0) return;
+
+    // Leaflet measures the container lazily; if this runs before the panel has taken its
+    // final on-screen size, getBoundsZoom fits against a stale (too-small) size and locks
+    // in a wrong minimum zoom. Force a re-measure immediately before using it.
+    map.invalidateSize();
+
+    const bounds = L.latLngBounds(latLngs);
+    map.setMinZoom(0);
+    // inside=true → the smallest zoom at which the map view fits entirely inside the
+    // boundary's bounds, i.e. the boundary covers the whole panel with no letterboxing.
+    const coverZoom = map.getBoundsZoom(bounds, true);
+    map.setView(bounds.getCenter(), coverZoom);
+    map.setMinZoom(coverZoom);
+    map.setMaxBounds(bounds.pad(0.05));
+  }, [map, boundary]);
+
+  return null;
+};
 
 interface Props {
   view: MapView;
@@ -91,6 +169,7 @@ const IncidentMapContent = ({ view, boundary, municipalityId }: Props) => {
       center={[-26.2041, 28.0473]}
       zoom={10}
       scrollWheelZoom
+      maxBoundsViscosity={1.0}
       style={{ width: "100%", height: "500px", borderRadius: "16px" }}
     >
       <TileLayer
@@ -98,13 +177,21 @@ const IncidentMapContent = ({ view, boundary, municipalityId }: Props) => {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      {/* Municipality boundary overlay */}
+      {/* Municipality boundary — frames/locks the viewport; red outline, translucent red tint outside it */}
       {boundary && (
-        <GeoJSON
-          key={municipalityId}
-          data={boundary as unknown as GeoJSON.Geometry}
-          style={{ stroke: false, fillColor: ZONE_COLOR, fillOpacity: 0.18 }}
-        />
+        <>
+          <Polygon
+            positions={buildOutsideRings(boundary)}
+            pathOptions={{ stroke: false, fillColor: BORDER_COLOR, fillOpacity: 0.35 }}
+            interactive={false}
+          />
+          <GeoJSON
+            key={municipalityId}
+            data={boundary as unknown as GeoJSON.Geometry}
+            style={{ color: BORDER_COLOR, weight: 2, fill: false }}
+          />
+          <LockToBoundary boundary={boundary} />
+        </>
       )}
 
       {/* Incident pins view */}

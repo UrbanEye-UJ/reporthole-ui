@@ -104,7 +104,7 @@ export default function ContractorDashboard() {
   const pending = total - resolved;
 
   return (
-    <main className="min-h-screen bg-white dark:bg-[#0F0F0F] transition-colors duration-300">
+    <main className="min-h-screen bg-white dark:bg-[#191919] transition-colors duration-300">
       <div className="max-w-lg mx-auto px-4 py-6 flex flex-col gap-5">
 
         {/* Header */}
@@ -205,7 +205,7 @@ export default function ContractorDashboard() {
                     placeholder="Describe your query or concern…"
                     rows={3}
                     maxLength={2000}
-                    className="w-full text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent dark:text-white px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-gray-900/20 placeholder-gray-400"
+                    className="w-full text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent dark:text-white px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-gray-900/20 placeholder-gray-500"
                   />
                   <button
                     type="button"
@@ -393,8 +393,8 @@ export default function ContractorDashboard() {
             onClick={() => setNotifOpen(false)}
           />
           {/* Panel */}
-          <div className="fixed top-0 right-0 h-full w-80 max-w-full bg-white dark:bg-[#161616] border-l border-gray-200 dark:border-[#2D2D2D] z-50 flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-[#2D2D2D]">
+          <div className="fixed top-0 right-0 h-full w-80 max-w-full bg-white dark:bg-[#202020] border-l border-gray-200 dark:border-[#2F2F2F] z-50 flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-[#2F2F2F]">
               <div>
                 <p className="text-base font-bold text-gray-900 dark:text-white">Notifications</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Your assignment activity</p>
@@ -410,7 +410,7 @@ export default function ContractorDashboard() {
                 </svg>
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-[#2D2D2D]">
+            <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-[#2F2F2F]">
               {notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full gap-2 text-gray-400 dark:text-gray-500 py-16">
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">

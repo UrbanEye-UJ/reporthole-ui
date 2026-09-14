@@ -10,6 +10,10 @@ import { logout as logoutRequest } from "@/app/api/generated/authentication/auth
  * and redirecting to /login. The server call is best-effort — a network hiccup shouldn't trap
  * the user on a page they just asked to leave, so cookies are cleared and the redirect happens
  * regardless of whether it succeeds.
+ *
+ * Also clears localStorage — this is a shared device concern (device tokens, cached theme
+ * preference) as much as a per-user one, so the next person to sign in on this browser doesn't
+ * inherit the previous user's local state.
  */
 export const useLogout = () => {
   const router = useRouter();
@@ -23,6 +27,7 @@ export const useLogout = () => {
     document.cookie = "reporthole_token=; path=/; max-age=0";
     document.cookie = "reporthole_role=; path=/; max-age=0";
     document.cookie = "reporthole_user_id=; path=/; max-age=0";
+    localStorage.clear();
     router.push("/login");
   };
 };

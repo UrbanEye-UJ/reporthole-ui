@@ -14,7 +14,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { navigation } from "../navigation";
-import { useGetProfile } from "@/app/api/generated/user-profile/user-profile";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -23,8 +22,6 @@ interface SidebarProps {
 
 const AdminSidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
   const pathname = usePathname();
-  const { data } = useGetProfile({ query: { staleTime: 1000 * 60 * 5 } });
-  const brandName = data?.data?.municipalityName ?? "Reporthole";
 
   return (
     <Box
@@ -63,7 +60,7 @@ const AdminSidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
               whiteSpace: "nowrap",
             }}
           >
-            {brandName}
+            Reporthole
           </Typography>
         )}
 
@@ -108,27 +105,21 @@ const AdminSidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
                     ? "center"
                     : "flex-start",
 
-                  borderRadius: 3,
+                  borderRadius: "6px",
 
+                  // Notion's selected sidebar item is a soft gray highlight with
+                  // the same text color as the rest — not a black/white inversion.
                   bgcolor: isActive
-                    ? "primary.main"
+                    ? (t) => (t.palette.mode === "dark" ? "#2A2A2A" : "#EDECEA")
                     : "transparent",
 
-                  color: isActive
-                    ? (t) =>
-                        t.palette.mode === "dark"
-                          ? "#111111"
-                          : "#FFFFFF"
-                    : "text.primary",
+                  color: "text.primary",
 
                   transition: "all 0.2s ease",
 
                   "&:hover": {
                     bgcolor: isActive
-                      ? (t) =>
-                          t.palette.mode === "dark"
-                            ? "#E5E7EB"
-                            : "#374151"
+                      ? (t) => (t.palette.mode === "dark" ? "#2A2A2A" : "#EDECEA")
                       : (t) =>
                           t.palette.mode === "dark"
                             ? "rgba(255,255,255,.06)"

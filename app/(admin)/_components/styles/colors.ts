@@ -1,32 +1,40 @@
+/**
+ * Notion-style palette. `background.secondary` is the sidebar/chrome tone (a
+ * tinted gray-white in light mode, a tone darker than canvas in dark mode);
+ * `background.primary` is the main canvas. Status colors (success/warning/
+ * danger/info) are intentionally kept saturated and distinct from
+ * primary/secondary — those stay near-black/near-white for buttons and
+ * selected nav, so a status chip is never confused with a UI action.
+ */
 export const colors = {
   dark: {
     background: {
-      primary: "#0F0F0F",
-      secondary: "#161616",
-      tertiary: "#1C1C1C",
+      primary: "#191919",
+      secondary: "#202020",
+      tertiary: "#2A2A2A",
     },
 
     surface: {
-      primary: "#161616",
-      secondary: "#1C1C1C",
+      primary: "#202020",
+      secondary: "#2A2A2A",
     },
 
-    border: "#2D2D2D",
+    border: "#2F2F2F",
 
     glass: {
-      background: "rgba(255,255,255,0.04)",
+      background: "rgba(255,255,255,0.03)",
       hover: "rgba(255,255,255,.06)",
       active: "#FFFFFF",
     },
 
     text: {
-      primary: "#F9FAFB",
-      secondary: "#9CA3AF",
-      disabled: "#4B5563",
+      primary: "#E9E9E7",
+      secondary: "#9B9A97",
+      disabled: "#6F6E69",
     },
 
     primary: "#FFFFFF",
-    secondary: "#D1D5DB",
+    secondary: "#9B9A97",
 
     success: "#22C55E",
     warning: "#F59E0B",
@@ -35,35 +43,35 @@ export const colors = {
   },
 
   light: {
-    // Page background is a soft off-white, distinct from card surfaces below — previously both
-    // were pure #FFFFFF, so Paper/Card panels had no visible separation from the page itself.
+    // background.secondary (sidebar/chrome) is a tinted gray-white distinct from
+    // background.primary (the white main canvas) — the Notion "sidebar vs. page" split.
     background: {
-      primary: "#F3F4F6",
-      secondary: "#FFFFFF",
-      tertiary: "#E5E7EB",
+      primary: "#FFFFFF",
+      secondary: "#F7F7F5",
+      tertiary: "#EDECEA",
     },
 
     surface: {
       primary: "#FFFFFF",
-      secondary: "#F3F4F6",
+      secondary: "#F7F7F5",
     },
 
-    border: "#D1D5DB",
+    border: "#E9E9E7",
 
     glass: {
-      background: "#FFFFFF",
+      background: "#F7F7F5",
       hover: "rgba(0,0,0,.04)",
-      active: "#111111",
+      active: "#191919",
     },
 
     text: {
-      primary: "#111111",
-      secondary: "#6B7280",
-      disabled: "#9CA3AF",
+      primary: "#37352F",
+      secondary: "#787774",
+      disabled: "#9B9A97",
     },
 
-    primary: "#111111",
-    secondary: "#374151",
+    primary: "#191919",
+    secondary: "#787774",
 
     success: "#22C55E",
     warning: "#F59E0B",

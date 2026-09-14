@@ -71,7 +71,7 @@ export default function RejectAssignmentModal({ visible, onClose, incidentId, in
             onChange={(e) => setReason(e.target.value)}
             placeholder="Explain why you can't take this assignment..."
             rows={3}
-            className="bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none resize-none"
+            className="bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-500 outline-none resize-none"
           />
         </div>
 

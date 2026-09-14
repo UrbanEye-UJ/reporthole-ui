@@ -11,14 +11,12 @@ import {
   Drawer,
   IconButton,
   Stack,
-  TextField,
   Toolbar,
   Tooltip,
   Typography,
 } from "@mui/material";
 
 import NotificationsRoundedIcon from "@mui/icons-material/NotificationsRounded";
-import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
 import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
@@ -79,31 +77,6 @@ const AdminTopbar = () => {
 
           {/* Right */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            {/* Search */}
-            <TextField
-              size="small"
-              placeholder="Search incidents..."
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <SearchRoundedIcon sx={{ mr: 1, color: "text.secondary" }} />
-                  ),
-                },
-              }}
-              sx={{
-                width: 320,
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: "999px",
-                  background: isDark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)",
-                  backdropFilter: "blur(12px)",
-                  transition: ".25s",
-                  "& fieldset": { borderColor: isDark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.12)" },
-                  "&:hover fieldset": { borderColor: "primary.main" },
-                  "&.Mui-focused fieldset": { borderColor: "primary.main" },
-                },
-              }}
-            />
-
             {/* Theme toggle */}
             <Tooltip title={isDark ? "Switch to light mode" : "Switch to dark mode"}>
               <IconButton
@@ -141,7 +114,7 @@ const AdminTopbar = () => {
             </Tooltip>
 
             {/* User avatar — TODO(api): replace "A" with first letter of profile first name */}
-            <Avatar sx={{ bgcolor: "primary.main", color: isDark ? "#111111" : "#FFFFFF", fontWeight: 700 }}>
+            <Avatar sx={{ bgcolor: "primary.main", color: "primary.contrastText", fontWeight: 700 }}>
               A
             </Avatar>
 

@@ -9,10 +9,14 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
+  InputAdornment,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
+import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
+import VisibilityOffRoundedIcon from "@mui/icons-material/VisibilityOffRounded";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -43,6 +47,7 @@ interface RevealAccountDialogProps {
  */
 const RevealAccountDialog = ({ open, onClose, userId, maskedName }: RevealAccountDialogProps) => {
   const [revealed, setRevealed] = useState<{ name: string; email: string } | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     control,
@@ -60,6 +65,7 @@ const RevealAccountDialog = ({ open, onClose, userId, maskedName }: RevealAccoun
     reset();
     resetMutation();
     setRevealed(null);
+    setShowPassword(false);
     onClose();
   };
 
@@ -104,11 +110,27 @@ const RevealAccountDialog = ({ open, onClose, userId, maskedName }: RevealAccoun
                   <TextField
                     {...field}
                     label="Your password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     fullWidth
                     autoFocus
                     error={!!errors.password}
                     helperText={errors.password?.message}
+                    slotProps={{
+                      input: {
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              onClick={() => setShowPassword((v) => !v)}
+                              edge="end"
+                              size="small"
+                              aria-label={showPassword ? "Hide password" : "Show password"}
+                            >
+                              {showPassword ? <VisibilityOffRoundedIcon fontSize="small" /> : <VisibilityRoundedIcon fontSize="small" />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
                   />
                 )}
               />

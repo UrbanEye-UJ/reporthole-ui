@@ -45,7 +45,7 @@ const STATUS_COLOR: Record<string, "default" | "warning" | "info" | "success" | 
 const SecurityIncidentMap = dynamic(() => import("../../_components/SecurityIncidentMap"), {
   ssr: false,
   loading: () => (
-    <div style={{ height: "600px", borderRadius: "16px", background: "rgba(127,127,127,.08)" }} />
+    <div style={{ height: "600px", borderRadius: "10px", background: "rgba(127,127,127,.08)" }} />
   ),
 });
 

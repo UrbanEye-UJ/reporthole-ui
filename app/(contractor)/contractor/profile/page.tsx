@@ -115,14 +115,14 @@ export default function ContractorProfilePage() {
 
     if (isLoading) {
         return (
-            <main className={`min-h-screen flex items-center justify-center ${darkMode ? "bg-[#0F0F0F]" : "bg-gray-100"}`}>
+            <main className={`min-h-screen flex items-center justify-center ${darkMode ? "bg-[#191919]" : "bg-gray-100"}`}>
                 <p className="text-sm text-gray-400">Loading profile…</p>
             </main>
         );
     }
 
     return (
-        <main className={`min-h-screen transition-colors duration-300 ${darkMode ? "bg-[#0F0F0F]" : "bg-gray-100"}`}>
+        <main className={`min-h-screen transition-colors duration-300 ${darkMode ? "bg-[#191919]" : "bg-gray-100"}`}>
             <div className="max-w-lg mx-auto px-4 py-6 flex flex-col gap-5">
 
                 {/* Header */}
@@ -159,7 +159,7 @@ export default function ContractorProfilePage() {
                 </div>
 
                 {/* Profile card */}
-                <div className={`rounded-2xl p-5 flex flex-col gap-4 transition-colors duration-300 ${darkMode ? "bg-[#161616]" : "bg-white"}`}>
+                <div className={`rounded-2xl p-5 flex flex-col gap-4 transition-colors duration-300 ${darkMode ? "bg-[#202020]" : "bg-white"}`}>
                     {editing ? (
                         <>
                             <div className="flex flex-col gap-3">
@@ -218,7 +218,7 @@ export default function ContractorProfilePage() {
 
                 {/* Specialisations */}
                 {!editing && (
-                    <div className={`rounded-2xl p-5 flex flex-col gap-3 transition-colors duration-300 ${darkMode ? "bg-[#161616]" : "bg-white"}`}>
+                    <div className={`rounded-2xl p-5 flex flex-col gap-3 transition-colors duration-300 ${darkMode ? "bg-[#202020]" : "bg-white"}`}>
                         <div className="flex items-center justify-between">
                             <h2 className={`text-sm font-semibold ${darkMode ? "text-gray-100" : "text-gray-900"}`}>Specialisations</h2>
                             {!editingSpec && (
@@ -296,7 +296,7 @@ export default function ContractorProfilePage() {
 
                 {/* Danger zone */}
                 {!editing && (
-                    <div className={`rounded-2xl p-5 flex flex-col gap-3 transition-colors duration-300 ${darkMode ? "bg-[#161616]" : "bg-white"}`}>
+                    <div className={`rounded-2xl p-5 flex flex-col gap-3 transition-colors duration-300 ${darkMode ? "bg-[#202020]" : "bg-white"}`}>
                         <h2 className={`text-sm font-semibold ${darkMode ? "text-red-400" : "text-red-600"}`}>Danger zone</h2>
                         <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
                             Deleting your account is permanent. Your job history will remain in the system but you will no longer be able to log in.

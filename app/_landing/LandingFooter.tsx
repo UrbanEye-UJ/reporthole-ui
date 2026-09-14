@@ -16,7 +16,7 @@ const footLink: React.CSSProperties = { fontSize: 14.5, color: "#C8D0DE", textDe
 
 export default function LandingFooter() {
   const { dark } = useLandingTheme();
-  const footerBg = dark ? "#0F0F0F" : "#111111";
+  const footerBg = dark ? "#191919" : "#191919";
 
   return (
     <footer style={{ background: footerBg, color: "#B9C2D4", padding: "54px 24px 40px" }}>
@@ -44,7 +44,7 @@ export default function LandingFooter() {
                 flex: "none",
               }}
             >
-              <PinIcon size={15} color="#111111" />
+              <PinIcon size={15} color="#191919" />
             </span>
             <span style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.02em" }}>Reporthole</span>
           </div>

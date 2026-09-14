@@ -11,34 +11,13 @@ import {
 import { useSend } from "@/app/api/generated/messages/messages";
 import { useCivilianTheme } from "../_context/CivilianThemeContext";
 import { apiClient } from "@/lib/axios";
+import { maskName, maskEmail, maskPhone } from "@/lib/piiMask";
 
 type EditState = {
     firstName: string;
     lastName: string;
     phoneNumber: string;
 };
-
-/** Mask a full name: "John Doe" → "J*** D***" */
-function maskName(name: string): string {
-    return name
-        .split(" ")
-        .filter(Boolean)
-        .map((w) => `${w[0]}${"*".repeat(Math.max(w.length - 1, 2))}`)
-        .join(" ");
-}
-
-/** Mask an email: "john@example.com" → "j***@example.com" */
-function maskEmail(email: string): string {
-    const [local, domain] = email.split("@");
-    if (!domain) return "***";
-    return `${local[0]}***@${domain}`;
-}
-
-/** Mask a phone: "0603802390" → "0603*****" */
-function maskPhone(phone: string): string {
-    if (phone.length <= 4) return "****";
-    return `${phone.slice(0, 4)}${"*".repeat(phone.length - 4)}`;
-}
 
 /** Eye-open SVG icon */
 function EyeIcon() {
@@ -71,6 +50,7 @@ export default function ProfilePage() {
     const [revealed, setRevealed] = useState(false);
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [passwordInput, setPasswordInput] = useState("");
+    const [showPasswordInput, setShowPasswordInput] = useState(false);
     const [verifyError, setVerifyError] = useState<string | null>(null);
     const [verifying, setVerifying] = useState(false);
 
@@ -139,6 +119,7 @@ export default function ProfilePage() {
             setRevealed(true);
             setShowPasswordModal(false);
             setPasswordInput("");
+            setShowPasswordInput(false);
         } catch {
             setVerifyError("Incorrect password. Please try again.");
         } finally {
@@ -155,14 +136,14 @@ export default function ProfilePage() {
 
     if (isLoading) {
         return (
-            <main className="min-h-screen bg-gray-100 dark:bg-[#0F0F0F] flex items-center justify-center transition-colors duration-300">
+            <main className="min-h-screen bg-gray-100 dark:bg-[#191919] flex items-center justify-center transition-colors duration-300">
                 <p className="text-sm text-gray-400 dark:text-gray-500">Loading profile…</p>
             </main>
         );
     }
 
     return (
-        <main className="min-h-screen bg-gray-100 dark:bg-[#0F0F0F] transition-colors duration-300">
+        <main className="min-h-screen bg-gray-100 dark:bg-[#191919] transition-colors duration-300">
             <div className="max-w-lg mx-auto px-4 py-6 flex flex-col gap-5">
 
                 {/* Header */}
@@ -199,7 +180,7 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Profile card */}
-                <div className="bg-white dark:bg-[#161616] rounded-2xl p-5 flex flex-col gap-4 transition-colors duration-300">
+                <div className="bg-white dark:bg-[#202020] rounded-2xl p-5 flex flex-col gap-4 transition-colors duration-300">
                     {editing ? (
                         <>
                             <div className="flex flex-col gap-3">
@@ -288,7 +269,7 @@ export default function ProfilePage() {
 
                 {/* Send us a message */}
                 {!editing && (
-                    <div className="flex flex-col gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#161616] p-4">
+                    <div className="flex flex-col gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#202020] p-4">
                         <button
                             type="button"
                             className="flex items-center justify-between w-full"
@@ -320,7 +301,7 @@ export default function ProfilePage() {
                                         placeholder="Subject (optional)"
                                         value={messageSubject}
                                         onChange={(e) => setMessageSubject(e.target.value)}
-                                        className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-gray-400"
+                                        className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-gray-400"
                                     />
                                     <textarea
                                         rows={4}
@@ -328,7 +309,7 @@ export default function ProfilePage() {
                                         value={messageContent}
                                         onChange={(e) => setMessageContent(e.target.value)}
                                         required
-                                        className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-gray-400 resize-none"
+                                        className="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-500 outline-none focus:ring-2 focus:ring-gray-400 resize-none"
                                     />
                                     <button
                                         type="submit"
@@ -345,7 +326,7 @@ export default function ProfilePage() {
 
                 {/* Danger zone */}
                 {!editing && (
-                    <div className="bg-white dark:bg-[#161616] rounded-2xl p-5 flex flex-col gap-3 transition-colors duration-300">
+                    <div className="bg-white dark:bg-[#202020] rounded-2xl p-5 flex flex-col gap-3 transition-colors duration-300">
                         <h2 className="text-sm font-semibold text-red-600 dark:text-red-400">Danger zone</h2>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                             Deleting your account is permanent. Your incidents will remain in the system but you will no longer be able to log in.
@@ -371,8 +352,8 @@ export default function ProfilePage() {
             {/* Password confirmation modal */}
             {showPasswordModal && (
                 <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4"
-                    onClick={() => { setShowPasswordModal(false); setPasswordInput(""); setVerifyError(null); }}>
-                    <div className="bg-white dark:bg-[#161616] rounded-2xl w-full max-w-sm p-6 flex flex-col gap-4"
+                    onClick={() => { setShowPasswordModal(false); setPasswordInput(""); setVerifyError(null); setShowPasswordInput(false); }}>
+                    <div className="bg-white dark:bg-[#202020] rounded-2xl w-full max-w-sm p-6 flex flex-col gap-4"
                         onClick={(e) => e.stopPropagation()}>
                         <div>
                             <h2 className="text-base font-bold text-gray-900 dark:text-gray-100">Confirm your identity</h2>
@@ -380,22 +361,32 @@ export default function ProfilePage() {
                                 Enter your password to reveal sensitive profile information.
                             </p>
                         </div>
-                        <input
-                            type="password"
-                            value={passwordInput}
-                            onChange={(e) => setPasswordInput(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && handleRevealSubmit()}
-                            placeholder="Your password"
-                            autoFocus
-                            className="bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 outline-none focus:ring-2 focus:ring-gray-400"
-                        />
+                        <div className="relative">
+                            <input
+                                type={showPasswordInput ? "text" : "password"}
+                                value={passwordInput}
+                                onChange={(e) => setPasswordInput(e.target.value)}
+                                onKeyDown={(e) => e.key === "Enter" && handleRevealSubmit()}
+                                placeholder="Your password"
+                                autoFocus
+                                className="w-full bg-gray-100 dark:bg-gray-700 rounded-xl pl-4 pr-10 py-3 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-500 outline-none focus:ring-2 focus:ring-gray-400"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPasswordInput((v) => !v)}
+                                aria-label={showPasswordInput ? "Hide password" : "Show password"}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                            >
+                                {showPasswordInput ? <EyeSlashIcon /> : <EyeIcon />}
+                            </button>
+                        </div>
                         {verifyError && <p className="text-xs text-red-500">{verifyError}</p>}
                         <button type="button" onClick={handleRevealSubmit} disabled={verifying || !passwordInput.trim()}
                             className="w-full bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 disabled:opacity-50 text-white font-semibold py-3 rounded-xl text-sm transition-colors">
                             {verifying ? "Verifying…" : "Reveal"}
                         </button>
                         <button type="button"
-                            onClick={() => { setShowPasswordModal(false); setPasswordInput(""); setVerifyError(null); }}
+                            onClick={() => { setShowPasswordModal(false); setPasswordInput(""); setVerifyError(null); setShowPasswordInput(false); }}
                             className="text-sm text-gray-400 text-center hover:text-gray-600 dark:hover:text-gray-300">
                             Cancel
                         </button>

@@ -49,8 +49,8 @@ export default function LandingGautengMap() {
           center={pos}
           radius={radius(count)}
           pathOptions={{
-            color: "#111111",
-            fillColor: "#111111",
+            color: "#191919",
+            fillColor: "#191919",
             fillOpacity: 0.70,
             weight: 2,
             opacity: 0.9,

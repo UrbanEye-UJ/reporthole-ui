@@ -10,7 +10,7 @@ export interface AdminThemeContextValue {
 }
 
 export const AdminThemeContext = createContext<AdminThemeContextValue>({
-  mode: "dark",
+  mode: "light",
   toggle: () => {},
 });
 

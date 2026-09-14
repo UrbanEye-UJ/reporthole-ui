@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
-import { useGetComments, useAddComment } from "@/app/api/generated/incidents/incidents";
+import { useGetComments, useAddComment, getGetCommentsQueryKey } from "@/app/api/generated/incidents/incidents";
 import type { IncidentCommentResponse } from "@/app/api/generated/openAPIDefinition.schemas";
 import { getErrorMessage } from "@/lib/getErrorMessage";
 
@@ -33,6 +34,7 @@ interface IncidentCommentsProps {
 export default function IncidentComments({ incidentId }: IncidentCommentsProps) {
   const [draft, setDraft] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const { data, isLoading } = useGetComments(incidentId ?? "", {
     query: { enabled: !!incidentId },
@@ -41,7 +43,10 @@ export default function IncidentComments({ incidentId }: IncidentCommentsProps) 
 
   const { mutate: post, isPending } = useAddComment({
     mutation: {
-      onSuccess: () => setDraft(""),
+      onSuccess: () => {
+        setDraft("");
+        queryClient.invalidateQueries({ queryKey: getGetCommentsQueryKey(incidentId ?? "") });
+      },
       onError: (err) => setSubmitError(getErrorMessage(err)),
     },
   });
@@ -96,7 +101,7 @@ export default function IncidentComments({ incidentId }: IncidentCommentsProps) 
             placeholder="Add a comment…"
             rows={2}
             maxLength={500}
-            className="w-full text-sm rounded-xl border border-gray-200 px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-gray-900/20 placeholder-gray-400"
+            className="w-full text-sm text-gray-900 rounded-xl border border-gray-300 px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-gray-900/20 placeholder-gray-500"
           />
           {submitError && (
             <p className="text-xs text-red-600">{submitError}</p>
