@@ -37,8 +37,8 @@ import { apiClient } from '../../../../lib/axios';
 
 
 /**
- * Returns the contractor's decrypted email after verifying the calling admin's own current password as a step-up re-authentication check. Admin only.
- * @summary Reveal a contractor's email
+ * Returns the contractor's decrypted email and phone number after verifying the calling admin's own current password as a step-up re-authentication check. Admin only.
+ * @summary Reveal a contractor's email and phone number
  */
 export const revealEmail = (
     id: string,
@@ -87,7 +87,7 @@ const {mutation: mutationOptions} = options ?
     export type RevealEmailMutationError = AppResponseRevealEmailResponse | AppResponseRevealEmailResponse | AppResponseRevealEmailResponse
 
     /**
- * @summary Reveal a contractor's email
+ * @summary Reveal a contractor's email and phone number
  */
 export const useRevealEmail = <TError = AppResponseRevealEmailResponse | AppResponseRevealEmailResponse | AppResponseRevealEmailResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revealEmail>>, TError,{id: string;data: RevealEmailRequest}, TContext>, }
@@ -168,7 +168,7 @@ export const useInviteContractor = <TError = AppResponseVoid | AppResponseVoid |
       return useMutation(mutationOptions, queryClient);
     }
     /**
- * Returns all CONTRACTOR accounts with their active-job counts. Admin only. Emails are masked (e.g. "jo***@example.com") — use POST /{id}/reveal-email to view one in full.
+ * Returns all CONTRACTOR accounts with their active-job counts. Admin only. Emails and phone numbers are masked (e.g. "jo***@example.com", "082***890") — use POST /{id}/reveal-email to view them in full.
  * @summary List contractors
  */
 export const getContractors = (

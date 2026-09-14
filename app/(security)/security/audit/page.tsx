@@ -108,9 +108,9 @@ export default function SecurityAuditPage() {
       ),
     },
     { field: "actor", headerName: "By", flex: 1, minWidth: 130 },
-    { field: "target", headerName: "Target", flex: 1, minWidth: 130 },
-    { field: "change", headerName: "Change", width: 130 },
-    { field: "detail", headerName: "Detail / Reason", flex: 2, minWidth: 180 },
+    { field: "target", headerName: "Target", flex: 1, minWidth: 130, filterable: false },
+    { field: "change", headerName: "Change", width: 130, filterable: false },
+    { field: "detail", headerName: "Detail / Reason", flex: 2, minWidth: 180, filterable: false },
     {
       field: "manage",
       headerName: "",
@@ -138,7 +138,7 @@ export default function SecurityAuditPage() {
       />
 
       <Panel title={`Entries (${rows.length})`}>
-        <DataTable rows={rows} columns={columns} loading={identityLoading || generalLoading} height={560} />
+        <DataTable rows={rows} columns={columns} loading={identityLoading || generalLoading} height={560} toolbar />
       </Panel>
     </>
   );

@@ -110,7 +110,7 @@ const SecurityIncidentMap = ({ view, municipalityId, boundary, issueType }: Prop
       center={[-26.2041, 28.0473]}
       zoom={9}
       scrollWheelZoom
-      style={{ width: "100%", height: "600px", borderRadius: "16px" }}
+      style={{ width: "100%", height: "600px", borderRadius: "10px" }}
     >
       <TileLayer
         attribution="&copy; OpenStreetMap contributors"

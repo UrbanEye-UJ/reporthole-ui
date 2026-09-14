@@ -31,7 +31,7 @@ describe("RevealEmailDialog", () => {
 
         fireEvent.change(screen.getByLabelText("Your password"), { target: { value: "my-password" } });
         await act(async () => {
-            fireEvent.click(screen.getByText("View Email"));
+            fireEvent.click(screen.getByText("View Details"));
         });
 
         expect(mockMutate).toHaveBeenCalledWith(
@@ -40,7 +40,7 @@ describe("RevealEmailDialog", () => {
         );
     });
 
-    it("shows the revealed email after a successful reveal", async () => {
+    it("shows the revealed email and phone after a successful reveal", async () => {
         render(
             <RevealEmailDialog
                 open
@@ -52,15 +52,16 @@ describe("RevealEmailDialog", () => {
 
         fireEvent.change(screen.getByLabelText("Your password"), { target: { value: "my-password" } });
         await act(async () => {
-            fireEvent.click(screen.getByText("View Email"));
+            fireEvent.click(screen.getByText("View Details"));
         });
 
         const [, handlers] = mockMutate.mock.calls[0];
         act(() => {
-            handlers.onSuccess({ data: { email: "con.tractor@example.com" } });
+            handlers.onSuccess({ data: { email: "con.tractor@example.com", phoneNumber: "0821234567" } });
         });
 
         expect(screen.getByText("con.tractor@example.com")).toBeInTheDocument();
+        expect(screen.getByText("0821234567")).toBeInTheDocument();
     });
 
     it("does not submit when the password field is empty", async () => {
@@ -74,7 +75,7 @@ describe("RevealEmailDialog", () => {
         );
 
         await act(async () => {
-            fireEvent.click(screen.getByText("View Email"));
+            fireEvent.click(screen.getByText("View Details"));
         });
 
         expect(mockMutate).not.toHaveBeenCalled();

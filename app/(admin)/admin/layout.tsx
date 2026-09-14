@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
 
 import { createAdminTheme } from "../_components/styles/theme";
 import { AdminThemeContext } from "../_components/styles/AdminThemeContext";
-import type { AdminThemeMode } from "../_components/styles/AdminThemeContext";
+import { useThemeMode } from "../_components/styles/useThemeMode";
 import AdminShell from "../_components/layout/AdminShell";
 import "../_components/styles/globals.css";
 
@@ -30,19 +30,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     },
   }));
 
-  const [mode, setMode] = useState<AdminThemeMode>(() => {
-    if (typeof window === "undefined") return "dark";
-    const saved = localStorage.getItem("admin-theme") as AdminThemeMode | null;
-    return saved === "dark" || saved === "light" ? saved : "dark";
-  });
-
-  const toggle = () => {
-    setMode((current) => {
-      const next = current === "dark" ? "light" : "dark";
-      localStorage.setItem("admin-theme", next);
-      return next;
-    });
-  };
+  const { mode, toggle } = useThemeMode("admin-theme", "light");
 
   const theme = useMemo(() => createAdminTheme(mode), [mode]);
 

@@ -515,7 +515,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                         <button
                             type="button"
                             onClick={() => setStep("ai-detect")}
-                            className="flex items-start gap-4 p-4 border-2 border-gray-900 bg-gray-50 hover:bg-gray-100 dark:border-white dark:bg-[#111111] dark:hover:bg-[#1a1a1a] rounded-2xl transition-colors text-left"
+                            className="flex items-start gap-4 p-4 border-2 border-gray-900 bg-gray-50 hover:bg-gray-100 dark:border-white dark:bg-[#191919] dark:hover:bg-[#1a1a1a] rounded-2xl transition-colors text-left"
                         >
                             <div className="w-10 h-10 rounded-xl bg-gray-900 dark:bg-white flex items-center justify-center flex-shrink-0 mt-0.5">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -712,7 +712,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                                 onChange={(e) => setDescription(e.target.value)}
                                 placeholder="Describe the issue..."
                                 rows={3}
-                                className="bg-gray-100 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 outline-none resize-none"
+                                className="bg-gray-100 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-500 outline-none resize-none"
                             />
                         </div>
 

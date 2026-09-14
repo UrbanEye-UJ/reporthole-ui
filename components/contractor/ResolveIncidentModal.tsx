@@ -142,7 +142,7 @@ export default function ResolveIncidentModal({ visible, onClose, incidentId, inc
             onChange={(e) => setNote(e.target.value)}
             placeholder="Describe the repair that was completed..."
             rows={3}
-            className="bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none resize-none"
+            className="bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-500 outline-none resize-none"
           />
         </div>
 

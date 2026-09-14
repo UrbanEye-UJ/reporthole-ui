@@ -5,7 +5,9 @@
  * Persists the user's preference to localStorage so it survives navigation.
  */
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext } from "react";
+
+import { usePersistedDarkMode } from "@/lib/hooks/usePersistedDarkMode";
 
 interface LandingThemeCtx {
   dark: boolean;
@@ -15,18 +17,7 @@ interface LandingThemeCtx {
 const Ctx = createContext<LandingThemeCtx>({ dark: false, toggle: () => {} });
 
 export function LandingThemeProvider({ children }: { children: React.ReactNode }) {
-    const [dark, setDark] = useState(() => {
-        if (typeof window === "undefined") return false;
-        return localStorage.getItem("rh-landing-theme") === "dark";
-    });
-
-
-  const toggle = () =>
-    setDark((d) => {
-      const next = !d;
-      localStorage.setItem("rh-landing-theme", next ? "dark" : "light");
-      return next;
-    });
+  const { darkMode: dark, toggle } = usePersistedDarkMode("rh-landing-theme");
 
   return <Ctx.Provider value={{ dark, toggle }}>{children}</Ctx.Provider>;
 }

@@ -77,7 +77,7 @@ export default function ProgressUpdateModal({
             placeholder="Describe what has been done so far..."
             rows={4}
             maxLength={255}
-            className="bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none resize-none"
+            className="bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-500 outline-none resize-none"
           />
           <p className="text-xs text-gray-400 dark:text-gray-500 text-right">{note.length}/255</p>
         </div>

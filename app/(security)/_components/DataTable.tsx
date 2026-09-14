@@ -1,6 +1,6 @@
 "use client";
 
-import { DataGrid, type GridColDef, type GridPaginationModel, type GridRowsProp } from "@mui/x-data-grid";
+import { DataGrid, GridToolbar, type GridColDef, type GridPaginationModel, type GridRowsProp } from "@mui/x-data-grid";
 
 interface DataTableProps {
   rows: GridRowsProp;
@@ -16,6 +16,11 @@ interface DataTableProps {
   paginationModel?: GridPaginationModel;
   onPaginationModelChange?: (model: GridPaginationModel) => void;
   rowCount?: number;
+  /**
+   * Shows the standard DataGrid toolbar (per-column "Filters" panel + a quick-search box).
+   * Off by default — opt in per table where filtering is actually useful.
+   */
+  toolbar?: boolean;
 }
 
 /**
@@ -34,6 +39,7 @@ export default function DataTable({
   paginationModel,
   onPaginationModelChange,
   rowCount,
+  toolbar = false,
 }: DataTableProps) {
   return (
     <DataGrid
@@ -42,6 +48,7 @@ export default function DataTable({
       loading={loading}
       disableRowSelectionOnClick
       paginationMode={paginationMode}
+      {...(toolbar ? { slots: { toolbar: GridToolbar }, showToolbar: true } : {})}
       {...(paginationMode === "server"
         ? { paginationModel, onPaginationModelChange, rowCount, pageSizeOptions: [50] }
         : {

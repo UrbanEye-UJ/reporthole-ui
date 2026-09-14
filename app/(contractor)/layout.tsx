@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#111111",
+  themeColor: "#191919",
 };
 
 export default function ContractorLayout({ children }: { children: ReactNode }) {

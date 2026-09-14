@@ -5,7 +5,6 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import AdminSidebar from "./AdminSidebar";
 import AdminTopbar from "./AdminTopbar";
-import { useAdminTheme } from "../styles/AdminThemeContext";
 
 interface Props {
   children: ReactNode;
@@ -13,26 +12,24 @@ interface Props {
 
 const AdminShell = ({ children }: Props) => {
   const [collapsed, setCollapsed] = useState(false);
-  const { mode } = useAdminTheme();
-
-  const background = mode === "dark" ? "#0F0F0F" : "#FFFFFF";
-  const color = mode === "dark" ? "#F9FAFB" : "#111111";
 
   return (
     /*
      * Dark body styles live on this wrapper instead of on <body> via CssBaseline.
      * This keeps the dark background contained within the admin DOM subtree and
      * prevents it from leaking into the civilian UI on SPA navigation.
+     * Colors come from the theme (not hardcoded) so this stays in sync with
+     * `_components/styles/colors.ts` instead of drifting from it.
      */
     <Box
       sx={{
         minHeight: "100vh",
-        background,
+        bgcolor: "background.default",
         backgroundAttachment: "fixed",
-        color,
+        color: "text.primary",
         fontFamily:
           '"Inter", "Roboto", "Segoe UI", Helvetica, Arial, sans-serif',
-        transition: "background 0.3s ease, color 0.3s ease",
+        transition: "background-color 0.3s ease, color 0.3s ease",
       }}
     >
       <Box

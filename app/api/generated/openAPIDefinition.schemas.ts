@@ -404,6 +404,7 @@ export const GrantRoleRequestRole = {
 
 export interface GrantRoleRequest {
   role: GrantRoleRequestRole;
+  municipalityId?: string;
   /**
    * @minLength 0
    * @maxLength 500
@@ -515,6 +516,7 @@ export interface AppResponseRevealEmailResponse {
 
 export interface RevealEmailResponse {
   email?: string;
+  phoneNumber?: string;
 }
 
 export type InviteContractorRequestSpecialisationsItem = typeof InviteContractorRequestSpecialisationsItem[keyof typeof InviteContractorRequestSpecialisationsItem];
@@ -739,34 +741,6 @@ export interface IncidentClusterDTO {
   centroidLongitude?: number;
   size?: number;
   incidentIds?: string[];
-}
-
-export interface AppResponseListCivilianSummaryResponse {
-  data?: CivilianSummaryResponse[];
-  message?: string;
-  status?: number;
-  timestamp?: string;
-}
-
-export type CivilianSummaryResponseStatus = typeof CivilianSummaryResponseStatus[keyof typeof CivilianSummaryResponseStatus];
-
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const CivilianSummaryResponseStatus = {
-  PENDING_VERIFICATION: 'PENDING_VERIFICATION',
-  ACTIVE: 'ACTIVE',
-  LOCKED: 'LOCKED',
-  SUSPENDED: 'SUSPENDED',
-  DELETED: 'DELETED',
-} as const;
-
-export interface CivilianSummaryResponse {
-  userId?: string;
-  maskedName?: string;
-  maskedEmail?: string;
-  incidentCount?: number;
-  status?: CivilianSummaryResponseStatus;
-  createdAt?: string;
 }
 
 export interface AppResponseListSecurityUserResponse {
