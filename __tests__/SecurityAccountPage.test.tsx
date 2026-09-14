@@ -48,6 +48,8 @@ jest.mock("@tanstack/react-query", () => ({
     useQueryClient: () => ({ invalidateQueries: jest.fn() }),
 }));
 
+const mockReveal = jest.fn();
+
 jest.mock("@/app/api/generated/security-admin/security-admin", () => ({
     useListUsers: () => ({
         data: {
@@ -69,6 +71,12 @@ jest.mock("@/app/api/generated/security-admin/security-admin", () => ({
     useSuspend: (o: { mutation: { onSuccess?: () => void } }) => asMutationHook(mutations.suspend)(o),
     useReactivate: (o: { mutation: { onSuccess?: () => void } }) => asMutationHook(mutations.reactivate)(o),
     useForceLogout: (o: { mutation: { onSuccess?: () => void } }) => asMutationHook(mutations.forceLogout)(o),
+    useReveal: () => ({
+        mutate: mockReveal,
+        isPending: false,
+        error: null,
+        reset: jest.fn(),
+    }),
 }));
 
 beforeEach(() => Object.values(mutations).forEach((m) => m.mockReset()));
@@ -116,5 +124,30 @@ describe("SecurityAccountPage", () => {
         fireEvent.click(screen.getByRole("button", { name: /Force logout/i }));
         fireEvent.click(screen.getByRole("button", { name: /^Confirm$/i }));
         expect(mutations.forceLogout).not.toHaveBeenCalled();
+    });
+
+    it("filters out the row when searching for a non-matching term", () => {
+        render(<SecurityAccountPage />);
+        fireEvent.change(screen.getByLabelText("Search"), { target: { value: "nobody-matches-this" } });
+        expect(screen.queryByText("Terry Target")).not.toBeInTheDocument();
+    });
+
+    it("keeps the row when searching by the visible first name", () => {
+        render(<SecurityAccountPage />);
+        fireEvent.change(screen.getByLabelText("Search"), { target: { value: "Terry" } });
+        expect(screen.getByText("Terry Target")).toBeInTheDocument();
+    });
+
+    it("filters out the row when the role filter doesn't match", () => {
+        render(<SecurityAccountPage />);
+        fireEvent.mouseDown(screen.getByLabelText("Role"));
+        fireEvent.click(screen.getByRole("option", { name: "CONTRACTOR" }));
+        expect(screen.queryByText("Terry Target")).not.toBeInTheDocument();
+    });
+
+    it("opens the reveal dialog when View is clicked, with the account's masked name in the title", () => {
+        render(<SecurityAccountPage />);
+        fireEvent.click(screen.getByRole("button", { name: "View" }));
+        expect(screen.getByText("View account — Terry Target")).toBeInTheDocument();
     });
 });

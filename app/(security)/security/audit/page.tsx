@@ -8,7 +8,7 @@ import { Button, Chip } from "@mui/material";
 import { PageHeader, Panel } from "../../_components/ui";
 import DataTable from "../../_components/DataTable";
 
-import { useListAudit } from "@/app/api/generated/security-admin/security-admin";
+import { useListAudit, useListAuditLog } from "@/app/api/generated/security-admin/security-admin";
 import { AuditEntryResponseAction } from "@/app/api/generated/openAPIDefinition.schemas";
 
 import type { GridColDef } from "@mui/x-data-grid";
@@ -22,43 +22,82 @@ const ACTION_COLOR: Record<
   [AuditEntryResponseAction.ACCOUNT_SUSPENDED]: "error",
   [AuditEntryResponseAction.ACCOUNT_REACTIVATED]: "info",
   [AuditEntryResponseAction.SESSIONS_REVOKED]: "warning",
+  PII_REVEALED: "info",
+  CONTRACTOR_INVITED: "success",
+  MUNICIPALITY_CREATED: "success",
+  MUNICIPALITY_TOKEN_ISSUED: "success",
+  MUNICIPALITY_TOKEN_REVOKED: "warning",
+  ADMIN_APPLICATION_REJECTED: "warning",
+  SPECIALISATIONS_UPDATED: "default",
+  COMMENT_POSTED: "default",
+  MESSAGE_SENT: "default",
+  CONTACT_FORM_SUBMITTED: "default",
 };
 
+interface Row {
+  id: string;
+  sortKey: number;
+  createdAt: string;
+  action: string;
+  actor: string;
+  target: string;
+  change: string;
+  detail: string;
+  targetUserId: string;
+}
+
 /**
- * Read-only view of the append-only access-control audit trail: every role
- * grant/revoke, suspension, reactivation and forced logout, newest first. There
- * is no edit or delete — the backend exposes no such endpoint. Each row links to
- * "Manage Account" pre-filled with the affected account.
+ * Read-only view of every recorded state-changing action, newest first — merges two
+ * append-only backend sources into one table:
+ *   - the identity/accountability trail (role grants/revokes, suspensions, forced logout,
+ *     PII reveals) where actor and target are both accounts, each row linking to
+ *     "Manage Account" pre-filled with the affected account; and
+ *   - the general audit log (municipality/token management, contractor invites, admin
+ *     application decisions, specialisation changes, comments, messages) for actions that
+ *     don't have a user "target" to manage.
+ * Neither source has an edit or delete endpoint — the backend exposes none.
  */
 export default function SecurityAuditPage() {
-  const { data, isLoading } = useListAudit();
+  const { data: identityData, isLoading: identityLoading } = useListAudit();
+  const { data: generalData, isLoading: generalLoading } = useListAuditLog();
 
-  const rows = useMemo(
-    () =>
-      (data?.data ?? []).map((entry, index) => ({
-        id: entry.auditId ?? String(index),
-        createdAt: entry.createdAt
-          ? new Date(entry.createdAt).toLocaleString()
+  const rows = useMemo(() => {
+    const identityRows: Row[] = (identityData?.data ?? []).map((entry, index) => ({
+      id: `identity-${entry.auditId ?? index}`,
+      sortKey: entry.createdAt ? new Date(entry.createdAt).getTime() : 0,
+      createdAt: entry.createdAt ? new Date(entry.createdAt).toLocaleString() : "—",
+      action: entry.action ?? "",
+      actor: entry.actorName ?? entry.actorId ?? "—",
+      target: entry.targetName ?? entry.targetId ?? "—",
+      change:
+        entry.fromValue || entry.toValue
+          ? `${entry.fromValue ?? "—"} → ${entry.toValue ?? "—"}`
           : "—",
-        action: entry.action ?? "",
-        actor: entry.actorName ?? entry.actorId ?? "—",
-        target: entry.targetName ?? entry.targetId ?? "—",
-        targetId: entry.targetId ?? "",
-        change:
-          entry.fromValue || entry.toValue
-            ? `${entry.fromValue ?? "—"} → ${entry.toValue ?? "—"}`
-            : "—",
-        reason: entry.reason ?? "",
-      })),
-    [data]
-  );
+      detail: entry.reason ?? "—",
+      targetUserId: entry.targetId ?? "",
+    }));
+
+    const generalRows: Row[] = (generalData?.data ?? []).map((entry, index) => ({
+      id: `general-${entry.id ?? index}`,
+      sortKey: entry.createdAt ? new Date(entry.createdAt).getTime() : 0,
+      createdAt: entry.createdAt ? new Date(entry.createdAt).toLocaleString() : "—",
+      action: entry.action ?? "",
+      actor: entry.actorName ?? entry.actorId ?? "System",
+      target: entry.entityType ?? "—",
+      change: "—",
+      detail: entry.summary ?? "—",
+      targetUserId: "",
+    }));
+
+    return [...identityRows, ...generalRows].sort((a, b) => b.sortKey - a.sortKey);
+  }, [identityData, generalData]);
 
   const columns: GridColDef[] = [
     { field: "createdAt", headerName: "When", width: 160 },
     {
       field: "action",
       headerName: "Action",
-      width: 160,
+      width: 190,
       renderCell: (params) => (
         <Chip
           size="small"
@@ -68,10 +107,10 @@ export default function SecurityAuditPage() {
         />
       ),
     },
-    { field: "actor", headerName: "By (security admin)", flex: 1, minWidth: 130 },
+    { field: "actor", headerName: "By", flex: 1, minWidth: 130 },
     { field: "target", headerName: "Target", flex: 1, minWidth: 130 },
     { field: "change", headerName: "Change", width: 130 },
-    { field: "reason", headerName: "Reason", flex: 2, minWidth: 150 },
+    { field: "detail", headerName: "Detail / Reason", flex: 2, minWidth: 180 },
     {
       field: "manage",
       headerName: "",
@@ -79,11 +118,11 @@ export default function SecurityAuditPage() {
       sortable: false,
       filterable: false,
       renderCell: (params) =>
-        params.row.targetId ? (
+        params.row.targetUserId ? (
           <Button
             size="small"
             component={Link}
-            href={`/security/account?userId=${params.row.targetId}`}
+            href={`/security/account?userId=${params.row.targetUserId}`}
           >
             Manage
           </Button>
@@ -95,11 +134,11 @@ export default function SecurityAuditPage() {
     <>
       <PageHeader
         title="Audit Trail"
-        subtitle="Append-only record of every identity action. Nobody — security admin included — can edit or delete an entry."
+        subtitle="Append-only record of every state-changing action on the platform. Nobody — security admin included — can edit or delete an entry."
       />
 
       <Panel title={`Entries (${rows.length})`}>
-        <DataTable rows={rows} columns={columns} loading={isLoading} height={560} />
+        <DataTable rows={rows} columns={columns} loading={identityLoading || generalLoading} height={560} />
       </Panel>
     </>
   );

@@ -224,6 +224,69 @@ export const useSave = <TError = AppResponseVoid | AppResponseVoid,
       return useMutation(mutationOptions, queryClient);
     }
     /**
+ * Invalidates the caller's current session server-side (and any other outstanding token for the account), not just the client-side cookie.
+ * @summary Log out
+ */
+export const logout = (
+    
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseVoid>(
+      {url: `/auth/logout`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getLogoutMutationOptions = <TError = AppResponseVoid,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError,void, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError,void, TContext> => {
+
+const mutationKey = ['logout'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof logout>>, void> = () => {
+          
+
+          return  logout()
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LogoutMutationResult = NonNullable<Awaited<ReturnType<typeof logout>>>
+    
+    export type LogoutMutationError = AppResponseVoid
+
+    /**
+ * @summary Log out
+ */
+export const useLogout = <TError = AppResponseVoid,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logout>>, TError,void, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof logout>>,
+        TError,
+        void,
+        TContext
+      > => {
+
+      const mutationOptions = getLogoutMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
  * Authenticates the user and returns a JWT token.
  * @summary Login user
  */

@@ -86,4 +86,66 @@ export const useGenerateToken = <TError = AppResponseDeviceTokenResponse | AppRe
 
       return useMutation(mutationOptions, queryClient);
     }
+    /**
+ * Permanently deletes a device token so it can no longer be used to authenticate. A user may only revoke their own device tokens.
+ * @summary Revoke device token
+ */
+export const revokeToken1 = (
+    id: string,
+ ) => {
+      
+      
+      return apiClient<void>(
+      {url: `/devices/token/${id}`, method: 'DELETE'
+    },
+      );
+    }
+  
+
+
+export const getRevokeToken1MutationOptions = <TError = void | void | void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeToken1>>, TError,{id: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof revokeToken1>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['revokeToken1'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeToken1>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  revokeToken1(id,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeToken1MutationResult = NonNullable<Awaited<ReturnType<typeof revokeToken1>>>
+    
+    export type RevokeToken1MutationError = void | void | void
+
+    /**
+ * @summary Revoke device token
+ */
+export const useRevokeToken1 = <TError = void | void | void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeToken1>>, TError,{id: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof revokeToken1>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+
+      const mutationOptions = getRevokeToken1MutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
     

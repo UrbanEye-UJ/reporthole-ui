@@ -24,18 +24,17 @@ import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneRounded";
 
-import { useRouter } from "next/navigation";
-
 import { useAdminTheme } from "../styles/AdminThemeContext";
 import {
   useNotifications,
   useUnreadNotificationCount,
   useMarkAllNotificationsRead,
 } from "@/lib/hooks/useNotifications";
+import { useLogout } from "@/lib/hooks/useLogout";
 
 const AdminTopbar = () => {
   const { mode, toggle } = useAdminTheme();
-  const router = useRouter();
+  const handleLogout = useLogout();
   const [notifOpen, setNotifOpen] = useState(false);
 
   const { data: notifications = [] } = useNotifications();
@@ -45,13 +44,6 @@ const AdminTopbar = () => {
   const handleOpenNotif = () => {
     setNotifOpen(true);
     if (unreadCount > 0) markAllRead();
-  };
-
-  const handleLogout = () => {
-    document.cookie = "reporthole_token=; path=/; max-age=0";
-    document.cookie = "reporthole_role=; path=/; max-age=0";
-    document.cookie = "reporthole_user_id=; path=/; max-age=0";
-    router.push("/");
   };
 
   const isDark = mode === "dark";

@@ -59,10 +59,16 @@ const AssignIncidentModal = ({ open, onClose, incidents }: AssignIncidentModalPr
   const selectedIncidentId = useWatch({ control, name: "incidentId" });
   const selectedIssueType = incidents.find((i) => i.incidentId === selectedIncidentId)?.issueType;
 
+  // A contractor specialised in "OTHER" handles any issue type — mirrors the eligibility
+  // check the backend applies in IncidentServiceImpl.assignIncident.
   const eligibleContractors = useMemo(
     () =>
       selectedIssueType
-        ? contractors.filter((c) => c.specialisations?.includes(selectedIssueType as never))
+        ? contractors.filter(
+            (c) =>
+              c.specialisations?.includes("OTHER" as never) ||
+              c.specialisations?.includes(selectedIssueType as never)
+          )
         : contractors,
     [contractors, selectedIssueType]
   );

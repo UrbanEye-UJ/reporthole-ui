@@ -35,18 +35,20 @@ export const colors = {
   },
 
   light: {
+    // Page background is a soft off-white, distinct from card surfaces below — previously both
+    // were pure #FFFFFF, so Paper/Card panels had no visible separation from the page itself.
     background: {
-      primary: "#FFFFFF",
+      primary: "#F3F4F6",
       secondary: "#FFFFFF",
-      tertiary: "#F9FAFB",
+      tertiary: "#E5E7EB",
     },
 
     surface: {
       primary: "#FFFFFF",
-      secondary: "#F9FAFB",
+      secondary: "#F3F4F6",
     },
 
-    border: "#E5E7EB",
+    border: "#D1D5DB",
 
     glass: {
       background: "#FFFFFF",

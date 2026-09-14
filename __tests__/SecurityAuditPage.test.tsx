@@ -37,8 +37,21 @@ const entries = [
     },
 ];
 
+const generalEntries = [
+    {
+        id: "g1",
+        action: "MUNICIPALITY_CREATED",
+        actorName: "Priya Public",
+        entityType: "MUNICIPALITY",
+        entityId: "22222222-2222-2222-2222-222222222222",
+        summary: 'Created municipality "City of Tshwane"',
+        createdAt: "2025-12-31T09:00:00",
+    },
+];
+
 jest.mock("@/app/api/generated/security-admin/security-admin", () => ({
     useListAudit: () => ({ data: { data: entries }, isLoading: false }),
+    useListAuditLog: () => ({ data: { data: generalEntries }, isLoading: false }),
 }));
 
 describe("SecurityAuditPage", () => {
@@ -60,5 +73,15 @@ describe("SecurityAuditPage", () => {
             "href",
             "/security/account?userId=11111111-1111-1111-1111-111111111111"
         );
+    });
+
+    it("merges in general audit log entries alongside identity actions", () => {
+        render(<SecurityAuditPage />);
+
+        expect(screen.getByText("MUNICIPALITY_CREATED")).toBeInTheDocument();
+        expect(screen.getByText("MUNICIPALITY")).toBeInTheDocument();
+        expect(screen.getByText('Created municipality "City of Tshwane"')).toBeInTheDocument();
+        // Only the identity-audit row has a target user id to manage.
+        expect(screen.getAllByRole("link", { name: "Manage" })).toHaveLength(1);
     });
 });

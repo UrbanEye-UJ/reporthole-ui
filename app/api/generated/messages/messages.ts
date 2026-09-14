@@ -36,7 +36,7 @@ import { apiClient } from '../../../../lib/axios';
 
 
 /**
- * Stores a CIVILIAN_COMPLAINT message from the authenticated user. Visible to admins via GET /messages/admin.
+ * Stores a USER_MESSAGE from the authenticated user — any role, not civilians only. Visible to admins via GET /messages/admin.
  * @summary Send a message to the admin team
  */
 export const send = (
@@ -258,8 +258,8 @@ export function useGetSecurityAdminMessages<TData = Awaited<ReturnType<typeof ge
 
 
 /**
- * Returns all CIVILIAN_COMPLAINT messages, newest first. SECURITY_ADMIN only.
- * @summary List civilian complaint messages
+ * Returns all USER_MESSAGE entries, newest first — sent by any authenticated user (civilian, contractor, or admin), not civilians alone. ADMIN or SECURITY_ADMIN.
+ * @summary List messages from users
  */
 export const getAdminMessages = (
     
@@ -330,7 +330,7 @@ export function useGetAdminMessages<TData = Awaited<ReturnType<typeof getAdminMe
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary List civilian complaint messages
+ * @summary List messages from users
  */
 
 export function useGetAdminMessages<TData = Awaited<ReturnType<typeof getAdminMessages>>, TError = AppResponseListMessageResponse | AppResponseListMessageResponse>(

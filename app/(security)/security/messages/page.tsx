@@ -44,9 +44,9 @@ export default function SecurityMessagesPage() {
     return (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
             <Box>
-                <Typography variant="h5" sx={{ fontWeight: 700 }}>Civilian Messages</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 700 }}>Messages</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                    Complaints and feedback submitted by civilians via the app.
+                    Messages sent to the admin team by any user — civilians, contractors, and admins.
                 </Typography>
             </Box>
 
@@ -69,7 +69,7 @@ export default function SecurityMessagesPage() {
                         <InboxRoundedIcon sx={{ fontSize: 56, opacity: 0.4 }} />
                         <Typography variant="body1" sx={{ fontWeight: 600 }}>No messages yet</Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 380, textAlign: "center" }}>
-                            Civilians can send complaints from their profile. They will appear here.
+                            Any user can send a message to the admin team from their dashboard. They will appear here.
                         </Typography>
                     </Box>
                 ) : (
@@ -77,9 +77,19 @@ export default function SecurityMessagesPage() {
                         {messages.map((msg) => (
                             <Box key={msg.id} sx={{ p: 2.5, opacity: msg.read ? 0.7 : 1 }}>
                                 <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "flex-start", mb: 0.5 }}>
-                                    <Typography variant="subtitle2" sx={{ fontWeight: msg.read ? 400 : 700 }}>
-                                        {msg.senderName ?? "Unknown Sender"}
-                                    </Typography>
+                                    <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                                        <Typography variant="subtitle2" sx={{ fontWeight: msg.read ? 400 : 700 }}>
+                                            {msg.senderName ?? "Unknown Sender"}
+                                        </Typography>
+                                        {msg.senderRole && (
+                                            <Chip
+                                                label={msg.senderRole}
+                                                size="small"
+                                                variant="outlined"
+                                                sx={{ fontSize: 10, height: 20 }}
+                                            />
+                                        )}
+                                    </Stack>
                                     <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                                         {!msg.read && (
                                             <Chip
