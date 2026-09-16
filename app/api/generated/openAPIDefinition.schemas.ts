@@ -743,6 +743,71 @@ export interface IncidentClusterDTO {
   incidentIds?: string[];
 }
 
+export interface AppResponseIncidentAnalyticsDTO {
+  data?: IncidentAnalyticsDTO;
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export interface IncidentAnalyticsDTO {
+  totalIncidents?: number;
+  resolvedIncidents?: number;
+  openIncidents?: number;
+  avgResolutionHours?: number;
+  statusBreakdown?: StatusBreakdownEntry[];
+  typeBreakdown?: TypeBreakdownEntry[];
+  monthlyTrend?: MonthlyTrendEntry[];
+  resolutionTimeTrend?: ResolutionTrendEntry[];
+}
+
+export interface MonthlyTrendEntry {
+  month?: string;
+  count?: number;
+}
+
+export interface ResolutionTrendEntry {
+  month?: string;
+  avgHours?: number;
+}
+
+export type StatusBreakdownEntryStatus = typeof StatusBreakdownEntryStatus[keyof typeof StatusBreakdownEntryStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const StatusBreakdownEntryStatus = {
+  REPORTED: 'REPORTED',
+  VERIFIED: 'VERIFIED',
+  ASSIGNED: 'ASSIGNED',
+  IN_PROGRESS: 'IN_PROGRESS',
+  RESOLVED: 'RESOLVED',
+} as const;
+
+export interface StatusBreakdownEntry {
+  status?: StatusBreakdownEntryStatus;
+  count?: number;
+}
+
+export type TypeBreakdownEntryType = typeof TypeBreakdownEntryType[keyof typeof TypeBreakdownEntryType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TypeBreakdownEntryType = {
+  POTHOLE: 'POTHOLE',
+  CRACK: 'CRACK',
+  FADED_MARKINGS: 'FADED_MARKINGS',
+  DAMAGED_SIGN: 'DAMAGED_SIGN',
+  BLOCKED_DRAIN: 'BLOCKED_DRAIN',
+  BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
+  ACCIDENT: 'ACCIDENT',
+  OTHER: 'OTHER',
+} as const;
+
+export interface TypeBreakdownEntry {
+  type?: TypeBreakdownEntryType;
+  count?: number;
+}
+
 export interface AppResponseListSecurityUserResponse {
   data?: SecurityUserResponse[];
   message?: string;
@@ -990,11 +1055,19 @@ export const GetIncidentClustersType = {
   OTHER: 'OTHER',
 } as const;
 
+export type GetIncidentAnalyticsParams = {
+municipalityId?: string;
+};
+
 export type ListAuditParams = {
 userId?: string;
 };
 
 export type ListTokensParams = {
+municipalityId?: string;
+};
+
+export type GetContractorsParams = {
 municipalityId?: string;
 };
 

@@ -2,6 +2,7 @@ import type { SvgIconComponent } from "@mui/icons-material";
 
 import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
 import ReportRoundedIcon from "@mui/icons-material/ReportRounded";
+import QueryStatsRoundedIcon from "@mui/icons-material/QueryStatsRounded";
 import EngineeringRoundedIcon from "@mui/icons-material/EngineeringRounded";
 import AccountCircleRoundedIcon from "@mui/icons-material/AccountCircleRounded";
 
@@ -25,6 +26,12 @@ export const navigation: NavigationItem[] = [
     label: "Incidents",
     path: "/admin/incidents",
     icon: ReportRoundedIcon,
+  },
+  {
+    id: "analytics",
+    label: "Analytics",
+    path: "/admin/analytics",
+    icon: QueryStatsRoundedIcon,
   },
   {
     id: "contractors",

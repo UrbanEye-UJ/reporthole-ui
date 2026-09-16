@@ -27,6 +27,7 @@ import type {
   AppResponseListContractorResponse,
   AppResponseRevealEmailResponse,
   AppResponseVoid,
+  GetContractorsParams,
   InviteContractorRequest,
   RevealEmailRequest
 } from '../openAPIDefinition.schemas';
@@ -168,17 +169,18 @@ export const useInviteContractor = <TError = AppResponseVoid | AppResponseVoid |
       return useMutation(mutationOptions, queryClient);
     }
     /**
- * Returns all CONTRACTOR accounts with their active-job counts. Admin only. Emails and phone numbers are masked (e.g. "jo***@example.com", "082***890") — use POST /{id}/reveal-email to view them in full.
+ * Returns all CONTRACTOR accounts with their active-job counts. Admin or security admin only. An admin always sees only their own municipality; a security admin sees every contractor platform-wide, or one municipality's with ?municipalityId=. Emails and phone numbers are masked (e.g. "jo***@example.com", "082***890") — use POST /{id}/reveal-email to view them in full.
  * @summary List contractors
  */
 export const getContractors = (
-    
+    params?: GetContractorsParams,
  signal?: AbortSignal
 ) => {
       
       
       return apiClient<AppResponseListContractorResponse>(
-      {url: `/admin/contractors`, method: 'GET', signal
+      {url: `/admin/contractors`, method: 'GET',
+        params, signal
     },
       );
     }
@@ -186,23 +188,23 @@ export const getContractors = (
 
 
 
-export const getGetContractorsQueryKey = () => {
+export const getGetContractorsQueryKey = (params?: GetContractorsParams,) => {
     return [
-    `/admin/contractors`
+    `/admin/contractors`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getGetContractorsQueryOptions = <TData = Awaited<ReturnType<typeof getContractors>>, TError = AppResponseListContractorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContractors>>, TError, TData>>, }
+export const getGetContractorsQueryOptions = <TData = Awaited<ReturnType<typeof getContractors>>, TError = AppResponseListContractorResponse>(params?: GetContractorsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContractors>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetContractorsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetContractorsQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getContractors>>> = ({ signal }) => getContractors(signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getContractors>>> = ({ signal }) => getContractors(params, signal);
 
       
 
@@ -216,7 +218,7 @@ export type GetContractorsQueryError = AppResponseListContractorResponse
 
 
 export function useGetContractors<TData = Awaited<ReturnType<typeof getContractors>>, TError = AppResponseListContractorResponse>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContractors>>, TError, TData>> & Pick<
+ params: undefined |  GetContractorsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContractors>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getContractors>>,
           TError,
@@ -226,7 +228,7 @@ export function useGetContractors<TData = Awaited<ReturnType<typeof getContracto
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetContractors<TData = Awaited<ReturnType<typeof getContractors>>, TError = AppResponseListContractorResponse>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContractors>>, TError, TData>> & Pick<
+ params?: GetContractorsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContractors>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getContractors>>,
           TError,
@@ -236,7 +238,7 @@ export function useGetContractors<TData = Awaited<ReturnType<typeof getContracto
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetContractors<TData = Awaited<ReturnType<typeof getContractors>>, TError = AppResponseListContractorResponse>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContractors>>, TError, TData>>, }
+ params?: GetContractorsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContractors>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -244,11 +246,11 @@ export function useGetContractors<TData = Awaited<ReturnType<typeof getContracto
  */
 
 export function useGetContractors<TData = Awaited<ReturnType<typeof getContractors>>, TError = AppResponseListContractorResponse>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContractors>>, TError, TData>>, }
+ params?: GetContractorsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getContractors>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetContractorsQueryOptions(options)
+  const queryOptions = getGetContractorsQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

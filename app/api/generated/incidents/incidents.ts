@@ -24,6 +24,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AppResponseIncidentAnalyticsDTO,
   AppResponseIncidentCommentResponse,
   AppResponseIncidentPageResponse,
   AppResponseIncidentResponseDTO,
@@ -33,6 +34,7 @@ import type {
   AppResponseListIncidentResponseDTO,
   AssignIncidentRequest,
   CreateCommentRequest,
+  GetIncidentAnalyticsParams,
   GetIncidentClustersParams,
   GetNearbyIncidentsParams,
   GetRecentIncidentsParams,
@@ -1921,6 +1923,99 @@ export function useGetIncidentClusters<TData = Awaited<ReturnType<typeof getInci
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetIncidentClustersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
+ * Returns the status funnel, incident-type mix, monthly volume trend, and average resolution time (with its own monthly trend) for the analytics dashboard. An ADMIN always sees only their own municipality; a security admin sees platform-wide data, or one municipality's with ?municipalityId=.
+ * @summary Get incident analytics
+ */
+export const getIncidentAnalytics = (
+    params?: GetIncidentAnalyticsParams,
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<AppResponseIncidentAnalyticsDTO>(
+      {url: `/incidents/analytics`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+  
+
+
+
+export const getGetIncidentAnalyticsQueryKey = (params?: GetIncidentAnalyticsParams,) => {
+    return [
+    `/incidents/analytics`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getGetIncidentAnalyticsQueryOptions = <TData = Awaited<ReturnType<typeof getIncidentAnalytics>>, TError = unknown>(params?: GetIncidentAnalyticsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentAnalytics>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetIncidentAnalyticsQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIncidentAnalytics>>> = ({ signal }) => getIncidentAnalytics(params, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIncidentAnalytics>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetIncidentAnalyticsQueryResult = NonNullable<Awaited<ReturnType<typeof getIncidentAnalytics>>>
+export type GetIncidentAnalyticsQueryError = unknown
+
+
+export function useGetIncidentAnalytics<TData = Awaited<ReturnType<typeof getIncidentAnalytics>>, TError = unknown>(
+ params: undefined |  GetIncidentAnalyticsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentAnalytics>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getIncidentAnalytics>>,
+          TError,
+          Awaited<ReturnType<typeof getIncidentAnalytics>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetIncidentAnalytics<TData = Awaited<ReturnType<typeof getIncidentAnalytics>>, TError = unknown>(
+ params?: GetIncidentAnalyticsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentAnalytics>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getIncidentAnalytics>>,
+          TError,
+          Awaited<ReturnType<typeof getIncidentAnalytics>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetIncidentAnalytics<TData = Awaited<ReturnType<typeof getIncidentAnalytics>>, TError = unknown>(
+ params?: GetIncidentAnalyticsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentAnalytics>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get incident analytics
+ */
+
+export function useGetIncidentAnalytics<TData = Awaited<ReturnType<typeof getIncidentAnalytics>>, TError = unknown>(
+ params?: GetIncidentAnalyticsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIncidentAnalytics>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetIncidentAnalyticsQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
