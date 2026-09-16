@@ -8,10 +8,17 @@ jest.mock("next/navigation", () => ({
     useSearchParams: () => ({ get: () => null }),
 }));
 
-let capturedOptions: unknown;
+interface CapturedLoginOptions {
+    mutation: {
+        onSuccess: (res: { data: { token: string; role: string } }) => void;
+        onError: (err: { response: { status: number } }) => void;
+    };
+}
+
+let capturedOptions: CapturedLoginOptions;
 
 jest.mock("@/app/api/generated/authentication/authentication", () => ({
-    useLogin: (options: unknown) => {
+    useLogin: (options: CapturedLoginOptions) => {
         capturedOptions = options;
         return { mutate: jest.fn(), isPending: false };
     },

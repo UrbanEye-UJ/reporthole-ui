@@ -7,8 +7,13 @@ jest.mock("axios", () => ({
     })),
 }));
 
+import type { InternalAxiosRequestConfig } from "axios";
 import * as axiosLib from "@/lib/axios";
 const { requestInterceptor, responseErrorInterceptor, router } = axiosLib;
+
+/** Minimal request config for the interceptor test doubles below — headers content is all these tests need. */
+const configWithHeaders = (headers: Record<string, string>) =>
+    ({ headers } as unknown as InternalAxiosRequestConfig);
 
 const setCookie = (value: string) => {
     Object.defineProperty(document, "cookie", {
@@ -22,19 +27,19 @@ describe("axios interceptors", () => {
     describe("request interceptor", () => {
         it("adds Authorization header when token cookie is present", () => {
             setCookie("reporthole_token=my-jwt");
-            const result = requestInterceptor({ headers: {} });
+            const result = requestInterceptor(configWithHeaders({}));
             expect((result.headers as Record<string, string>).Authorization).toBe("Bearer my-jwt");
         });
 
         it("does not add Authorization header when no token cookie", () => {
             setCookie("");
-            const result = requestInterceptor({ headers: {} });
+            const result = requestInterceptor(configWithHeaders({}));
             expect((result.headers as Record<string, string>).Authorization).toBeUndefined();
         });
 
         it("reads only the token cookie when multiple cookies are present", () => {
             setCookie("other=value; reporthole_token=abc123; reporthole_role=CIVILIAN");
-            const result = requestInterceptor({ headers: {} });
+            const result = requestInterceptor(configWithHeaders({}));
             expect((result.headers as Record<string, string>).Authorization).toBe("Bearer abc123");
         });
     });
