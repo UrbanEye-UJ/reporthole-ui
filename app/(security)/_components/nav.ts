@@ -5,6 +5,7 @@ import ManageAccountsRoundedIcon from "@mui/icons-material/ManageAccountsRounded
 import AccountBalanceRoundedIcon from "@mui/icons-material/AccountBalanceRounded";
 import MailRoundedIcon from "@mui/icons-material/MailRounded";
 import ReportRoundedIcon from "@mui/icons-material/ReportRounded";
+import QueryStatsRoundedIcon from "@mui/icons-material/QueryStatsRounded";
 
 export interface SecurityNavItem {
   id: string;
@@ -35,6 +36,12 @@ export const securityNavigation: SecurityNavItem[] = [
     label: "Incidents",
     path: "/security/incidents",
     icon: ReportRoundedIcon,
+  },
+  {
+    id: "analytics",
+    label: "Analytics",
+    path: "/security/analytics",
+    icon: QueryStatsRoundedIcon,
   },
   {
     id: "audit",

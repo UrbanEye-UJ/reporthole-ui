@@ -63,3 +63,30 @@ export function Panel({ title, children }: PanelProps) {
     </Paper>
   );
 }
+
+interface MetricCardProps {
+  title: string;
+  value: string | number;
+  icon?: ReactNode;
+}
+
+/** A single labelled KPI number. */
+export function MetricCard({ title, value, icon }: MetricCardProps) {
+  return (
+    <Paper elevation={0} sx={{ p: 3, border: "1px solid", borderColor: "divider", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+      <Box>
+        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+          {title}
+        </Typography>
+        <Typography variant="h4" sx={{ mt: 1, fontWeight: 700 }}>
+          {value}
+        </Typography>
+      </Box>
+      {icon && (
+        <Box sx={{ width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "12px", bgcolor: "action.hover", color: "primary.main", "& svg": { fontSize: 26 } }}>
+          {icon}
+        </Box>
+      )}
+    </Paper>
+  );
+}

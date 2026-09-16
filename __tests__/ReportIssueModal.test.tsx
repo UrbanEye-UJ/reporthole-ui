@@ -33,7 +33,7 @@ beforeAll(() => {
     global.fetch = jest.fn(() => Promise.resolve({ ok: true } as unknown as Response));
     // jsdom does not implement createImageBitmap or canvas drawing APIs
     global.createImageBitmap = jest.fn(async () => ({ width: 100, height: 100, close: jest.fn() }));
-    HTMLCanvasElement.prototype.getContext = jest.fn(() => ({ drawImage: jest.fn() })) as typeof HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = jest.fn(() => ({ drawImage: jest.fn() })) as unknown as typeof HTMLCanvasElement.prototype.getContext;
     HTMLCanvasElement.prototype.toBlob = jest.fn((cb: BlobCallback) => cb(new Blob(["img"])));
 });
 
@@ -203,7 +203,7 @@ describe("ReportIssueModal", () => {
 
         it("shows coordinates in form step after successful geolocation", async () => {
             mockGeolocation.getCurrentPosition.mockImplementation((success: (pos: GeolocationPosition) => void) =>
-                success({ coords: { latitude: -26.2041, longitude: 28.0473 } })
+                success({ coords: { latitude: -26.2041, longitude: 28.0473 } } as GeolocationPosition)
             );
             await act(async () => {
                 renderModal({ visible: true });
@@ -214,7 +214,7 @@ describe("ReportIssueModal", () => {
 
         it("shows error when geolocation fails on open", async () => {
             mockGeolocation.getCurrentPosition.mockImplementation((_: unknown, error: (err: GeolocationPositionError) => void) =>
-                error({ code: 1, message: "denied" })
+                error({ code: 1, message: "denied" } as GeolocationPositionError)
             );
             await act(async () => {
                 renderModal({ visible: true });
@@ -229,7 +229,7 @@ describe("ReportIssueModal", () => {
     describe("nearby incidents nudge", () => {
         beforeEach(() => {
             mockGeolocation.getCurrentPosition.mockImplementation((success: (pos: GeolocationPosition) => void) =>
-                success({ coords: { latitude: -26.2041, longitude: 28.0473 } })
+                success({ coords: { latitude: -26.2041, longitude: 28.0473 } } as GeolocationPosition)
             );
         });
 

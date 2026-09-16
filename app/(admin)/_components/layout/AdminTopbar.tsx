@@ -29,6 +29,7 @@ import {
   useMarkAllNotificationsRead,
 } from "@/lib/hooks/useNotifications";
 import { useLogout } from "@/lib/hooks/useLogout";
+import { useGetProfile } from "@/app/api/generated/user-profile/user-profile";
 
 const AdminTopbar = () => {
   const { mode, toggle } = useAdminTheme();
@@ -38,6 +39,8 @@ const AdminTopbar = () => {
   const { data: notifications = [] } = useNotifications();
   const { data: unreadCount = 0 } = useUnreadNotificationCount();
   const { mutate: markAllRead } = useMarkAllNotificationsRead();
+  const { data: profileData } = useGetProfile({ query: { staleTime: 1000 * 60 * 5 } });
+  const avatarInitial = profileData?.data?.firstName?.[0]?.toUpperCase() ?? "?";
 
   const handleOpenNotif = () => {
     setNotifOpen(true);
@@ -113,9 +116,9 @@ const AdminTopbar = () => {
               </IconButton>
             </Tooltip>
 
-            {/* User avatar — TODO(api): replace "A" with first letter of profile first name */}
+            {/* User avatar */}
             <Avatar sx={{ bgcolor: "primary.main", color: "primary.contrastText", fontWeight: 700 }}>
-              A
+              {avatarInitial}
             </Avatar>
 
             {/* Logout */}

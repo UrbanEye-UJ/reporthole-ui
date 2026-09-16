@@ -21,9 +21,6 @@ import { useGetContractors } from "@/app/api/generated/admin-contractors/admin-c
 
 import type { GridColDef } from "@mui/x-data-grid";
 
-// TODO(api): "Completed Repairs" needs a dedicated backend aggregation endpoint
-// (counting RESOLVED assignments platform-wide) — left as a placeholder for now.
-
 export default function ContractorsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [revealTarget, setRevealTarget] = useState<{ id: string; name: string } | null>(null);
@@ -113,6 +110,7 @@ export default function ContractorsPage() {
   ];
 
   const activeContracts = contractors.reduce((sum, c) => sum + (c.activeJobs ?? 0), 0);
+  const completedRepairs = contractors.reduce((sum, c) => sum + (c.completedJobs ?? 0), 0);
 
   return (
     <>
@@ -152,7 +150,7 @@ export default function ContractorsPage() {
         <Grid size={{ xs: 12, md: 4 }}>
           <MetricCard
             title="Completed Repairs"
-            value="—"
+            value={completedRepairs}
           />
         </Grid>
 
