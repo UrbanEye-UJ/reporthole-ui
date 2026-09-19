@@ -128,7 +128,7 @@ function ResetPasswordForm() {
             </button>
 
             <p className="text-sm text-gray-500">
-                <Link href="/login" className="text-blue-600 font-semibold hover:underline">
+                <Link href="/login" className="text-blue-600 visited:text-blue-600 font-semibold hover:underline">
                     Back to login
                 </Link>
             </p>
