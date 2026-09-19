@@ -174,7 +174,7 @@ function ContractorRegisterForm() {
 
             <p className="text-sm text-gray-500">
                 Already have an account?{" "}
-                <Link href="/login" className="text-blue-600 font-semibold hover:underline">
+                <Link href="/login" className="text-blue-600 visited:text-blue-600 font-semibold hover:underline">
                     Sign in
                 </Link>
             </p>

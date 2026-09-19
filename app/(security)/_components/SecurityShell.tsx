@@ -69,13 +69,15 @@ export default function SecurityShell({ children, mode, toggleMode }: Props) {
 
         <Box component="nav" sx={{ p: 1.5, display: "flex", flexDirection: "column", gap: 0.5 }}>
           {securityNavigation.map((item) => {
-            const active = pathname.startsWith(item.path);
+            const active = !item.external && pathname.startsWith(item.path);
             const Icon = item.icon;
             return (
               <Box
                 key={item.id}
-                component={Link}
+                component={item.external ? "a" : Link}
                 href={item.path}
+                target={item.external ? "_blank" : undefined}
+                rel={item.external ? "noopener noreferrer" : undefined}
                 sx={{
                   display: "flex",
                   alignItems: "center",

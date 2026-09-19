@@ -145,6 +145,7 @@ const RevealEmailDialog = ({ open, onClose, contractorId, contractorName }: Reve
                         endAdornment: (
                           <InputAdornment position="end">
                             <IconButton
+                              type="button"
                               onClick={() => setShowPassword((v) => !v)}
                               edge="end"
                               size="small"

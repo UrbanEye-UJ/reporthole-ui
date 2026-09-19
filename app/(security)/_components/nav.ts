@@ -6,12 +6,20 @@ import AccountBalanceRoundedIcon from "@mui/icons-material/AccountBalanceRounded
 import MailRoundedIcon from "@mui/icons-material/MailRounded";
 import ReportRoundedIcon from "@mui/icons-material/ReportRounded";
 import QueryStatsRoundedIcon from "@mui/icons-material/QueryStatsRounded";
+import StorageRoundedIcon from "@mui/icons-material/StorageRounded";
+import TerminalRoundedIcon from "@mui/icons-material/TerminalRounded";
 
 export interface SecurityNavItem {
   id: string;
   label: string;
   path: string;
   icon: SvgIconComponent;
+  /**
+   * True for links that aren't Next.js routes — Caddy intercepts these paths
+   * (/pgadmin, /logs) before they'd ever reach the Next app, so they must be
+   * plain full-page navigations, not client-side `next/link` transitions.
+   */
+  external?: boolean;
 }
 
 /**
@@ -60,5 +68,19 @@ export const securityNavigation: SecurityNavItem[] = [
     label: "Messages",
     path: "/security/messages",
     icon: MailRoundedIcon,
+  },
+  {
+    id: "db-admin",
+    label: "Database Admin",
+    path: "/pgadmin",
+    icon: StorageRoundedIcon,
+    external: true,
+  },
+  {
+    id: "logs",
+    label: "Live Logs",
+    path: "/logs",
+    icon: TerminalRoundedIcon,
+    external: true,
   },
 ];
