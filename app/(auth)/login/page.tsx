@@ -116,7 +116,7 @@ function LoginForm() {
                 />
 
                 <div className="flex justify-end">
-                    <Link href="/forgot-password" className="text-sm text-blue-600 font-medium hover:underline">
+                    <Link href="/forgot-password" className="text-sm text-blue-600 visited:text-blue-600 font-medium hover:underline">
                         Forgot password?
                     </Link>
                 </div>
@@ -147,7 +147,7 @@ function LoginForm() {
 
             <p className="text-sm text-gray-500">
                 Don&apos;t have an account?{" "}
-                <Link href="/register" className="text-blue-600 font-semibold hover:underline">
+                <Link href="/register" className="text-blue-600 visited:text-blue-600 font-semibold hover:underline">
                     Sign up
                 </Link>
             </p>

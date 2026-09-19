@@ -120,6 +120,7 @@ const RevealAccountDialog = ({ open, onClose, userId, maskedName }: RevealAccoun
                         endAdornment: (
                           <InputAdornment position="end">
                             <IconButton
+                              type="button"
                               onClick={() => setShowPassword((v) => !v)}
                               edge="end"
                               size="small"
