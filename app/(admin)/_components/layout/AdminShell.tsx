@@ -1,10 +1,12 @@
 "use client";
 
-import { Box } from "@mui/material";
+import { Box, Drawer, useMediaQuery, useTheme } from "@mui/material";
 import { useState } from "react";
 import type { ReactNode } from "react";
 import AdminSidebar from "./AdminSidebar";
 import AdminTopbar from "./AdminTopbar";
+
+const MOBILE_SIDEBAR_WIDTH = 260;
 
 interface Props {
   children: ReactNode;
@@ -12,6 +14,9 @@ interface Props {
 
 const AdminShell = ({ children }: Props) => {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   return (
     /*
@@ -35,25 +40,42 @@ const AdminShell = ({ children }: Props) => {
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: collapsed ? "80px 1fr" : "260px 1fr",
+          gridTemplateColumns: isMobile ? "1fr" : collapsed ? "80px 1fr" : "260px 1fr",
           gridTemplateRows: "70px 1fr",
           minHeight: "100vh",
           transition: "all .3s ease",
         }}
       >
-        <AdminSidebar
-          collapsed={collapsed}
-          setCollapsed={setCollapsed}
-        />
+        {isMobile ? (
+          <Drawer
+            variant="temporary"
+            open={mobileOpen}
+            onClose={() => setMobileOpen(false)}
+            ModalProps={{ keepMounted: true }}
+            sx={{ "& .MuiDrawer-paper": { width: MOBILE_SIDEBAR_WIDTH, boxSizing: "border-box" } }}
+          >
+            <AdminSidebar
+              collapsed={false}
+              setCollapsed={setCollapsed}
+              onClose={() => setMobileOpen(false)}
+              onNavigate={() => setMobileOpen(false)}
+            />
+          </Drawer>
+        ) : (
+          <AdminSidebar
+            collapsed={collapsed}
+            setCollapsed={setCollapsed}
+          />
+        )}
 
-        <AdminTopbar />
+        <AdminTopbar isMobile={isMobile} onMenuClick={() => setMobileOpen(true)} />
 
         <Box
           component="main"
           sx={{
-            gridColumn: 2,
+            gridColumn: isMobile ? 1 : 2,
             gridRow: 2,
-            p: 3,
+            p: { xs: 2, md: 3 },
             overflow: "auto",
             background: "transparent",
           }}

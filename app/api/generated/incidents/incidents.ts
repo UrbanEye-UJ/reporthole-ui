@@ -179,7 +179,7 @@ export const useReportStillUnresolved = <TError = AppResponseIncidentResponseDTO
       return useMutation(mutationOptions, queryClient);
     }
     /**
- * Marks the caller's assignment for this incident as RESOLVED, storing a repair photo and note. Caller must be the contractor this incident is assigned to.
+ * Marks the caller's assignment for this incident as RESOLVED, storing a repair photo and note. Caller must be the contractor this incident is assigned to. Optionally idempotent via an Idempotency-Key header — see /accept.
  * @summary Resolve incident
  */
 export const resolveIncident = (
@@ -308,7 +308,7 @@ export const useReopenIncident = <TError = AppResponseIncidentResponseDTO | AppR
       return useMutation(mutationOptions, queryClient);
     }
     /**
- * Called by the assigned contractor to reject the incident, giving a required reason. The assignment is removed from the contractor and the incident reverts to VERIFIED so an admin can assign it to someone else.
+ * Called by the assigned contractor to reject the incident, giving a required reason. The assignment is removed from the contractor and the incident reverts to VERIFIED so an admin can assign it to someone else. Optionally idempotent via an Idempotency-Key header — see /accept.
  * @summary Reject assignment
  */
 export const rejectAssignment = (
@@ -374,7 +374,7 @@ export const useRejectAssignment = <TError = AppResponseIncidentResponseDTO | Ap
       return useMutation(mutationOptions, queryClient);
     }
     /**
- * Called by the assigned contractor to post a free-text progress note while the incident is IN_PROGRESS. Each note is appended to the incident's workflow history, visible to admins.
+ * Called by the assigned contractor to post a free-text progress note while the incident is IN_PROGRESS. Each note is appended to the incident's workflow history, visible to admins. Optionally idempotent via an Idempotency-Key header — see /accept.
  * @summary Add progress update
  */
 export const addProgressUpdate = (
@@ -727,7 +727,7 @@ export const useAssignIncident = <TError = AppResponseIncidentResponseDTO | AppR
       return useMutation(mutationOptions, queryClient);
     }
     /**
- * Called by the assigned contractor to accept the incident, advancing its status to IN_PROGRESS.
+ * Called by the assigned contractor to accept the incident, advancing its status to IN_PROGRESS. Optionally idempotent via an ?Idempotency-Key header — a repeated key returns the current state without re-running the acceptance a second time, so an offline-queued retry can't double-fire if the original request actually succeeded.
  * @summary Accept assignment
  */
 export const acceptAssignment = (

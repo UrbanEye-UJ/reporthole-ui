@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -18,21 +19,32 @@ import { navigation } from "../navigation";
 interface SidebarProps {
   collapsed: boolean;
   setCollapsed: Dispatch<SetStateAction<boolean>>;
+  /**
+   * Present when this sidebar is rendered inside the mobile off-canvas Drawer
+   * (see AdminShell) — the header button then closes the drawer instead of
+   * toggling the desktop collapse width, and `collapsed` is ignored (always
+   * shown full-width while open).
+   */
+  onClose?: () => void;
+  /** Called after a nav link is clicked — used to close the mobile drawer. */
+  onNavigate?: () => void;
 }
 
-const AdminSidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
+const AdminSidebar = ({ collapsed, setCollapsed, onClose, onNavigate }: SidebarProps) => {
   const pathname = usePathname();
+  const isMobileDrawer = !!onClose;
+  const effectiveCollapsed = isMobileDrawer ? false : collapsed;
 
   return (
     <Box
       sx={{
-        gridRow: "1 / span 2",
-        width: collapsed ? 80 : 260,
-        minHeight: "100vh",
+        gridRow: isMobileDrawer ? undefined : "1 / span 2",
+        width: effectiveCollapsed ? 80 : 260,
+        minHeight: isMobileDrawer ? "100%" : "100vh",
         display: "flex",
         flexDirection: "column",
         bgcolor: "background.paper",
-        borderRight: "1px solid",
+        borderRight: isMobileDrawer ? "none" : "1px solid",
         borderColor: "divider",
         transition: "width 0.3s ease",
         overflow: "hidden",
@@ -44,7 +56,7 @@ const AdminSidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
           height: 70,
           display: "flex",
           alignItems: "center",
-          justifyContent: collapsed
+          justifyContent: effectiveCollapsed
             ? "center"
             : "space-between",
           px: 2,
@@ -52,7 +64,7 @@ const AdminSidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
           borderColor: "divider",
         }}
       >
-        {!collapsed && (
+        {!effectiveCollapsed && (
           <Typography
             variant="h6"
             sx={{
@@ -66,11 +78,12 @@ const AdminSidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
 
         <IconButton
           color="inherit"
+          aria-label={isMobileDrawer ? "Close menu" : "Toggle sidebar"}
           onClick={() =>
-            setCollapsed((previous) => !previous)
+            isMobileDrawer ? onClose?.() : setCollapsed((previous) => !previous)
           }
         >
-          <MenuRoundedIcon />
+          {isMobileDrawer ? <CloseRoundedIcon /> : <MenuRoundedIcon />}
         </IconButton>
       </Box>
 
@@ -93,6 +106,7 @@ const AdminSidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
               key={item.path}
               href={item.path}
               style={{ textDecoration: "none" }}
+              onClick={onNavigate}
             >
               <Box
                 sx={{
@@ -100,8 +114,8 @@ const AdminSidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
                   display: "flex",
                   alignItems: "center",
                   gap: 2,
-                  px: collapsed ? 0 : 2,
-                  justifyContent: collapsed
+                  px: effectiveCollapsed ? 0 : 2,
+                  justifyContent: effectiveCollapsed
                     ? "center"
                     : "flex-start",
 
@@ -129,7 +143,7 @@ const AdminSidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
               >
                 <Icon />
 
-                {!collapsed && (
+                {!effectiveCollapsed && (
                   <Typography
                     sx={{
                       fontSize: "0.95rem",

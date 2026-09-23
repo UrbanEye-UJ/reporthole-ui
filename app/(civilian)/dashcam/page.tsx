@@ -17,11 +17,13 @@
  * Auth: No login required. A device token (generated via POST /devices/token/generate
  * while logged in normally) is entered once and persisted in localStorage.
  *
- * HTTPS: camera and geolocation require a secure context. Use `npm run dev:https`.
+ * HTTPS: camera and geolocation require a secure context. `npm run dev` always runs over HTTPS.
  */
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useGenerateToken } from "@/app/api/generated/devices/devices";
+import { enqueue, remove, listQueued, isNetworkError, type QueuedMutation } from "@/lib/offlineQueue";
+import { dispatchQueueChanged } from "@/lib/hooks/useOfflineSync";
 
 const DISCARD_THRESHOLD = 0.65;
 const AUTO_LOG_THRESHOLD = 0.75;
@@ -36,12 +38,22 @@ interface DashcamEvent {
     timestamp: Date;
     label: string;
     confidence: number;
+    /** General object detector (stock YOLO/COCO model) — informational only, never affects routing. */
+    stockLabel?: string;
+    stockConfidence?: number;
     decision: RoutingDecision;
     status: EventStatus;
     errorMessage?: string;
     /** Stored for deferred ESCALATE confirmation — not displayed. */
     imageBase64?: string;
     gps?: { latitude: number; longitude: number };
+    /**
+     * The detector's own bounding box, normalised [0,1] centre-based (YOLO format) — forwarded to
+     * incident creation so the backend can auto-generate a training label. Undefined if the model
+     * output didn't include one (never happens for a real detection, but the JSON fields are
+     * individually nullable).
+     */
+    bbox?: { xCenter: number; yCenter: number; width: number; height: number };
 }
 
 interface PredictResponse {
@@ -49,9 +61,16 @@ interface PredictResponse {
     detection: {
         label: string | null;
         confidence: number | null;
-        bbox: number[] | null;
-        raw_label: string | null;
+        bboxXCenter: number | null;
+        bboxYCenter: number | null;
+        bboxWidth: number | null;
+        bboxHeight: number | null;
     };
+    stockDetection?: {
+        label: string | null;
+        confidence: number | null;
+        rawLabel: string | null;
+    } | null;
 }
 
 /** Reads a Blob as a plain base64 string (no data-URI prefix). */
@@ -65,7 +84,16 @@ function blobToBase64(blob: Blob): Promise<string> {
 
 export default function DashcamPage() {
     // ── Token state ────────────────────────────────────────────────────────
-    const [deviceToken, setDeviceToken] = useState<string | null>(() => typeof window !== "undefined" ? localStorage.getItem(DEVICE_TOKEN_KEY) : null);
+    // Initialized to null on both server and client — reading localStorage in the initializer
+    // made the server-rendered token-entry screen and the client's first render (which would
+    // immediately see a stored token, if any) disagree on which screen to show, a much bigger
+    // hydration mismatch than a text label since it swaps the whole subtree. Set for real in an
+    // effect instead, after hydration has already matched on the token-entry screen.
+    const [deviceToken, setDeviceToken] = useState<string | null>(null);
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setDeviceToken(localStorage.getItem(DEVICE_TOKEN_KEY));
+    }, []);
     const [tokenInput, setTokenInput] = useState("");
 
     // ── Camera state ───────────────────────────────────────────────────────
@@ -114,6 +142,41 @@ export default function DashcamPage() {
         return () => navigator.geolocation.clearWatch(id);
     }, [deviceToken]);
 
+    // ── Restore queued detections from a previous session ──────────────────
+    // If the page was closed/reloaded while a detection was queued offline, it wouldn't
+    // otherwise appear in this fresh `events` state — pull it back in so it's still visible
+    // and confirmable rather than silently sitting in IndexedDB.
+    useEffect(() => {
+        listQueued().then((items) => {
+            const restored: DashcamEvent[] = items
+                .filter((i): i is QueuedMutation & { kind: "dashcam-report" } => i.kind === "dashcam-report")
+                .map((i) => {
+                    const body = i.body as {
+                        incidentType: string;
+                        latitude: number;
+                        longitude: number;
+                        imageBase64: string;
+                    };
+                    return {
+                        id: i.id,
+                        timestamp: new Date(i.createdAt),
+                        label: body.incidentType,
+                        confidence: 0,
+                        decision: i.dashcamDecision ?? "ESCALATE",
+                        status: "pending_confirm",
+                        imageBase64: body.imageBase64,
+                        gps: { latitude: body.latitude, longitude: body.longitude },
+                    };
+                });
+            if (restored.length === 0) return;
+            setEvents((prev) => {
+                const existingIds = new Set(prev.map((e) => e.id));
+                const toAdd = restored.filter((e) => !existingIds.has(e.id));
+                return toAdd.length ? [...toAdd, ...prev] : prev;
+            });
+        });
+    }, []);
+
     // ── Event log helpers ──────────────────────────────────────────────────
 
     const addEvent = useCallback((event: DashcamEvent) => {
@@ -131,16 +194,40 @@ export default function DashcamPage() {
      * Uses Authorization: Bearer <device-token> — not the shared axios
      * instance, which would inject a JWT from the cookie (or redirect to
      * /login on 401 if no cookie is present).
+     *
+     * `decision` is the event's own routing tier (AUTO_LOG or ESCALATE) — carried through to the
+     * offline queue so a network failure here queues it correctly: an ESCALATE item has already
+     * been human-confirmed (this call IS that confirmation) so it auto-replays on reconnect,
+     * while an AUTO_LOG item hasn't, so it's held for confirm-before-send instead — see
+     * `useOfflineSync.ts`.
      */
     const createIncident = useCallback(async (
         eventId: string,
         label: string,
         confidence: number,
         imageBase64: string,
-        coords: { latitude: number; longitude: number }
+        coords: { latitude: number; longitude: number },
+        decision: "AUTO_LOG" | "ESCALATE",
+        bbox?: { xCenter: number; yCenter: number; width: number; height: number }
     ) => {
         const token = tokenRef.current;
         if (!token) return;
+
+        const payload = {
+            incidentType: label,
+            description: `Dashcam: ${label} detected at ${Math.round(confidence * 100)}% confidence.`,
+            source: "DASHCAM",
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            imageBase64,
+            forceCreate: false,
+            occurredAt: new Date().toISOString(),
+            confidence,
+            bboxXCenter: bbox?.xCenter,
+            bboxYCenter: bbox?.yCenter,
+            bboxWidth: bbox?.width,
+            bboxHeight: bbox?.height,
+        };
 
         try {
             const res = await fetch("/api/incidents/create", {
@@ -149,15 +236,7 @@ export default function DashcamPage() {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({
-                    incidentType: label,
-                    description: `Dashcam: ${label} detected at ${Math.round(confidence * 100)}% confidence.`,
-                    source: "DASHCAM",
-                    latitude: coords.latitude,
-                    longitude: coords.longitude,
-                    imageBase64,
-                    forceCreate: false,
-                }),
+                body: JSON.stringify(payload),
             });
 
             if (res.status === 401) {
@@ -165,18 +244,41 @@ export default function DashcamPage() {
                     status: "error",
                     errorMessage: "Invalid device token — clear and re-enter it.",
                 });
+                await remove(eventId);
                 return;
             }
             if (!res.ok) {
                 updateEvent(eventId, { status: "error", errorMessage: `Server error (${res.status})` });
+                await remove(eventId);
                 return;
             }
 
             const body = await res.json();
             // Backend returns duplicate:true with HTTP 200 when a nearby incident exists
             updateEvent(eventId, { status: body.data?.duplicate ? "duplicate" : "logged" });
-        } catch {
-            updateEvent(eventId, { status: "error", errorMessage: "Network error — incident not saved." });
+            await remove(eventId);
+        } catch (err) {
+            if (isNetworkError(err)) {
+                await enqueue({
+                    id: eventId,
+                    kind: "dashcam-report",
+                    url: "/incidents/create",
+                    method: "POST",
+                    body: payload,
+                    authMode: "device-token",
+                    deviceToken: token,
+                    dashcamDecision: decision,
+                });
+                dispatchQueueChanged((await listQueued()).length);
+                updateEvent(eventId, {
+                    status: "pending_confirm",
+                    imageBase64,
+                    gps: coords,
+                    errorMessage: undefined,
+                });
+            } else {
+                updateEvent(eventId, { status: "error", errorMessage: "Network error — incident not saved." });
+            }
         }
     }, [updateEvent]);
 
@@ -225,6 +327,12 @@ export default function DashcamPage() {
         const label = prediction.detection.label;
         const confidence = prediction.detection.confidence;
         const coords = gpsRef.current;
+        const stockLabel = prediction.stockDetection?.label ?? undefined;
+        const stockConfidence = prediction.stockDetection?.confidence ?? undefined;
+        const { bboxXCenter, bboxYCenter, bboxWidth, bboxHeight } = prediction.detection;
+        const bbox = bboxXCenter != null && bboxYCenter != null && bboxWidth != null && bboxHeight != null
+            ? { xCenter: bboxXCenter, yCenter: bboxYCenter, width: bboxWidth, height: bboxHeight }
+            : undefined;
 
         setLastDetection({ label, confidence });
 
@@ -241,7 +349,7 @@ export default function DashcamPage() {
         const eventId = crypto.randomUUID();
 
         if (decision === "DISCARD") {
-            addEvent({ id: eventId, timestamp: new Date(), label, confidence, decision, status: "discarded" });
+            addEvent({ id: eventId, timestamp: new Date(), label, confidence, stockLabel, stockConfidence, decision, status: "discarded" });
             return;
         }
 
@@ -252,6 +360,8 @@ export default function DashcamPage() {
                 timestamp: new Date(),
                 label,
                 confidence,
+                stockLabel,
+                stockConfidence,
                 decision,
                 status: "error",
                 errorMessage: "No GPS fix — incident not saved.",
@@ -260,8 +370,23 @@ export default function DashcamPage() {
         }
 
         if (decision === "AUTO_LOG") {
-            addEvent({ id: eventId, timestamp: new Date(), label, confidence, decision, status: "saving" });
-            await createIncident(eventId, label, confidence, base64, coords);
+            addEvent({
+                id: eventId,
+                timestamp: new Date(),
+                label,
+                confidence,
+                stockLabel,
+                stockConfidence,
+                decision,
+                status: "saving",
+                // Kept even though AUTO_LOG doesn't normally need deferred confirmation — if
+                // createIncident below queues this (offline), it becomes a pending_confirm item
+                // like ESCALATE's, and needs these to let the user confirm it later.
+                imageBase64: base64,
+                gps: coords,
+                bbox,
+            });
+            await createIncident(eventId, label, confidence, base64, coords, decision, bbox);
         } else {
             // ESCALATE — hold in log with imageBase64 and gps for deferred confirmation
             addEvent({
@@ -269,7 +394,10 @@ export default function DashcamPage() {
                 timestamp: new Date(),
                 label,
                 confidence,
+                stockLabel,
+                stockConfidence,
                 decision,
+                bbox,
                 status: "pending_confirm",
                 imageBase64: base64,
                 gps: coords,
@@ -297,7 +425,7 @@ export default function DashcamPage() {
             // getUserMedia fails with a generic NotAllowedError on non-HTTPS origins
             setCameraError(
                 msg.toLowerCase().includes("not allowed") || msg.toLowerCase().includes("secure")
-                    ? "Camera requires HTTPS. Start the dev server with `npm run dev:https`."
+                    ? "Camera requires HTTPS. Start the dev server with `npm run dev`."
                     : `Camera error: ${msg}`
             );
         }
@@ -394,10 +522,10 @@ export default function DashcamPage() {
     // ── Main dashcam screen ────────────────────────────────────────────────
 
     return (
-        <main className="min-h-screen bg-gray-950 text-white flex flex-col">
+        <main className="h-[100dvh] bg-gray-950 text-white flex flex-col overflow-hidden">
 
-            {/* Live camera feed */}
-            <div className="relative w-full aspect-video bg-black">
+            {/* Live camera feed — ~65% of the screen */}
+            <div className="relative w-full bg-black shrink-0 h-[65dvh]">
                 <video
                     ref={videoRef}
                     autoPlay
@@ -426,8 +554,8 @@ export default function DashcamPage() {
                 )}
             </div>
 
-            {/* Controls bar */}
-            <div className="flex items-center justify-between gap-3 px-4 py-3 bg-gray-900">
+            {/* Controls bar — compact strip between the camera and the log, not counted in either's share */}
+            <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-gray-900 shrink-0">
                 <div className="text-xs font-mono truncate">
                     {gpsError ? (
                         <span className="text-yellow-400">{gpsError}</span>
@@ -461,8 +589,8 @@ export default function DashcamPage() {
                 </div>
             </div>
 
-            {/* Event log */}
-            <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2">
+            {/* Prediction log — ~35% of the screen, scrollable */}
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 flex flex-col gap-2">
                 {events.length === 0 && (
                     <p className="text-gray-600 text-sm text-center py-8">
                         {isActive ? "Scanning…" : "Press Start to begin scanning."}
@@ -478,7 +606,9 @@ export default function DashcamPage() {
                                 event.label,
                                 event.confidence,
                                 event.imageBase64!,
-                                event.gps!
+                                event.gps!,
+                                event.decision as "AUTO_LOG" | "ESCALATE",
+                                event.bbox
                             )
                         }
                         onMarkSaving={() => updateEvent(event.id, { status: "saving" })}
@@ -515,7 +645,10 @@ function EventLogEntry({ event, onConfirm, onMarkSaving }: EventLogEntryProps) {
 
     const statusText: Record<EventStatus, string> = {
         saving: "Saving…",
-        pending_confirm: "Awaiting confirmation",
+        // AUTO_LOG only reaches pending_confirm by being queued offline — ESCALATE reaches it
+        // by design (always needs a human tap). Same label works for both: either way, this
+        // entry needs the driver to confirm before it's sent.
+        pending_confirm: event.decision === "AUTO_LOG" ? "No connection — tap to send" : "Awaiting confirmation",
         logged: "Logged",
         duplicate: "Duplicate — already on record",
         discarded: "Discarded",
@@ -523,26 +656,37 @@ function EventLogEntry({ event, onConfirm, onMarkSaving }: EventLogEntryProps) {
     };
 
     const isConfirmable =
-        event.decision === "ESCALATE" &&
+        (event.decision === "ESCALATE" || event.decision === "AUTO_LOG") &&
         event.status === "pending_confirm" &&
         !!event.imageBase64 &&
         !!event.gps;
 
     return (
-        <div className="bg-gray-900 rounded-lg px-3 py-2.5 flex flex-col gap-1.5">
+        <div className="bg-gray-900 rounded-lg px-3 py-2.5 flex flex-col gap-1">
+            {/* Primary: label + confidence — the dominant visual element of the log */}
             <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-medium">{event.label.replace(/_/g, " ")}</span>
-                <span className="text-xs text-gray-500 font-mono">
+                <span className="text-base font-bold text-white">{event.label.replace(/_/g, " ")}</span>
+                <span className="text-lg font-bold text-gray-100 tabular-nums">
+                    {Math.round(event.confidence * 100)}%
+                </span>
+            </div>
+
+            {/* Secondary: general object detector score, if present */}
+            {event.stockLabel && (
+                <span className="text-[11px] text-gray-500">
+                    General detector: {event.stockLabel.replace(/_/g, " ")}
+                    {typeof event.stockConfidence === "number" && ` (${Math.round(event.stockConfidence * 100)}%)`}
+                </span>
+            )}
+
+            {/* Tertiary: timestamp, decision, status */}
+            <div className="flex items-center gap-3 text-[11px] flex-wrap mt-0.5">
+                <span className="text-gray-500 font-mono">
                     {event.timestamp.toLocaleTimeString("en-ZA", {
                         hour: "2-digit",
                         minute: "2-digit",
                         second: "2-digit",
                     })}
-                </span>
-            </div>
-            <div className="flex items-center gap-3 text-xs flex-wrap">
-                <span className="text-gray-400">
-                    {Math.round(event.confidence * 100)}% confidence
                 </span>
                 <span className={decisionColour[event.decision]}>
                     {event.decision.replace("_", " ")}
