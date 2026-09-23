@@ -8,7 +8,6 @@ import IssueCard from "@/components/shared/IssueCard";
 import ReportIssueModal from "@/components/shared/ReportIssueModal";
 import IncidentDetailModal from "@/components/shared/IncidentDetailModal";
 import SessionExpiryWarning from "@/components/shared/SessionExpiryWarning";
-import InstallAppButton from "@/components/shared/InstallAppButton";
 import {
     useGetMyIncidents,
     useDeleteIncident,
@@ -181,8 +180,6 @@ export default function CivilianDashboard() {
                         <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">{role.toLowerCase()}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                        <InstallAppButton />
-
                         {/* Theme toggle */}
                         <button
                             type="button"
