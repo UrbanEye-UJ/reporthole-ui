@@ -45,15 +45,15 @@ export const flagForTraining = (
     params?: FlagForTrainingParams,
  signal?: AbortSignal
 ) => {
-
-
+      
+      
       return apiClient<AppResponseTrainingStatusResponse>(
       {url: `/admin/training/incidents/${id}/flag-for-training`, method: 'POST',
         params, signal
     },
       );
     }
-
+  
 
 
 export const getFlagForTrainingMutationOptions = <TError = AppResponseTrainingStatusResponse | AppResponseTrainingStatusResponse | AppResponseTrainingStatusResponse,
@@ -67,7 +67,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-
+      
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof flagForTraining>>, {id: string;params?: FlagForTrainingParams}> = (props) => {
@@ -76,13 +76,13 @@ const {mutation: mutationOptions} = options ?
           return  flagForTraining(id,params,)
         }
 
-
+        
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type FlagForTrainingMutationResult = NonNullable<Awaited<ReturnType<typeof flagForTraining>>>
-
+    
     export type FlagForTrainingMutationError = AppResponseTrainingStatusResponse | AppResponseTrainingStatusResponse | AppResponseTrainingStatusResponse
 
     /**
@@ -109,14 +109,14 @@ export const getAnnotations = (
     id: string,
  signal?: AbortSignal
 ) => {
-
-
+      
+      
       return apiClient<AppResponseListAnnotationResponse>(
       {url: `/admin/training/incidents/${id}/annotations`, method: 'GET', signal
     },
       );
     }
-
+  
 
 
 
@@ -126,7 +126,7 @@ export const getGetAnnotationsQueryKey = (id?: string,) => {
     ] as const;
     }
 
-
+    
 export const getGetAnnotationsQueryOptions = <TData = Awaited<ReturnType<typeof getAnnotations>>, TError = AppResponseListAnnotationResponse | AppResponseListAnnotationResponse>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnotations>>, TError, TData>>, }
 ) => {
 
@@ -134,13 +134,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getGetAnnotationsQueryKey(id);
 
-
+  
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof getAnnotations>>> = ({ signal }) => getAnnotations(id, signal);
 
+      
 
-
-
+      
 
    return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAnnotations>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -179,7 +179,7 @@ export function useGetAnnotations<TData = Awaited<ReturnType<typeof getAnnotatio
 
 export function useGetAnnotations<TData = Awaited<ReturnType<typeof getAnnotations>>, TError = AppResponseListAnnotationResponse | AppResponseListAnnotationResponse>(
  id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnotations>>, TError, TData>>, }
- , queryClient?: QueryClient
+ , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetAnnotationsQueryOptions(id,options)
@@ -202,8 +202,8 @@ export const saveAnnotations = (
     saveAnnotationsRequest: SaveAnnotationsRequest,
  signal?: AbortSignal
 ) => {
-
-
+      
+      
       return apiClient<AppResponseListAnnotationResponse>(
       {url: `/admin/training/incidents/${id}/annotations`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -211,7 +211,7 @@ export const saveAnnotations = (
     },
       );
     }
-
+  
 
 
 export const getSaveAnnotationsMutationOptions = <TError = AppResponseListAnnotationResponse | AppResponseListAnnotationResponse | AppResponseListAnnotationResponse,
@@ -225,7 +225,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-
+      
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveAnnotations>>, {id: string;data: SaveAnnotationsRequest}> = (props) => {
@@ -234,7 +234,7 @@ const {mutation: mutationOptions} = options ?
           return  saveAnnotations(id,data,)
         }
 
-
+        
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -267,15 +267,15 @@ export const exportYolo = (
     params?: ExportYoloParams,
  signal?: AbortSignal
 ) => {
-
-
+      
+      
       return apiClient<string>(
       {url: `/admin/training/export/yolo`, method: 'GET',
         params, signal
     },
       );
     }
-
+  
 
 
 
@@ -285,7 +285,7 @@ export const getExportYoloQueryKey = (params?: ExportYoloParams,) => {
     ] as const;
     }
 
-
+    
 export const getExportYoloQueryOptions = <TData = Awaited<ReturnType<typeof exportYolo>>, TError = string | string>(params?: ExportYoloParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exportYolo>>, TError, TData>>, }
 ) => {
 
@@ -293,13 +293,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getExportYoloQueryKey(params);
 
-
+  
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof exportYolo>>> = ({ signal }) => exportYolo(params, signal);
 
+      
 
-
-
+      
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportYolo>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -338,7 +338,7 @@ export function useExportYolo<TData = Awaited<ReturnType<typeof exportYolo>>, TE
 
 export function useExportYolo<TData = Awaited<ReturnType<typeof exportYolo>>, TError = string | string>(
  params?: ExportYoloParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof exportYolo>>, TError, TData>>, }
- , queryClient?: QueryClient
+ , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getExportYoloQueryOptions(params,options)
@@ -359,14 +359,14 @@ export function useExportYolo<TData = Awaited<ReturnType<typeof exportYolo>>, TE
 export const deleteAnnotation = (
     annotationId: string,
  ) => {
-
-
+      
+      
       return apiClient<void>(
       {url: `/admin/training/annotations/${annotationId}`, method: 'DELETE'
     },
       );
     }
-
+  
 
 
 export const getDeleteAnnotationMutationOptions = <TError = void | void,
@@ -380,7 +380,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-
+      
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAnnotation>>, {annotationId: string}> = (props) => {
@@ -389,13 +389,13 @@ const {mutation: mutationOptions} = options ?
           return  deleteAnnotation(annotationId,)
         }
 
-
+        
 
 
   return  { mutationFn, ...mutationOptions }}
 
     export type DeleteAnnotationMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAnnotation>>>
-
+    
     export type DeleteAnnotationMutationError = void | void
 
     /**
@@ -414,4 +414,4 @@ export const useDeleteAnnotation = <TError = void | void,
 
       return useMutation(mutationOptions, queryClient);
     }
-
+    

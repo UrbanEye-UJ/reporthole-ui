@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import StatusCard from "@/components/shared/StatusCard";
@@ -53,7 +53,13 @@ const directionsUrl = (lat?: number, lng?: number) =>
 export default function ContractorDashboard() {
   const handleLogout = useLogout();
   const { darkMode, toggle: toggleTheme } = useContractorTheme();
-  const [role] = useState(() => (typeof window !== "undefined" ? getCookie("reporthole_role") : ""));
+  // Initialized to "" on both server and client to avoid a hydration mismatch — see the
+  // civilian dashboard's identical fix for the full explanation.
+  const [role, setRole] = useState("");
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRole(getCookie("reporthole_role"));
+  }, []);
   const [resolveTarget, setResolveTarget] = useState<IncidentWithStatus | null>(null);
   const [progressTarget, setProgressTarget] = useState<IncidentWithStatus | null>(null);
   const [rejectTarget, setRejectTarget] = useState<IncidentWithStatus | null>(null);

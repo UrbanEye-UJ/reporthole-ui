@@ -27,7 +27,7 @@ const ISSUE_TYPES = Object.values(IncidentRequestDTOIncidentType);
  * prompt entirely and go straight to the pre-filled form — the model is confident
  * enough that asking the user to double-check adds friction without adding value.
  */
-const AI_AUTO_ACCEPT_THRESHOLD = 0.90;
+const AI_AUTO_ACCEPT_THRESHOLD = 0.75;
 
 function getCurrentUserId(): string | null {
     try {
@@ -151,6 +151,13 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
     const [aiResult, setAiResult] = useState<DetectionDTO | null>(null);
     // Stock/general-object-detector result — informational only, never affects the accepted issue type.
     const [aiStockResult, setAiStockResult] = useState<DetectionDTO | null>(null);
+    /**
+     * The detection the user actually accepted (auto-accepted or via "Yes, that looks right"),
+     * carried through to submission so the backend can auto-generate a training label from the
+     * detector's own bounding box. Null for a manually-reported issue (never went through AI, or
+     * the AI suggestion was rejected) — the backend only attaches AI fields when this is present.
+     */
+    const [acceptedAiDetection, setAcceptedAiDetection] = useState<DetectionDTO | null>(null);
     const [aiError, setAiError] = useState<string | null>(null);
 
     // File input refs — separate refs for camera and gallery
@@ -295,6 +302,14 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
             forceCreate,
             locationAddress: address ?? undefined,
             occurredAt: new Date().toISOString(),
+            // Carried through only when the submitted report came from an accepted AI
+            // suggestion — lets the backend auto-approve and auto-label it for training from the
+            // detector's own bounding box. Absent for a fully manual report.
+            confidence: acceptedAiDetection?.confidence,
+            bboxXCenter: acceptedAiDetection?.bboxXCenter,
+            bboxYCenter: acceptedAiDetection?.bboxYCenter,
+            bboxWidth: acceptedAiDetection?.bboxWidth,
+            bboxHeight: acceptedAiDetection?.bboxHeight,
         };
         try {
             await createIncident.mutateAsync({ data: payload });
@@ -335,6 +350,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
         setDescription(`AI detected: ${(detection.label ?? "").replace(/_/g, " ")} at ${Math.round((detection.confidence ?? 0) * 100)}% confidence.`);
         setFile(imageFile);
         setPreview(previewUrl);
+        setAcceptedAiDetection(detection);
         setStep("form");
     }, []);
 
@@ -392,6 +408,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
             setFile(aiFile);
             setPreview(aiPreview);
         }
+        setAcceptedAiDetection(null);
         setStep("form");
     }, [aiFile, aiPreview]);
 
@@ -410,6 +427,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
         setAiPreview(null);
         setAiResult(null);
         setAiStockResult(null);
+        setAcceptedAiDetection(null);
         setAiError(null);
         setAiAnalyzing(false);
         if (cameraRef.current) cameraRef.current.value = "";

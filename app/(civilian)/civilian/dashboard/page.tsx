@@ -75,8 +75,17 @@ export default function CivilianDashboard() {
     const { data: unreadCount = 0 } = useUnreadNotificationCount();
     const { mutate: markAllRead } = useMarkAllNotificationsRead();
     const refetchNotifications = useRefetchNotifications();
-    const [role] = useState(() => typeof window !== "undefined" ? getCookie("reporthole_role") : "");
-    const [userId] = useState(() => typeof window !== "undefined" ? getCookie("reporthole_user_id") : "");
+    // Initialized to "" on both server and client (not read from the cookie synchronously) to
+    // avoid a hydration mismatch — the cookie is only readable client-side, so reading it in the
+    // initializer made the server-rendered "" and the client's first render disagree. Set for
+    // real in an effect instead, after hydration has already matched.
+    const [role, setRole] = useState("");
+    const [userId, setUserId] = useState("");
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setRole(getCookie("reporthole_role"));
+        setUserId(getCookie("reporthole_user_id"));
+    }, []);
     const [searchKeyword, setSearchKeyword] = useState("");
     const [searchType, setSearchType] = useState<SearchMyIncidentsType | "">("");
     const [activeTab, setActiveTab] = useState<"my" | "nearby">("my");

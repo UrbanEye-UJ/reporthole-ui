@@ -514,7 +514,7 @@ describe("ReportIssueModal", () => {
         it("shows AI prediction result when inference succeeds", async () => {
             mockPredictMutateAsync.mockResolvedValue({
                 detected: true,
-                detection: { label: "POTHOLE", confidence: 0.87, rawLabel: "Pothole_FP" },
+                detection: { label: "POTHOLE", confidence: 0.72, rawLabel: "Pothole_FP" },
             });
 
             renderModal({ visible: true });
@@ -531,14 +531,14 @@ describe("ReportIssueModal", () => {
             await waitFor(() => {
                 expect(screen.getByText("AI Detected")).toBeInTheDocument();
                 expect(screen.getByText("POTHOLE")).toBeInTheDocument();
-                expect(screen.getByText("87% confidence")).toBeInTheDocument();
+                expect(screen.getByText("72% confidence")).toBeInTheDocument();
             });
         });
 
         it("pre-fills form and switches to form step when user accepts AI prediction", async () => {
             mockPredictMutateAsync.mockResolvedValue({
                 detected: true,
-                detection: { label: "POTHOLE", confidence: 0.87, rawLabel: "Pothole_FP" },
+                detection: { label: "POTHOLE", confidence: 0.72, rawLabel: "Pothole_FP" },
             });
 
             renderModal({ visible: true });
@@ -559,10 +559,10 @@ describe("ReportIssueModal", () => {
             expect(screen.getByPlaceholderText("Describe the issue...")).toBeInTheDocument();
             const descriptionField = screen.getByPlaceholderText("Describe the issue...") as HTMLTextAreaElement;
             expect(descriptionField.value).toContain("AI detected");
-            expect(descriptionField.value).toContain("87%");
+            expect(descriptionField.value).toContain("72%");
         });
 
-        it("auto-accepts and skips the confirmation prompt when confidence is above 90%", async () => {
+        it("auto-accepts and skips the confirmation prompt when confidence is above 75%", async () => {
             mockPredictMutateAsync.mockResolvedValue({
                 detected: true,
                 detection: { label: "POTHOLE", confidence: 0.95, rawLabel: "Pothole_FP" },
@@ -589,10 +589,10 @@ describe("ReportIssueModal", () => {
             expect(descriptionField.value).toContain("95%");
         });
 
-        it("still shows the confirmation prompt at exactly 90% confidence", async () => {
+        it("still shows the confirmation prompt at exactly 75% confidence", async () => {
             mockPredictMutateAsync.mockResolvedValue({
                 detected: true,
-                detection: { label: "POTHOLE", confidence: 0.90, rawLabel: "Pothole_FP" },
+                detection: { label: "POTHOLE", confidence: 0.75, rawLabel: "Pothole_FP" },
             });
 
             renderModal({ visible: true });
@@ -679,7 +679,7 @@ describe("ReportIssueModal", () => {
         it("calls usePredict with the uploaded image", async () => {
             mockPredictMutateAsync.mockResolvedValue({
                 detected: true,
-                detection: { label: "POTHOLE", confidence: 0.90, rawLabel: "Pothole_FP" },
+                detection: { label: "POTHOLE", confidence: 0.72, rawLabel: "Pothole_FP" },
             });
 
             renderModal({ visible: true });

@@ -47,6 +47,13 @@ interface DashcamEvent {
     /** Stored for deferred ESCALATE confirmation — not displayed. */
     imageBase64?: string;
     gps?: { latitude: number; longitude: number };
+    /**
+     * The detector's own bounding box, normalised [0,1] centre-based (YOLO format) — forwarded to
+     * incident creation so the backend can auto-generate a training label. Undefined if the model
+     * output didn't include one (never happens for a real detection, but the JSON fields are
+     * individually nullable).
+     */
+    bbox?: { xCenter: number; yCenter: number; width: number; height: number };
 }
 
 interface PredictResponse {
@@ -54,8 +61,10 @@ interface PredictResponse {
     detection: {
         label: string | null;
         confidence: number | null;
-        bbox: number[] | null;
-        raw_label: string | null;
+        bboxXCenter: number | null;
+        bboxYCenter: number | null;
+        bboxWidth: number | null;
+        bboxHeight: number | null;
     };
     stockDetection?: {
         label: string | null;
@@ -75,7 +84,16 @@ function blobToBase64(blob: Blob): Promise<string> {
 
 export default function DashcamPage() {
     // ── Token state ────────────────────────────────────────────────────────
-    const [deviceToken, setDeviceToken] = useState<string | null>(() => typeof window !== "undefined" ? localStorage.getItem(DEVICE_TOKEN_KEY) : null);
+    // Initialized to null on both server and client — reading localStorage in the initializer
+    // made the server-rendered token-entry screen and the client's first render (which would
+    // immediately see a stored token, if any) disagree on which screen to show, a much bigger
+    // hydration mismatch than a text label since it swaps the whole subtree. Set for real in an
+    // effect instead, after hydration has already matched on the token-entry screen.
+    const [deviceToken, setDeviceToken] = useState<string | null>(null);
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setDeviceToken(localStorage.getItem(DEVICE_TOKEN_KEY));
+    }, []);
     const [tokenInput, setTokenInput] = useState("");
 
     // ── Camera state ───────────────────────────────────────────────────────
@@ -189,7 +207,8 @@ export default function DashcamPage() {
         confidence: number,
         imageBase64: string,
         coords: { latitude: number; longitude: number },
-        decision: "AUTO_LOG" | "ESCALATE"
+        decision: "AUTO_LOG" | "ESCALATE",
+        bbox?: { xCenter: number; yCenter: number; width: number; height: number }
     ) => {
         const token = tokenRef.current;
         if (!token) return;
@@ -203,6 +222,11 @@ export default function DashcamPage() {
             imageBase64,
             forceCreate: false,
             occurredAt: new Date().toISOString(),
+            confidence,
+            bboxXCenter: bbox?.xCenter,
+            bboxYCenter: bbox?.yCenter,
+            bboxWidth: bbox?.width,
+            bboxHeight: bbox?.height,
         };
 
         try {
@@ -305,6 +329,10 @@ export default function DashcamPage() {
         const coords = gpsRef.current;
         const stockLabel = prediction.stockDetection?.label ?? undefined;
         const stockConfidence = prediction.stockDetection?.confidence ?? undefined;
+        const { bboxXCenter, bboxYCenter, bboxWidth, bboxHeight } = prediction.detection;
+        const bbox = bboxXCenter != null && bboxYCenter != null && bboxWidth != null && bboxHeight != null
+            ? { xCenter: bboxXCenter, yCenter: bboxYCenter, width: bboxWidth, height: bboxHeight }
+            : undefined;
 
         setLastDetection({ label, confidence });
 
@@ -356,8 +384,9 @@ export default function DashcamPage() {
                 // like ESCALATE's, and needs these to let the user confirm it later.
                 imageBase64: base64,
                 gps: coords,
+                bbox,
             });
-            await createIncident(eventId, label, confidence, base64, coords, decision);
+            await createIncident(eventId, label, confidence, base64, coords, decision, bbox);
         } else {
             // ESCALATE — hold in log with imageBase64 and gps for deferred confirmation
             addEvent({
@@ -368,6 +397,7 @@ export default function DashcamPage() {
                 stockLabel,
                 stockConfidence,
                 decision,
+                bbox,
                 status: "pending_confirm",
                 imageBase64: base64,
                 gps: coords,
@@ -577,7 +607,8 @@ export default function DashcamPage() {
                                 event.confidence,
                                 event.imageBase64!,
                                 event.gps!,
-                                event.decision as "AUTO_LOG" | "ESCALATE"
+                                event.decision as "AUTO_LOG" | "ESCALATE",
+                                event.bbox
                             )
                         }
                         onMarkSaving={() => updateEvent(event.id, { status: "saving" })}
