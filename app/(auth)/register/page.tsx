@@ -200,6 +200,15 @@ export default function RegisterPage() {
                 )}
             </div>
 
+            <p className="text-xs text-gray-500 text-center -mt-1">
+                By registering, you agree to our Terms and Conditions and consent to our{" "}
+                <Link href="/privacy" className="text-blue-600 visited:text-blue-600 hover:underline">
+                    Privacy Policy
+                </Link>
+                , including the collection and use of your name, email, phone number, and report
+                locations.
+            </p>
+
             <button
                 type="button"
                 onClick={handleRegister}

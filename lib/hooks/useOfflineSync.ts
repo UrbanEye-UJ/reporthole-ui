@@ -4,10 +4,11 @@
  * Replays queued offline mutations (see `lib/offlineQueue.ts`) once connectivity returns.
  * Mount once per role (civilian, contractor) — see `_providers.tsx` in each route group.
  *
- * AUTO_LOG dashcam items are the one exception: they were never human-reviewed before being
- * queued (unlike everything else here, which the user already actively decided to submit), so
- * they're left queued for the dashcam page itself to surface as a confirm-before-send prompt —
- * see `dashcam/page.tsx`. Every other kind replays automatically.
+ * Dashcam items (both AUTO_LOG and ESCALATE) are the one exception: neither is ever
+ * human-reviewed before being queued (unlike everything else here, which the user already
+ * actively decided to submit), so they're left queued for the dashcam page itself to surface as
+ * a retry-send prompt instead of silently firing off once connectivity returns, possibly much
+ * later — see `dashcam/page.tsx`. Every other kind replays automatically.
  */
 
 import { useCallback, useEffect } from "react";
@@ -29,9 +30,9 @@ export function useOfflineSync() {
         let replayedAny = false;
 
         for (const item of queued) {
-            // AUTO_LOG items were never reviewed before queueing — hold them for the dashcam
-            // page's own confirm-before-send UI instead of silently replaying.
-            if (item.kind === "dashcam-report" && item.dashcamDecision === "AUTO_LOG") {
+            // Neither dashcam tier was reviewed before queueing — hold both for the dashcam
+            // page's own retry-send UI instead of silently replaying.
+            if (item.kind === "dashcam-report" && item.dashcamDecision) {
                 continue;
             }
 
