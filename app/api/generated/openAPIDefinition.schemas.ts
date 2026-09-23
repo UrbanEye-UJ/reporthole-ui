@@ -52,15 +52,26 @@ export interface ContactMessageRequest {
   content: string;
 }
 
+export type DetectionDTOSource = typeof DetectionDTOSource[keyof typeof DetectionDTOSource];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const DetectionDTOSource = {
+  CUSTOM: 'CUSTOM',
+  STOCK: 'STOCK',
+} as const;
+
 export interface DetectionDTO {
   label?: string;
   confidence?: number;
   rawLabel?: string;
+  source?: DetectionDTOSource;
 }
 
 export interface PredictResponseDTO {
   detected?: boolean;
   detection?: DetectionDTO;
+  stockDetection?: DetectionDTO;
 }
 
 export type FrameAcceptedResponseStatus = typeof FrameAcceptedResponseStatus[keyof typeof FrameAcceptedResponseStatus];
@@ -122,6 +133,16 @@ export const IncidentResponseDTOStatus = {
   RESOLVED: 'RESOLVED',
 } as const;
 
+export type IncidentResponseDTOTrainingStatus = typeof IncidentResponseDTOTrainingStatus[keyof typeof IncidentResponseDTOTrainingStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const IncidentResponseDTOTrainingStatus = {
+  NOT_FLAGGED: 'NOT_FLAGGED',
+  FLAGGED: 'FLAGGED',
+  EXPORTED: 'EXPORTED',
+} as const;
+
 export interface IncidentResponseDTO {
   incidentId?: string;
   incidentType?: IncidentResponseDTOIncidentType;
@@ -142,6 +163,7 @@ export interface IncidentResponseDTO {
   workflowHistory?: WorkflowEntryDTO[];
   aiGenerated?: boolean;
   aiConfidence?: number;
+  trainingStatus?: IncidentResponseDTOTrainingStatus;
 }
 
 export type WorkflowEntryDTOStatus = typeof WorkflowEntryDTOStatus[keyof typeof WorkflowEntryDTOStatus];
@@ -236,8 +258,7 @@ export const IncidentRequestDTOSource = {
 
 export interface IncidentRequestDTO {
   incidentType: IncidentRequestDTOIncidentType;
-  /** @minLength 1 */
-  description: string;
+  description?: string;
   source: IncidentRequestDTOSource;
   latitude?: number;
   longitude?: number;
@@ -246,6 +267,12 @@ export interface IncidentRequestDTO {
   forceCreate?: boolean;
   locationAddress?: string;
   confidence?: number;
+  /**
+   * When the report actually happened, as captured client-side. Optional — defaults to the
+   * server's receipt time when absent. Used for offline-queued submissions so a report replayed
+   * after reconnecting is timestamped when it occurred, not when it synced.
+   */
+  occurredAt?: string;
 }
 
 export interface AppResponseDeviceTokenResponse {
@@ -500,6 +527,95 @@ export interface MunicipalityTokenResponse {
   expiresAt?: string;
   revokedAt?: string;
   status?: MunicipalityTokenResponseStatus;
+}
+
+export interface AppResponseTrainingStatusResponse {
+  data?: TrainingStatusResponse;
+  message?: string;
+  status?: number;
+  timestamp?: string;
+}
+
+export type TrainingStatusResponseTrainingStatus = typeof TrainingStatusResponseTrainingStatus[keyof typeof TrainingStatusResponseTrainingStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TrainingStatusResponseTrainingStatus = {
+  NOT_FLAGGED: 'NOT_FLAGGED',
+  FLAGGED: 'FLAGGED',
+  EXPORTED: 'EXPORTED',
+} as const;
+
+export interface TrainingStatusResponse {
+  incidentId?: string;
+  trainingStatus?: TrainingStatusResponseTrainingStatus;
+}
+
+export type AnnotationBoxRequestClassLabel = typeof AnnotationBoxRequestClassLabel[keyof typeof AnnotationBoxRequestClassLabel];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AnnotationBoxRequestClassLabel = {
+  POTHOLE: 'POTHOLE',
+  CRACK: 'CRACK',
+  FADED_MARKINGS: 'FADED_MARKINGS',
+  DAMAGED_SIGN: 'DAMAGED_SIGN',
+  BLOCKED_DRAIN: 'BLOCKED_DRAIN',
+  BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
+  ACCIDENT: 'ACCIDENT',
+  OTHER: 'OTHER',
+} as const;
+
+export interface AnnotationBoxRequest {
+  classLabel: AnnotationBoxRequestClassLabel;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface SaveAnnotationsRequest {
+  imageWidth: number;
+  imageHeight: number;
+  /**
+   * @minItems 0
+   * @maxItems 100
+   */
+  boxes: AnnotationBoxRequest[];
+}
+
+export type AnnotationResponseClassLabel = typeof AnnotationResponseClassLabel[keyof typeof AnnotationResponseClassLabel];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AnnotationResponseClassLabel = {
+  POTHOLE: 'POTHOLE',
+  CRACK: 'CRACK',
+  FADED_MARKINGS: 'FADED_MARKINGS',
+  DAMAGED_SIGN: 'DAMAGED_SIGN',
+  BLOCKED_DRAIN: 'BLOCKED_DRAIN',
+  BROKEN_TRAFFIC_LIGHT: 'BROKEN_TRAFFIC_LIGHT',
+  ACCIDENT: 'ACCIDENT',
+  OTHER: 'OTHER',
+} as const;
+
+export interface AnnotationResponse {
+  id?: string;
+  incidentId?: string;
+  classLabel?: AnnotationResponseClassLabel;
+  xCenter?: number;
+  yCenter?: number;
+  width?: number;
+  height?: number;
+  annotatedBy?: string;
+  createdAt?: string;
+}
+
+export interface AppResponseListAnnotationResponse {
+  data?: AnnotationResponse[];
+  message?: string;
+  status?: number;
+  timestamp?: string;
 }
 
 export interface RevealEmailRequest {
@@ -967,6 +1083,10 @@ export type VerifyEmailParams = {
 token: string;
 };
 
+export type FlagForTrainingParams = {
+flagged?: boolean;
+};
+
 export type ListApplicationsParams = {
 status?: ListApplicationsStatus;
 };
@@ -1065,6 +1185,10 @@ userId?: string;
 
 export type ListTokensParams = {
 municipalityId?: string;
+};
+
+export type ExportYoloParams = {
+since?: string;
 };
 
 export type GetContractorsParams = {

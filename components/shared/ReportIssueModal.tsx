@@ -15,6 +15,8 @@ import {
     IncidentRequestDTOIncidentType,
     IncidentResponseDTO,
 } from "@/app/api/generated/openAPIDefinition.schemas";
+import { enqueue, isNetworkError, listQueued } from "@/lib/offlineQueue";
+import { dispatchQueueChanged } from "@/lib/hooks/useOfflineSync";
 
 const LocationPickerMap = dynamic(() => import("./LocationPickerMap"), { ssr: false });
 
@@ -131,6 +133,8 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
     const geocodeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [locating, setLocating] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    /** Set when submission failed offline and was queued for later, instead of a real error. */
+    const [offlineQueued, setOfflineQueued] = useState(false);
     const [duplicate, setDuplicate] = useState<IncidentResponseDTO | null>(null);
     const [nearbyDismissed, setNearbyDismissed] = useState(false);
 
@@ -145,6 +149,8 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
     const [aiPreview, setAiPreview] = useState<string | null>(null);
     const [aiAnalyzing, setAiAnalyzing] = useState(false);
     const [aiResult, setAiResult] = useState<DetectionDTO | null>(null);
+    // Stock/general-object-detector result — informational only, never affects the accepted issue type.
+    const [aiStockResult, setAiStockResult] = useState<DetectionDTO | null>(null);
     const [aiError, setAiError] = useState<string | null>(null);
 
     // File input refs — separate refs for camera and gallery
@@ -206,16 +212,6 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                     setStep("success");
                 }
             },
-            onError: (err: unknown) => {
-                const status = (err as { response?: { status?: number } }).response?.status;
-                if (status === 404 || status === 401) {
-                    document.cookie = "reporthole_token=; path=/; max-age=0";
-                    document.cookie = "reporthole_role=; path=/; max-age=0";
-                    window.location.href = "/";
-                } else {
-                    setError("Something went wrong. Please try again.");
-                }
-            },
         },
     });
 
@@ -260,7 +256,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                 console.warn(`[Geolocation] button error — code: ${err.code}, message: ${err.message}`);
                 setLocating(false);
                 if (err.code === err.PERMISSION_DENIED) {
-                    setError("Location access was denied. This usually means the site is not on HTTPS. Ask your developer to run 'npm run dev:https', or open browser site settings and set Location to Allow.");
+                    setError("Location access was denied. This usually means the site is not on HTTPS. Ask your developer to run 'npm run dev', or open browser site settings and set Location to Allow.");
                 } else if (err.code === err.POSITION_UNAVAILABLE) {
                     setError("Your location could not be determined. Check that your device has location services enabled.");
                 } else if (err.code === err.TIMEOUT) {
@@ -282,11 +278,12 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
     };
 
     const submitIncident = async (forceCreate = false) => {
-        if (!description || !file) {
-            setError("Please add a description and capture an image.");
+        if (!file) {
+            setError("Please capture an image.");
             return;
         }
         setError(null);
+        setOfflineQueued(false);
         const imageBase64 = await fileToBase64(file);
         const payload: IncidentRequestDTO = {
             incidentType: type,
@@ -297,8 +294,27 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
             imageBase64,
             forceCreate,
             locationAddress: address ?? undefined,
+            occurredAt: new Date().toISOString(),
         };
-        createIncident.mutate({ data: payload });
+        try {
+            await createIncident.mutateAsync({ data: payload });
+        } catch (err: unknown) {
+            if (isNetworkError(err)) {
+                await enqueue({ kind: "civilian-report", url: "/incidents/create", method: "POST", body: payload, authMode: "jwt" });
+                dispatchQueueChanged((await listQueued()).length);
+                setOfflineQueued(true);
+                setStep("success");
+                return;
+            }
+            const status = (err as { response?: { status?: number } }).response?.status;
+            if (status === 404 || status === 401) {
+                document.cookie = "reporthole_token=; path=/; max-age=0";
+                document.cookie = "reporthole_role=; path=/; max-age=0";
+                window.location.href = "/";
+            } else {
+                setError("Something went wrong. Please try again.");
+            }
+        }
     };
 
     // ── AI-detect handlers ───────────────────────────────────────────────────
@@ -330,12 +346,15 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
         setAiFile(selected);
         setAiPreview(previewUrl);
         setAiResult(null);
+        setAiStockResult(null);
         setAiError(null);
         setAiAnalyzing(true);
 
         try {
             const compressed = await compressForInference(selected);
             const data = await runPredict({ data: { image: compressed } });
+            // Captured regardless of the custom model's outcome below — informational context either way.
+            setAiStockResult(data.stockDetection ?? null);
             if (!data.detected || !data.detection?.label || !data.detection?.confidence) {
                 setAiError("No road damage detected in this image. Try a clearer photo or report manually.");
                 return;
@@ -364,10 +383,17 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
         applyPrediction(aiResult, aiFile, aiPreview);
     }, [aiResult, aiFile, aiPreview, applyPrediction]);
 
-    /** Discards the AI result and goes to the manual form. */
+    /**
+     * Discards the AI-suggested category and goes to the manual form, but keeps the
+     * photo already captured in AI mode so the user doesn't have to re-upload it.
+     */
     const rejectAiPrediction = useCallback(() => {
+        if (aiFile && aiPreview) {
+            setFile(aiFile);
+            setPreview(aiPreview);
+        }
         setStep("form");
-    }, []);
+    }, [aiFile, aiPreview]);
 
     const handleClose = () => {
         setStep("choose");
@@ -378,10 +404,12 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
         setAddress(null);
         setType(ISSUE_TYPES[0]);
         setError(null);
+        setOfflineQueued(false);
         setDuplicate(null);
         setAiFile(null);
         setAiPreview(null);
         setAiResult(null);
+        setAiStockResult(null);
         setAiError(null);
         setAiAnalyzing(false);
         if (cameraRef.current) cameraRef.current.value = "";
@@ -408,13 +436,25 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                 {/* ── Success ────────────────────────────────────────────── */}
                 {step === "success" && (
                     <div className="flex flex-col items-center gap-4 py-6">
-                        <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                            </svg>
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center ${offlineQueued ? "bg-yellow-100" : "bg-green-100"}`}>
+                            {offlineQueued ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-yellow-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                                </svg>
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                </svg>
+                            )}
                         </div>
-                        <p className="text-base font-semibold text-gray-900">Report Submitted</p>
-                        <p className="text-sm text-gray-500 text-center">Your issue has been logged and will be reviewed shortly.</p>
+                        <p className="text-base font-semibold text-gray-900">
+                            {offlineQueued ? "Saved — will send when you're back online" : "Report Submitted"}
+                        </p>
+                        <p className="text-sm text-gray-500 text-center">
+                            {offlineQueued
+                                ? "No connection right now. Your report is saved on this device and will be sent automatically once you're back online."
+                                : "Your issue has been logged and will be reviewed shortly."}
+                        </p>
                         <button type="button" onClick={handleClose} className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3.5 rounded-xl text-sm transition-colors">
                             Done
                         </button>
@@ -617,6 +657,12 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                                         <p className={`text-xs font-medium uppercase tracking-wide ${confident ? "text-gray-500" : "text-red-500"}`}>AI Detected</p>
                                         <p className="text-base font-bold text-gray-900 mt-0.5">{(aiResult.label ?? "").replace(/_/g, " ")}</p>
                                         <p className="text-xs text-gray-500">{Math.round((aiResult.confidence ?? 0) * 100)}% confidence</p>
+                                        {aiStockResult?.label && (
+                                            <p className="text-[11px] text-gray-400 mt-1">
+                                                General object detector: {aiStockResult.label.replace(/_/g, " ")}
+                                                {typeof aiStockResult.confidence === "number" && ` (${Math.round(aiStockResult.confidence * 100)}%)`}
+                                            </p>
+                                        )}
                                     </div>
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${confident ? "bg-gray-100" : "bg-red-100"}`}>
                                         <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 ${confident ? "text-gray-700" : "text-red-600"}`} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -646,6 +692,12 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                         {!aiAnalyzing && aiError && (
                             <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex flex-col gap-2">
                                 <p className="text-sm text-red-700">{aiError}</p>
+                                {aiStockResult?.label && (
+                                    <p className="text-[11px] text-gray-400">
+                                        General object detector saw: {aiStockResult.label.replace(/_/g, " ")}
+                                        {typeof aiStockResult.confidence === "number" && ` (${Math.round(aiStockResult.confidence * 100)}%)`}
+                                    </p>
+                                )}
                                 <button
                                     type="button"
                                     onClick={rejectAiPrediction}
@@ -664,6 +716,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                                     setAiFile(null);
                                     setAiPreview(null);
                                     setAiResult(null);
+                                    setAiStockResult(null);
                                     setAiError(null);
                                     if (aiCameraRef.current) aiCameraRef.current.value = "";
                                     if (aiGalleryRef.current) aiGalleryRef.current.value = "";
@@ -706,7 +759,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
                         </div>
 
                         <div className="flex flex-col gap-1.5">
-                            <label className="text-sm font-semibold text-gray-700">Description <span className="text-red-500">*</span></label>
+                            <label className="text-sm font-semibold text-gray-700">Description <span className="text-gray-400 font-normal">(optional)</span></label>
                             <textarea
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
@@ -834,21 +887,16 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
 
                         {error && <p className="text-xs text-red-500 text-center">{error}</p>}
 
-                        {(!description || !preview) && (
+                        {!preview && (
                             <p className="text-xs text-gray-400 text-center">
-                                {[
-                                    !preview && "a photo",
-                                    !description && "a description",
-                                ]
-                                    .filter(Boolean)
-                                    .join(" and ")} still needed
+                                a photo still needed
                             </p>
                         )}
 
                         <button
                             type="button"
                             onClick={() => submitIncident()}
-                            disabled={submitting || !description || !preview}
+                            disabled={submitting || !preview}
                             className="w-full bg-gray-900 hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl text-sm transition-colors"
                         >
                             {submitting ? "Submitting..." : "Submit"}

@@ -163,4 +163,13 @@ describe("dashcam screen", () => {
         );
         expect(localStorage.getItem("dashcam_device_token")).toBeNull();
     });
+
+    it("gives the camera feed a fixed 65dvh height rather than an aspect-ratio box", async () => {
+        const { container } = render(<DashcamPage />);
+        await waitFor(() => screen.getByRole("button", { name: /^start$/i }));
+
+        const videoBox = container.querySelector(".h-\\[65dvh\\]");
+        expect(videoBox).toBeInTheDocument();
+        expect(videoBox).not.toHaveClass("aspect-video");
+    });
 });

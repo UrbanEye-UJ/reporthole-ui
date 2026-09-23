@@ -529,6 +529,98 @@ export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TErr
 
 
 /**
+ * Returns 200 if the caller is a security admin, 403 otherwise. Called by Caddy's forward_auth as a subrequest before proxying to pgAdmin/Dozzle — not meant to be called directly by the frontend. No response body; the status code is the whole contract.
+ * @summary Access-gate check for the /pgadmin and /logs dev-tool subpaths
+ */
+export const checkAccess = (
+    
+ signal?: AbortSignal
+) => {
+      
+      
+      return apiClient<void>(
+      {url: `/admin/security/check-access`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getCheckAccessQueryKey = () => {
+    return [
+    `/admin/security/check-access`
+    ] as const;
+    }
+
+    
+export const getCheckAccessQueryOptions = <TData = Awaited<ReturnType<typeof checkAccess>>, TError = void>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkAccess>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCheckAccessQueryKey();
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof checkAccess>>> = ({ signal }) => checkAccess(signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof checkAccess>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type CheckAccessQueryResult = NonNullable<Awaited<ReturnType<typeof checkAccess>>>
+export type CheckAccessQueryError = void
+
+
+export function useCheckAccess<TData = Awaited<ReturnType<typeof checkAccess>>, TError = void>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkAccess>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof checkAccess>>,
+          TError,
+          Awaited<ReturnType<typeof checkAccess>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCheckAccess<TData = Awaited<ReturnType<typeof checkAccess>>, TError = void>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkAccess>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof checkAccess>>,
+          TError,
+          Awaited<ReturnType<typeof checkAccess>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCheckAccess<TData = Awaited<ReturnType<typeof checkAccess>>, TError = void>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkAccess>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Access-gate check for the /pgadmin and /logs dev-tool subpaths
+ */
+
+export function useCheckAccess<TData = Awaited<ReturnType<typeof checkAccess>>, TError = void>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkAccess>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCheckAccessQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
  * Returns every role grant/revoke, suspension, reactivation and forced logout, newest first. Optionally filtered to a single account with ?userId=. Append-only — there is no endpoint to edit or delete entries. Security admin only.
  * @summary Read the access-control audit trail
  */

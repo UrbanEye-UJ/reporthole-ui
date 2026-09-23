@@ -10,6 +10,13 @@ jest.mock("@/app/api/generated/incidents/incidents", () => ({
     useSearchIncidents: jest.fn(),
 }));
 
+jest.mock("@/app/(security)/_components/incidents/AnnotationOverlay", () => ({
+    __esModule: true,
+    // Own hooks (react-query) and behaviour are covered by AnnotationOverlay.test.tsx;
+    // stubbed here so this page test doesn't need a QueryClientProvider.
+    default: () => null,
+}));
+
 jest.mock("@/app/(security)/_components/DataTable", () => ({
     __esModule: true,
     default: ({ rows, columns }: { rows: GridRowsProp; columns: GridColDef[] }) => (

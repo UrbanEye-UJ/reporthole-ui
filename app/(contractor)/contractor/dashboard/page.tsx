@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import StatusCard from "@/components/shared/StatusCard";
 import IncidentComments from "@/components/shared/IncidentComments";
+import InstallAppButton from "@/components/shared/InstallAppButton";
 import { useSend } from "@/app/api/generated/messages/messages";
 import ProgressUpdateModal from "@/components/contractor/ProgressUpdateModal";
 import ResolveIncidentModal from "@/components/contractor/ResolveIncidentModal";
@@ -12,6 +13,8 @@ import RejectAssignmentModal from "@/components/contractor/RejectAssignmentModal
 import { useGetMyAssignments } from "@/lib/hooks/useMyAssignments";
 import { useAcceptAssignment } from "@/lib/hooks/useAcceptAssignment";
 import { getErrorMessage } from "@/lib/getErrorMessage";
+import { enqueue, isNetworkError, listQueued } from "@/lib/offlineQueue";
+import { dispatchQueueChanged } from "@/lib/hooks/useOfflineSync";
 import type { AssignmentStatus, IncidentWithStatus } from "@/lib/hooks/useRecentIncidents";
 import { useContractorTheme } from "../../_context/ContractorThemeContext";
 import { useLogout } from "@/lib/hooks/useLogout";
@@ -75,14 +78,30 @@ export default function ContractorDashboard() {
   const assignments = useMemo(() => data?.data ?? [], [data]);
 
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [actionTargetId, setActionTargetId] = useState<string | null>(null);
   const { mutate: accept, isPending: accepting } = useAcceptAssignment();
 
   const handleAccept = (incidentId: string) => {
     setActionError(null);
+    setActionNotice(null);
     setActionTargetId(incidentId);
     accept(incidentId, {
-      onError: (err) => setActionError(getErrorMessage(err)),
+      onError: async (err) => {
+        if (isNetworkError(err)) {
+          await enqueue({
+            kind: "contractor-accept",
+            url: `/incidents/${incidentId}/accept`,
+            method: "POST",
+            body: {},
+            authMode: "jwt",
+          });
+          dispatchQueueChanged((await listQueued()).length);
+          setActionNotice("No connection — saved and will send automatically once you're back online.");
+          return;
+        }
+        setActionError(getErrorMessage(err));
+      },
       onSettled: () => setActionTargetId(null),
     });
   };
@@ -114,6 +133,8 @@ export default function ContractorDashboard() {
             <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">{role.toLowerCase()}</p>
           </div>
           <div className="flex items-center gap-3">
+            <InstallAppButton />
+
             {/* Profile link */}
             <Link
               href="/contractor/profile"
@@ -254,6 +275,12 @@ export default function ContractorDashboard() {
           {actionError && (
             <p className="text-xs text-red-500 text-center bg-red-50 dark:bg-red-900/20 rounded-lg py-2 px-3">
               {actionError}
+            </p>
+          )}
+
+          {actionNotice && (
+            <p className="text-xs text-yellow-700 dark:text-yellow-400 text-center bg-yellow-50 dark:bg-yellow-900/20 rounded-lg py-2 px-3">
+              {actionNotice}
             </p>
           )}
 

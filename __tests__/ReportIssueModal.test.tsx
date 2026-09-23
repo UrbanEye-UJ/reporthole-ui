@@ -8,10 +8,13 @@ const mockPredictMutateAsync = jest.fn();
 const mockUseGetNearbyIncidents = jest.fn(() => ({ data: undefined as { data: unknown[] } | undefined }));
 
 type MutationHandlers = { onSuccess: (result: unknown) => void; onError: (err: unknown) => void };
+type SuccessOnlyHandlers = { onSuccess?: (result: unknown) => void };
 
 jest.mock("@/app/api/generated/incidents/incidents", () => ({
-    useCreateIncident: ({ mutation }: { mutation: MutationHandlers }) => ({
-        mutate: (payload: unknown) => mockCreateMutate(payload, mutation),
+    // The component calls mutateAsync (not mutate) and handles rejection itself — see
+    // submitIncident's try/catch, which is also what decides the offline-queue path.
+    useCreateIncident: ({ mutation }: { mutation: SuccessOnlyHandlers }) => ({
+        mutateAsync: (payload: unknown) => mockCreateMutate(payload, mutation),
         isPending: false,
     }),
     useConfirmDuplicate: ({ mutation }: { mutation: MutationHandlers }) => ({
@@ -269,9 +272,11 @@ describe("ReportIssueModal", () => {
 
     describe("submit flow — no duplicate", () => {
         it("shows success screen after successful submission", async () => {
-            mockCreateMutate.mockImplementation((_: unknown, { onSuccess }: { onSuccess: (result: unknown) => void }) =>
-                onSuccess({ data: { duplicate: false, incidentId: "abc-123" } })
-            );
+            mockCreateMutate.mockImplementation((_: unknown, { onSuccess }: SuccessOnlyHandlers) => {
+                const result = { data: { duplicate: false, incidentId: "abc-123" } };
+                onSuccess?.(result);
+                return Promise.resolve(result);
+            });
 
             renderModal({ visible: true });
             await fillForm();
@@ -286,9 +291,11 @@ describe("ReportIssueModal", () => {
         });
 
         it("calls onClose when Done is clicked on success screen", async () => {
-            mockCreateMutate.mockImplementation((_: unknown, { onSuccess }: { onSuccess: (result: unknown) => void }) =>
-                onSuccess({ data: { duplicate: false, incidentId: "abc-123" } })
-            );
+            mockCreateMutate.mockImplementation((_: unknown, { onSuccess }: SuccessOnlyHandlers) => {
+                const result = { data: { duplicate: false, incidentId: "abc-123" } };
+                onSuccess?.(result);
+                return Promise.resolve(result);
+            });
 
             const onClose = jest.fn();
             renderModal({ visible: true, onClose });
@@ -303,8 +310,10 @@ describe("ReportIssueModal", () => {
             expect(onClose).toHaveBeenCalled();
         });
 
-        it("shows error message when mutation fails", async () => {
-            mockCreateMutate.mockImplementation((_: unknown, { onError }: { onError: (err: unknown) => void }) => onError(new Error("fail")));
+        it("shows error message when the server rejects the mutation", async () => {
+            // A plain Error (not an axios network error) — the real server responded, just with
+            // a failure, so this must NOT be treated as an offline/queue-worthy failure.
+            mockCreateMutate.mockImplementation(() => Promise.reject(new Error("fail")));
 
             renderModal({ visible: true });
             await fillForm();
@@ -315,6 +324,22 @@ describe("ReportIssueModal", () => {
 
             await waitFor(() => {
                 expect(screen.getByText("Something went wrong. Please try again.")).toBeInTheDocument();
+            });
+        });
+
+        it("queues the report and shows the offline confirmation when the request never reaches the server", async () => {
+            const networkError = Object.assign(new Error("Network Error"), { isAxiosError: true });
+            mockCreateMutate.mockImplementation(() => Promise.reject(networkError));
+
+            renderModal({ visible: true });
+            await fillForm();
+
+            await act(async () => {
+                fireEvent.click(screen.getByRole("button", { name: /submit/i }));
+            });
+
+            await waitFor(() => {
+                expect(screen.getByText("Saved — will send when you're back online")).toBeInTheDocument();
             });
         });
     });
@@ -337,9 +362,11 @@ describe("ReportIssueModal", () => {
         };
 
         beforeEach(() => {
-            mockCreateMutate.mockImplementation((_: unknown, { onSuccess }: { onSuccess: (result: unknown) => void }) =>
-                onSuccess({ data: duplicateData })
-            );
+            mockCreateMutate.mockImplementation((_: unknown, { onSuccess }: SuccessOnlyHandlers) => {
+                const result = { data: duplicateData };
+                onSuccess?.(result);
+                return Promise.resolve(result);
+            });
         });
 
         it("shows duplicate confirmation screen when duplicate is detected", async () => {
@@ -365,9 +392,11 @@ describe("ReportIssueModal", () => {
                 get: () => `reporthole_token=${jwtWithOwnId}`,
                 configurable: true,
             });
-            mockCreateMutate.mockImplementationOnce((_: unknown, { onSuccess }: { onSuccess: (result: unknown) => void }) =>
-                onSuccess({ data: { ...duplicateData, userId: OWN_USER_ID } })
-            );
+            mockCreateMutate.mockImplementationOnce((_: unknown, { onSuccess }: SuccessOnlyHandlers) => {
+                const result = { data: { ...duplicateData, userId: OWN_USER_ID } };
+                onSuccess?.(result);
+                return Promise.resolve(result);
+            });
 
             renderModal({ visible: true });
             await fillForm();
@@ -384,9 +413,11 @@ describe("ReportIssueModal", () => {
         });
 
         it("shows own-report message when alreadyConfirmed is true (previous confirmer)", async () => {
-            mockCreateMutate.mockImplementationOnce((_: unknown, { onSuccess }: { onSuccess: (result: unknown) => void }) =>
-                onSuccess({ data: { ...duplicateData, alreadyConfirmed: true } })
-            );
+            mockCreateMutate.mockImplementationOnce((_: unknown, { onSuccess }: SuccessOnlyHandlers) => {
+                const result = { data: { ...duplicateData, alreadyConfirmed: true } };
+                onSuccess?.(result);
+                return Promise.resolve(result);
+            });
 
             renderModal({ visible: true });
             await fillForm();
@@ -428,12 +459,16 @@ describe("ReportIssueModal", () => {
 
         it("re-submits with forceCreate when user says it is a different issue", async () => {
             mockCreateMutate
-                .mockImplementationOnce((_: unknown, { onSuccess }: { onSuccess: (result: unknown) => void }) =>
-                    onSuccess({ data: duplicateData })
-                )
-                .mockImplementationOnce((_: unknown, { onSuccess }: { onSuccess: (result: unknown) => void }) =>
-                    onSuccess({ data: { duplicate: false, incidentId: "new-456" } })
-                );
+                .mockImplementationOnce((_: unknown, { onSuccess }: SuccessOnlyHandlers) => {
+                    const result = { data: duplicateData };
+                    onSuccess?.(result);
+                    return Promise.resolve(result);
+                })
+                .mockImplementationOnce((_: unknown, { onSuccess }: SuccessOnlyHandlers) => {
+                    const result = { data: { duplicate: false, incidentId: "new-456" } };
+                    onSuccess?.(result);
+                    return Promise.resolve(result);
+                });
 
             renderModal({ visible: true });
             await fillForm();

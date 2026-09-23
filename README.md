@@ -28,8 +28,10 @@ Next.js mobile-first web app for the Reporthole civic road-incident reporting pl
 cd reporthole-fe
 npm install
 cp .env.example .env.local          # fill in NEXT_PUBLIC_API_URL
-npm run dev                          # http://localhost:3000
+npm run dev                          # https://localhost:3000 — always HTTPS, see note below
 ```
+
+`npm run dev` always runs over HTTPS (self-signed cert under `certificates/`, trust it once in your browser) — needed for the camera/geolocation APIs used by dashcam mode, and local verification/password-reset email links are hardcoded to `https://localhost:3000` (see `application-local.yml` on the backend).
 
 See the backend [README](../reporthole-be/README.md) and [`docs/DEV_SETUP.md`](../reporthole-be/docs/DEV_SETUP.md) to get the API server running first.
 
@@ -101,8 +103,9 @@ All request/response types come from `@/app/api/generated/openAPIDefinition.sche
 
 | Command | What it does |
 |---------|-------------|
-| `npm run dev` | Start dev server with hot reload at http://localhost:3000 |
-| `npm run build` | Production build |
+| `npm run dev` | Start dev server with hot reload at https://localhost:3000 (always HTTPS) |
+| `npm run build` | Production build (also rebuilds the service worker) |
+| `npm run build:sw` | Rebuild just the service worker (`public/sw.js`) after editing `app/sw.ts`, without a full production build |
 | `npm run start` | Run production build locally |
 | `npm run lint` | ESLint check |
 | `npm run generate:api` | Regenerate orval API client (backend must be running) |

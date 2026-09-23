@@ -9,6 +9,8 @@ import {
     useDeleteAccount,
 } from "@/app/api/generated/user-profile/user-profile";
 import { useSend } from "@/app/api/generated/messages/messages";
+import { useGenerateToken, useRevokeToken1 } from "@/app/api/generated/devices/devices";
+import { useListDevices } from "@/lib/deviceTokens";
 import { useCivilianTheme } from "../_context/CivilianThemeContext";
 import { apiClient } from "@/lib/axios";
 import { maskName, maskEmail, maskPhone } from "@/lib/piiMask";
@@ -60,8 +62,40 @@ export default function ProfilePage() {
     const [messageContent, setMessageContent] = useState("");
     const [messageSent, setMessageSent] = useState(false);
 
+    // "Dashcam devices" section
+    const [devicesOpen, setDevicesOpen] = useState(false);
+    const [revokingId, setRevokingId] = useState<string | null>(null);
+    const [newToken, setNewToken] = useState<string | null>(null);
+    const [copyConfirmed, setCopyConfirmed] = useState(false);
+
     const { data, refetch, isLoading } = useGetProfile({ query: { staleTime: 0 } });
     const profile = data?.data;
+
+    const {
+        data: devicesData,
+        isLoading: isLoadingDevices,
+        refetch: refetchDevices,
+    } = useListDevices();
+    const devices = devicesData?.data ?? [];
+
+    const { mutate: generateToken, isPending: isGeneratingToken } = useGenerateToken({
+        mutation: {
+            onSuccess: (res) => {
+                const token = res.data?.deviceToken;
+                if (token) setNewToken(token);
+                refetchDevices();
+            },
+        },
+    });
+
+    const { mutate: revokeToken, isPending: isRevoking } = useRevokeToken1({
+        mutation: {
+            onSuccess: () => {
+                setRevokingId(null);
+                refetchDevices();
+            },
+        },
+    });
 
     const { mutate: updateProfile, isPending: isSaving } = useUpdateProfile({
         mutation: {
@@ -108,6 +142,22 @@ export default function ProfilePage() {
     const handleDelete = () => {
         if (!confirmDelete) { setConfirmDelete(true); return; }
         deleteAccount();
+    };
+
+    const handleCopyToken = async () => {
+        if (!newToken) return;
+        try {
+            await navigator.clipboard.writeText(newToken);
+            setCopyConfirmed(true);
+        } catch {
+            // Clipboard API unavailable (e.g. non-secure context) — the token
+            // is still shown selectable in the modal for manual copy.
+        }
+    };
+
+    const closeTokenModal = () => {
+        setNewToken(null);
+        setCopyConfirmed(false);
     };
 
     const handleRevealSubmit = useCallback(async () => {
@@ -324,6 +374,115 @@ export default function ProfilePage() {
                     </div>
                 )}
 
+                {/* Dashcam devices */}
+                {!editing && (
+                    <div className="flex flex-col gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#202020] p-4">
+                        <button
+                            type="button"
+                            className="flex items-center justify-between w-full"
+                            onClick={() => setDevicesOpen(!devicesOpen)}
+                        >
+                            <span className="text-base font-semibold text-gray-800 dark:text-gray-100">
+                                Dashcam devices
+                            </span>
+                            <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 text-gray-400 transition-transform ${devicesOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                            </svg>
+                        </button>
+                        {devicesOpen && (
+                            <div className="flex flex-col gap-3">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    A device token lets a dashcam create incidents without logging in. Generate one per physical device, and revoke it if the device is lost.
+                                </p>
+
+                                {isLoadingDevices ? (
+                                    <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">Loading devices…</p>
+                                ) : devices.length === 0 ? (
+                                    <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">No devices registered yet.</p>
+                                ) : (
+                                    <div className="flex flex-col gap-2">
+                                        {devices.map((device) => {
+                                            const isConfirming = revokingId === device.deviceId;
+                                            return (
+                                                <div key={device.deviceId} className="flex flex-col gap-1.5 bg-gray-50 dark:bg-gray-700/50 rounded-xl px-3 py-2.5">
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <div className="flex flex-col min-w-0">
+                                                            <span className="text-sm font-mono text-gray-800 dark:text-gray-100 truncate">{device.tokenPreview}</span>
+                                                            <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(device.createdAt)}</span>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            disabled={isRevoking && isConfirming}
+                                                            onClick={() =>
+                                                                isConfirming
+                                                                    ? revokeToken({ id: device.deviceId })
+                                                                    : setRevokingId(device.deviceId)
+                                                            }
+                                                            className={`shrink-0 text-xs font-semibold px-3 py-1.5 rounded-md transition-colors ${
+                                                                isConfirming
+                                                                    ? "bg-red-600 hover:bg-red-700 text-white"
+                                                                    : "bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400"
+                                                            } disabled:opacity-50`}
+                                                        >
+                                                            {isRevoking && isConfirming
+                                                                ? "Revoking…"
+                                                                : isConfirming
+                                                                    ? "Tap again to confirm"
+                                                                    : "Revoke"}
+                                                        </button>
+                                                    </div>
+                                                    {isConfirming && !isRevoking && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setRevokingId(null)}
+                                                            className="self-start text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                <button
+                                    type="button"
+                                    onClick={() => generateToken()}
+                                    disabled={isGeneratingToken}
+                                    className="w-full border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 text-gray-900 dark:text-gray-100 font-semibold py-2.5 rounded-xl text-sm transition-colors"
+                                >
+                                    {isGeneratingToken ? "Generating…" : "Generate new device token"}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Dashcam Mode entry point — only once a device is registered */}
+                {!editing && devices.length > 0 && (
+                    <Link
+                        href="/dashcam"
+                        className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#202020] p-4 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-700 dark:text-gray-200" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Dashcam Mode</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Auto-detect road damage while you drive</p>
+                            </div>
+                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                        </svg>
+                    </Link>
+                )}
+
                 {/* Danger zone */}
                 {!editing && (
                     <div className="bg-white dark:bg-[#202020] rounded-2xl p-5 flex flex-col gap-3 transition-colors duration-300">
@@ -348,6 +507,39 @@ export default function ProfilePage() {
                     </div>
                 )}
             </div>
+
+            {/* New device token modal — shown once, right after generation */}
+            {newToken && (
+                <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4">
+                    <div className="bg-white dark:bg-[#202020] rounded-2xl w-full max-w-sm p-6 flex flex-col gap-4">
+                        <div>
+                            <h2 className="text-base font-bold text-gray-900 dark:text-gray-100">Device token generated</h2>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                Copy this now and enter it on the dashcam device. For your security, it won&apos;t be shown again.
+                            </p>
+                        </div>
+                        <div className="bg-gray-100 dark:bg-gray-700 rounded-xl px-3 py-2.5">
+                            <code className="text-sm font-mono text-gray-800 dark:text-gray-100 break-all select-all">
+                                {newToken}
+                            </code>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleCopyToken}
+                            className="w-full bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
+                        >
+                            {copyConfirmed ? "Copied!" : "Copy to clipboard"}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={closeTokenModal}
+                            className="text-sm text-gray-400 text-center hover:text-gray-600 dark:hover:text-gray-300"
+                        >
+                            Done
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Password confirmation modal */}
             {showPasswordModal && (
