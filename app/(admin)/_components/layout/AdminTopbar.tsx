@@ -21,6 +21,7 @@ import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
 import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneRounded";
+import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 
 import { useAdminTheme } from "../styles/AdminThemeContext";
 import {
@@ -31,7 +32,13 @@ import {
 import { useLogout } from "@/lib/hooks/useLogout";
 import { useGetProfile } from "@/app/api/generated/user-profile/user-profile";
 
-const AdminTopbar = () => {
+interface AdminTopbarProps {
+  /** Below the md breakpoint the sidebar is an off-canvas Drawer — show a hamburger to open it. */
+  isMobile?: boolean;
+  onMenuClick?: () => void;
+}
+
+const AdminTopbar = ({ isMobile, onMenuClick }: AdminTopbarProps) => {
   const { mode, toggle } = useAdminTheme();
   const handleLogout = useLogout();
   const [notifOpen, setNotifOpen] = useState(false);
@@ -56,7 +63,7 @@ const AdminTopbar = () => {
         elevation={0}
         color="inherit"
         sx={{
-          gridColumn: 2,
+          gridColumn: isMobile ? 1 : 2,
           bgcolor: "background.paper",
           borderBottom: "1px solid",
           borderColor: "divider",
@@ -69,17 +76,27 @@ const AdminTopbar = () => {
             height: 70,
             display: "flex",
             justifyContent: "space-between",
+            gap: 1,
           }}
         >
           {/* Left */}
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
+            {isMobile && (
+              <IconButton onClick={onMenuClick} aria-label="Open menu" edge="start">
+                <MenuRoundedIcon />
+              </IconButton>
+            )}
+            <Typography
+              variant="h6"
+              noWrap
+              sx={{ fontWeight: 700, lineHeight: 1.2, fontSize: { xs: "1rem", md: "1.25rem" } }}
+            >
               Road Infrastructure Operations Platform
             </Typography>
           </Box>
 
           {/* Right */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, md: 2 }, flexShrink: 0 }}>
             {/* Theme toggle */}
             <Tooltip title={isDark ? "Switch to light mode" : "Switch to dark mode"}>
               <IconButton

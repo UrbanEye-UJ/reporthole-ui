@@ -5,10 +5,12 @@ import type { ReactNode } from "react";
 
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
 import { CssBaseline, ThemeProvider } from "@mui/material";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 
 import { createAdminTheme } from "@/app/(admin)/_components/styles/theme";
 import { useThemeMode } from "@/app/(admin)/_components/styles/useThemeMode";
+import { createQueryPersister, shouldPersistQuery } from "@/lib/queryPersist";
 import SecurityShell from "./_components/SecurityShell";
 /**
  * Route-group layout for `/security/**` — the surface reserved for the
@@ -32,6 +34,8 @@ export default function SecurityLayout({ children }: { children: ReactNode }) {
       })
   );
 
+  const [persister] = useState(() => createQueryPersister("reporthole-query-cache-security"));
+
   const { mode, toggle: toggleMode } = useThemeMode("security-theme", "light");
   const theme = useMemo(() => createAdminTheme(mode), [mode]);
 
@@ -39,9 +43,12 @@ export default function SecurityLayout({ children }: { children: ReactNode }) {
     <AppRouterCacheProvider>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <QueryClientProvider client={queryClient}>
+        <PersistQueryClientProvider
+          client={queryClient}
+          persistOptions={{ persister, dehydrateOptions: { shouldDehydrateQuery: shouldPersistQuery } }}
+        >
           <SecurityShell mode={mode} toggleMode={toggleMode}>{children}</SecurityShell>
-        </QueryClientProvider>
+        </PersistQueryClientProvider>
       </ThemeProvider>
     </AppRouterCacheProvider>
   );

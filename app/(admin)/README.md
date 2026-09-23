@@ -119,7 +119,7 @@ When BE endpoints are ready: add them to the Spring Boot controller with Swagger
 
 ## Dev performance — first-visit compile delay
 
-**In development (`npm run dev` / `npm run dev:https`) admin pages are slow on first visit.** This is expected and is not a bug.
+**In development (`npm run dev`) admin pages are slow on first visit.** This is expected and is not a bug.
 
 Next.js with webpack uses **lazy (on-demand) compilation** — a page's bundle is only compiled the first time it is requested. The server logs show this clearly:
 

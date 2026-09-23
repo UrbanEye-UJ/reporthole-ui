@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 
 import {
   Box,
+  Button,
   Chip,
   FormControl,
   InputLabel,
@@ -16,10 +17,12 @@ import {
 } from "@mui/material";
 import LocationOnRoundedIcon from "@mui/icons-material/LocationOnRounded";
 import GrainRoundedIcon from "@mui/icons-material/GrainRounded";
+import SchoolRoundedIcon from "@mui/icons-material/SchoolRounded";
 import type { GridColDef, GridPaginationModel } from "@mui/x-data-grid";
 
 import { PageHeader, Panel } from "../../_components/ui";
 import DataTable from "../../_components/DataTable";
+import AnnotationOverlay from "../../_components/incidents/AnnotationOverlay";
 import { useList } from "@/app/api/generated/municipalities/municipalities";
 import { useSearchIncidents } from "@/app/api/generated/incidents/incidents";
 import { SearchIncidentsType } from "@/app/api/generated/openAPIDefinition.schemas";
@@ -61,6 +64,7 @@ export default function SecurityIncidentsPage() {
   const [issueType, setIssueType] = useState<string>(ALL_TYPES);
   const [view, setView] = useState<SecurityMapView>("pins");
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: PAGE_SIZE });
+  const [trainingIncidentId, setTrainingIncidentId] = useState<string | null>(null);
 
   const { data: municipalitiesData, isLoading: municipalitiesLoading } = useList();
   const municipalities = municipalitiesData?.data ?? [];
@@ -76,6 +80,11 @@ export default function SecurityIncidentsPage() {
     size: paginationModel.pageSize,
   });
   const page = pageData?.data;
+
+  const trainingIncident = useMemo(
+    () => (page?.content ?? []).find((i) => i.incidentId === trainingIncidentId) ?? null,
+    [page, trainingIncidentId]
+  );
 
   const handleMunicipalityChange = (event: SelectChangeEvent) => {
     setMunicipalityId(event.target.value);
@@ -96,6 +105,8 @@ export default function SecurityIncidentsPage() {
         status: incident.status ?? "REPORTED",
         reporterCount: incident.reporterCount ?? 1,
         date: incident.incidentDate ? new Date(incident.incidentDate).toLocaleDateString("en-ZA") : "—",
+        imageUrl: incident.imageUrl,
+        trainingStatus: incident.trainingStatus,
       })),
     [page]
   );
@@ -124,6 +135,31 @@ export default function SecurityIncidentsPage() {
     },
     { field: "reporterCount", headerName: "Reporters", width: 110 },
     { field: "date", headerName: "Reported", width: 130 },
+    {
+      field: "training",
+      headerName: "Training",
+      width: 190,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => {
+        const flagged = params.row.trainingStatus === "FLAGGED" || params.row.trainingStatus === "EXPORTED";
+        return (
+          <Button
+            size="small"
+            variant={flagged ? "text" : "outlined"}
+            startIcon={<SchoolRoundedIcon />}
+            disabled={!params.row.imageUrl}
+            onClick={() => setTrainingIncidentId(String(params.id))}
+          >
+            {params.row.trainingStatus === "EXPORTED"
+              ? "Exported"
+              : params.row.trainingStatus === "FLAGGED"
+                ? "Flagged"
+                : "Use for Training"}
+          </Button>
+        );
+      },
+    },
   ];
 
   return (
@@ -219,6 +255,15 @@ export default function SecurityIncidentsPage() {
           />
         </Panel>
       </Box>
+
+      <AnnotationOverlay
+        open={!!trainingIncident}
+        onClose={() => setTrainingIncidentId(null)}
+        incidentId={trainingIncident?.incidentId ?? ""}
+        incidentType={trainingIncident?.incidentType}
+        imageUrl={trainingIncident?.imageUrl}
+        trainingStatus={trainingIncident?.trainingStatus}
+      />
     </>
   );
 }

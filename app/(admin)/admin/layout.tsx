@@ -4,7 +4,8 @@ import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
 import { ThemeProvider } from "@mui/material";
 // No <CssBaseline /> — dark body styles live on AdminShell's wrapper Box instead of <body>,
 // so they don't leak into the civilian UI on SPA navigation.
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { useState, useMemo } from "react";
 import type { ReactNode } from "react";
 
@@ -13,6 +14,7 @@ import { AdminThemeContext } from "../_components/styles/AdminThemeContext";
 import { useThemeMode } from "../_components/styles/useThemeMode";
 import AdminShell from "../_components/layout/AdminShell";
 import "../_components/styles/globals.css";
+import { createQueryPersister, shouldPersistQuery } from "@/lib/queryPersist";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
@@ -30,6 +32,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     },
   }));
 
+  const [persister] = useState(() => createQueryPersister("reporthole-query-cache-admin"));
+
   const { mode, toggle } = useThemeMode("admin-theme", "light");
 
   const theme = useMemo(() => createAdminTheme(mode), [mode]);
@@ -38,9 +42,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     <AdminThemeContext.Provider value={{ mode, toggle }}>
       <AppRouterCacheProvider>
         <ThemeProvider theme={theme}>
-          <QueryClientProvider client={queryClient}>
+          <PersistQueryClientProvider
+            client={queryClient}
+            persistOptions={{ persister, dehydrateOptions: { shouldDehydrateQuery: shouldPersistQuery } }}
+          >
             <AdminShell>{children}</AdminShell>
-          </QueryClientProvider>
+          </PersistQueryClientProvider>
         </ThemeProvider>
       </AppRouterCacheProvider>
     </AdminThemeContext.Provider>
