@@ -15,6 +15,8 @@ import {
     ISSUE_TYPE_LABEL,
     type IssueType,
 } from "@/lib/hooks/useUpdateSpecialisations";
+import { useInstallPrompt } from "@/lib/hooks/useInstallPrompt";
+import InstallInstructionsModal from "@/components/shared/InstallInstructionsModal";
 
 type EditState = {
     firstName: string;
@@ -42,6 +44,16 @@ export default function ContractorProfilePage() {
     const { data, refetch, isLoading } = useGetProfile({ query: { staleTime: 0 } });
     const profile = data?.data;
 
+    const { canInstall, isStandalone, isIOS, promptInstall } = useInstallPrompt();
+    const [showInstallInstructions, setShowInstallInstructions] = useState(false);
+    const handleInstallClick = () => {
+        if (canInstall) {
+            promptInstall();
+        } else {
+            setShowInstallInstructions(true);
+        }
+    };
+
     useEffect(() => {
         if (profile) {
             // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -50,7 +62,6 @@ export default function ContractorProfilePage() {
                 lastName: profile.lastName ?? "",
                 phoneNumber: profile.phoneNumber ?? "",
             });
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             setSelectedSpec(new Set((profile as { specialisations?: IssueType[] }).specialisations ?? []));
         }
     }, [profile]);
@@ -294,6 +305,34 @@ export default function ContractorProfilePage() {
                     </div>
                 )}
 
+                {/* Install app — always shown unless already installed */}
+                {!editing && !isStandalone && (
+                    <button
+                        type="button"
+                        onClick={handleInstallClick}
+                        className={`flex items-center justify-between rounded-xl border p-4 transition-colors ${
+                            darkMode
+                                ? "border-gray-700 bg-[#202020] hover:bg-gray-700/40"
+                                : "border-gray-200 bg-white hover:bg-gray-50"
+                        }`}
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${darkMode ? "bg-gray-700" : "bg-gray-100"}`}>
+                                <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 ${darkMode ? "text-gray-200" : "text-gray-700"}`} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                </svg>
+                            </div>
+                            <div className="text-left">
+                                <p className={`text-sm font-semibold ${darkMode ? "text-gray-100" : "text-gray-800"}`}>Install app</p>
+                                <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Add Reporthole to your home screen</p>
+                            </div>
+                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                        </svg>
+                    </button>
+                )}
+
                 {/* Danger zone */}
                 {!editing && (
                     <div className={`rounded-2xl p-5 flex flex-col gap-3 transition-colors duration-300 ${darkMode ? "bg-[#202020]" : "bg-white"}`}>
@@ -327,6 +366,12 @@ export default function ContractorProfilePage() {
                     </div>
                 )}
             </div>
+
+            <InstallInstructionsModal
+                open={showInstallInstructions}
+                onClose={() => setShowInstallInstructions(false)}
+                isIOS={isIOS}
+            />
         </main>
     );
 }

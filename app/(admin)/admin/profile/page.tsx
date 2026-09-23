@@ -7,6 +7,7 @@ import {
   Alert,
   Box,
   Button,
+  ButtonBase,
   Dialog,
   DialogActions,
   DialogContent,
@@ -21,6 +22,8 @@ import {
 } from "@mui/material";
 import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import VisibilityOffRoundedIcon from "@mui/icons-material/VisibilityOffRounded";
+import GetAppRoundedIcon from "@mui/icons-material/GetAppRounded";
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 
 import {
   useGetProfile,
@@ -31,6 +34,8 @@ import {
 
 import PageHeader from "../../_components/ui/PageHeader";
 import { maskName, maskEmail, maskPhone } from "@/lib/piiMask";
+import { useInstallPrompt } from "@/lib/hooks/useInstallPrompt";
+import InstallInstructionsModal from "@/components/shared/InstallInstructionsModal";
 
 type EditState = { firstName: string; lastName: string; phoneNumber: string };
 
@@ -51,6 +56,16 @@ export default function AdminProfilePage() {
   const [passwordInput, setPasswordInput] = useState("");
   const [showPasswordInput, setShowPasswordInput] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
+
+  const { canInstall, isStandalone, isIOS, promptInstall } = useInstallPrompt();
+  const [showInstallInstructions, setShowInstallInstructions] = useState(false);
+  const handleInstallClick = () => {
+    if (canInstall) {
+      promptInstall();
+    } else {
+      setShowInstallInstructions(true);
+    }
+  };
 
   const { data, refetch, isLoading } = useGetProfile({ query: { staleTime: 0 } });
   const profile = data?.data;
@@ -223,6 +238,36 @@ export default function AdminProfilePage() {
           )}
         </Paper>
 
+        {/* Install app — always shown unless already installed */}
+        {!editing && !isStandalone && (
+          <ButtonBase
+            onClick={handleInstallClick}
+            sx={{
+              p: 2,
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: 2,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              width: "100%",
+              textAlign: "left",
+              "&:hover": { bgcolor: "action.hover" },
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Box sx={{ width: 36, height: 36, borderRadius: "50%", bgcolor: "action.selected", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <GetAppRoundedIcon fontSize="small" />
+              </Box>
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>Install app</Typography>
+                <Typography variant="caption" color="text.secondary">Add Reporthole to your home screen</Typography>
+              </Box>
+            </Box>
+            <ChevronRightRoundedIcon fontSize="small" sx={{ color: "text.disabled" }} />
+          </ButtonBase>
+        )}
+
         {/* Danger zone */}
         {!editing && (
           <Paper elevation={0} sx={{ p: 3, border: "1px solid", borderColor: "error.main", borderRadius: 2 }}>
@@ -312,6 +357,12 @@ export default function AdminProfilePage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <InstallInstructionsModal
+        open={showInstallInstructions}
+        onClose={() => setShowInstallInstructions(false)}
+        isIOS={isIOS}
+      />
     </>
   );
 }

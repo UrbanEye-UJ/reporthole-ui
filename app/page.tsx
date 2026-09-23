@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import LandingHeader from "./_landing/LandingHeader";
 import LandingFooter from "./_landing/LandingFooter";
@@ -7,6 +8,8 @@ import PinIcon from "./_landing/PinIcon";
 import ContactSection from "./_landing/ContactSection";
 import LandingMapWrapper from "./_landing/LandingMapWrapper";
 import { LandingThemeProvider, useLandingTheme } from "./_landing/LandingThemeContext";
+import { useInstallPrompt } from "@/lib/hooks/useInstallPrompt";
+import InstallInstructionsModal from "@/components/shared/InstallInstructionsModal";
 
 /** Monospace style used for labels and stats sub-text. */
 const mono: React.CSSProperties = {
@@ -57,6 +60,15 @@ const stats = [
 /** Inner page — reads from LandingThemeContext. */
 function LandingContent() {
   const { dark } = useLandingTheme();
+  const { canInstall, isStandalone, isIOS, promptInstall } = useInstallPrompt();
+  const [showInstallInstructions, setShowInstallInstructions] = useState(false);
+  const handleInstallClick = () => {
+    if (canInstall) {
+      promptInstall();
+    } else {
+      setShowInstallInstructions(true);
+    }
+  };
 
   // ── Palette ──────────────────────────────────────────────────────────────
   const pageBg   = dark ? "#0F0F0F" : "#F9FAFB";
@@ -158,6 +170,30 @@ function LandingContent() {
                 >
                   Sign in
                 </Link>
+                {!isStandalone && (
+                  <button
+                    type="button"
+                    onClick={handleInstallClick}
+                    style={{
+                      padding: "16px 28px",
+                      borderRadius: 12,
+                      border: "1.5px dashed rgba(255,255,255,0.4)",
+                      background: "transparent",
+                      color: "#fff",
+                      fontWeight: 700,
+                      fontSize: 16,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                    Install app
+                  </button>
+                )}
               </div>
               <p style={{ ...mono, fontSize: 12.5, color: "#6B7280", margin: "18px 0 0" }}>
                 Free for residents · Accounts keep your reports traceable
@@ -457,6 +493,12 @@ function LandingContent() {
       </main>
 
       <LandingFooter />
+
+      <InstallInstructionsModal
+        open={showInstallInstructions}
+        onClose={() => setShowInstallInstructions(false)}
+        isIOS={isIOS}
+      />
     </div>
   );
 }

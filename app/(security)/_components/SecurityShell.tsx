@@ -10,9 +10,12 @@ import ShieldRoundedIcon from "@mui/icons-material/ShieldRounded";
 import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
 import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
+import GetAppRoundedIcon from "@mui/icons-material/GetAppRounded";
 
 import { securityNavigation } from "./nav";
 import { useLogout } from "@/lib/hooks/useLogout";
+import { useInstallPrompt } from "@/lib/hooks/useInstallPrompt";
+import InstallInstructionsModal from "@/components/shared/InstallInstructionsModal";
 
 const MOBILE_SIDEBAR_WIDTH = 260;
 
@@ -38,6 +41,16 @@ export default function SecurityShell({ children, mode, toggleMode }: Props) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const { canInstall, isStandalone, isIOS, promptInstall } = useInstallPrompt();
+  const [showInstallInstructions, setShowInstallInstructions] = useState(false);
+  const handleInstallClick = () => {
+    if (canInstall) {
+      promptInstall();
+    } else {
+      setShowInstallInstructions(true);
+    }
+  };
 
   const sidebarContent = (
     <>
@@ -147,6 +160,13 @@ export default function SecurityShell({ children, mode, toggleMode }: Props) {
           </IconButton>
         )}
         <Box sx={{ display: "flex", alignItems: "center" }}>
+          {!isStandalone && (
+            <Tooltip title="Install app">
+              <IconButton onClick={handleInstallClick} aria-label="Install app" size="small" sx={{ mr: 1 }}>
+                <GetAppRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
           <Tooltip title={isDark ? "Switch to light mode" : "Switch to dark mode"}>
             <IconButton onClick={toggleMode} aria-label="Toggle theme" size="small" sx={{ mr: 1 }}>
               {isDark ? <LightModeRoundedIcon fontSize="small" /> : <DarkModeRoundedIcon fontSize="small" />}
@@ -166,6 +186,12 @@ export default function SecurityShell({ children, mode, toggleMode }: Props) {
       <Box component="main" sx={{ gridColumn: isMobile ? 1 : 2, gridRow: 2, p: { xs: 2, md: 3 }, overflow: "auto" }}>
         {children}
       </Box>
+
+      <InstallInstructionsModal
+        open={showInstallInstructions}
+        onClose={() => setShowInstallInstructions(false)}
+        isIOS={isIOS}
+      />
     </Box>
   );
 }
