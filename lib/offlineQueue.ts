@@ -33,9 +33,9 @@ export interface QueuedMutation {
     /** Only set for "dashcam-report" — the sync manager can't read this from a cookie the way JWT replays can. */
     deviceToken?: string;
     /**
-     * Only meaningful for "dashcam-report": which routing decision produced this item.
-     * AUTO_LOG items are held for human confirmation on reconnect instead of auto-replaying —
-     * see `useOfflineSync.ts`.
+     * Only meaningful for "dashcam-report": which routing decision produced this item. Both
+     * tiers are held for a retry-send tap on reconnect instead of auto-replaying — see
+     * `useOfflineSync.ts`.
      */
     dashcamDecision?: "AUTO_LOG" | "ESCALATE";
     createdAt: string;

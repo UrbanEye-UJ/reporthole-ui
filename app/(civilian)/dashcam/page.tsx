@@ -8,8 +8,11 @@
  *  2. Captures a frame every 2 seconds via a hidden <canvas>.
  *  3. Posts each frame to /api/inference/predict (Spring Boot ONNX endpoint).
  *  4. Applies confidence-based routing:
- *       ≥ 0.75  → AUTO_LOG  — incident created immediately
- *       ≥ 0.65  → ESCALATE  — user must tap "Confirm" in the event log
+ *       ≥ 0.75  → AUTO_LOG  — incident created immediately, auto-verified
+ *       ≥ 0.65  → ESCALATE  — incident created immediately too, but left for an admin to
+ *                             review (same AI-approval threshold that gates any AI report) —
+ *                             deliberately no driver interaction: tapping a screen mid-drive
+ *                             isn't something this app should ever ask for.
  *       < 0.65  → DISCARD   — logged silently, no incident created
  *  5. Incident creation uses Authorization: Bearer <device-token> (not a JWT).
  *     The token is entered once and stored in localStorage.
@@ -21,6 +24,7 @@
  */
 
 import { useRef, useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useGenerateToken } from "@/app/api/generated/devices/devices";
 import { enqueue, remove, listQueued, isNetworkError, type QueuedMutation } from "@/lib/offlineQueue";
 import { dispatchQueueChanged } from "@/lib/hooks/useOfflineSync";
@@ -44,7 +48,7 @@ interface DashcamEvent {
     decision: RoutingDecision;
     status: EventStatus;
     errorMessage?: string;
-    /** Stored for deferred ESCALATE confirmation — not displayed. */
+    /** Stored for a deferred retry-send if this was queued offline — not displayed. */
     imageBase64?: string;
     gps?: { latitude: number; longitude: number };
     /**
@@ -195,10 +199,11 @@ export default function DashcamPage() {
      * instance, which would inject a JWT from the cookie (or redirect to
      * /login on 401 if no cookie is present).
      *
-     * `decision` is the event's own routing tier (AUTO_LOG or ESCALATE) — carried through to the
-     * offline queue so a network failure here queues it correctly: an ESCALATE item has already
-     * been human-confirmed (this call IS that confirmation) so it auto-replays on reconnect,
-     * while an AUTO_LOG item hasn't, so it's held for confirm-before-send instead — see
+     * `decision` is the event's own routing tier (AUTO_LOG or ESCALATE) — both submit immediately
+     * with no driver interaction; the only difference is what happens to the incident once it
+     * exists server-side (AUTO_LOG auto-verifies, ESCALATE lands in the admin's AI review queue,
+     * via the same AI-approval-threshold logic every AI-generated incident goes through). Carried
+     * through to the offline queue purely so a network failure here queues correctly — see
      * `useOfflineSync.ts`.
      */
     const createIncident = useCallback(async (
@@ -369,40 +374,25 @@ export default function DashcamPage() {
             return;
         }
 
-        if (decision === "AUTO_LOG") {
-            addEvent({
-                id: eventId,
-                timestamp: new Date(),
-                label,
-                confidence,
-                stockLabel,
-                stockConfidence,
-                decision,
-                status: "saving",
-                // Kept even though AUTO_LOG doesn't normally need deferred confirmation — if
-                // createIncident below queues this (offline), it becomes a pending_confirm item
-                // like ESCALATE's, and needs these to let the user confirm it later.
-                imageBase64: base64,
-                gps: coords,
-                bbox,
-            });
-            await createIncident(eventId, label, confidence, base64, coords, decision, bbox);
-        } else {
-            // ESCALATE — hold in log with imageBase64 and gps for deferred confirmation
-            addEvent({
-                id: eventId,
-                timestamp: new Date(),
-                label,
-                confidence,
-                stockLabel,
-                stockConfidence,
-                decision,
-                bbox,
-                status: "pending_confirm",
-                imageBase64: base64,
-                gps: coords,
-            });
-        }
+        // Both tiers submit immediately, no driver interaction — AUTO_LOG auto-verifies
+        // server-side, ESCALATE lands in the admin's AI review queue. imageBase64/gps are kept on
+        // the event even though this path doesn't normally need deferred confirmation — if
+        // createIncident below queues this (offline), it becomes a pending_confirm item and needs
+        // these to let it be retried later.
+        addEvent({
+            id: eventId,
+            timestamp: new Date(),
+            label,
+            confidence,
+            stockLabel,
+            stockConfidence,
+            decision,
+            status: "saving",
+            imageBase64: base64,
+            gps: coords,
+            bbox,
+        });
+        await createIncident(eventId, label, confidence, base64, coords, decision, bbox);
     }, [addEvent, createIncident]);
 
     // ── Camera start / stop ────────────────────────────────────────────────
@@ -483,6 +473,15 @@ export default function DashcamPage() {
             <main className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
                 <div className="bg-white rounded-2xl shadow-sm p-6 w-full max-w-sm flex flex-col gap-4">
                     <div>
+                        <Link
+                            href="/profile"
+                            className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors mb-2"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                            </svg>
+                            Back to profile
+                        </Link>
                         <h1 className="text-lg font-bold text-gray-900">Reporthole Dashcam</h1>
                         <p className="text-sm text-gray-500 mt-1">
                             Enter your device token to begin. Generate one from your account while logged in.
@@ -545,6 +544,17 @@ export default function DashcamPage() {
                         </span>
                     </div>
                 )}
+
+                {/* Back to profile */}
+                <Link
+                    href="/profile"
+                    aria-label="Back to profile"
+                    className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm rounded-lg p-2 text-white hover:bg-black/80 transition-colors"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                    </svg>
+                </Link>
 
                 {/* Camera error banner */}
                 {cameraError && (
@@ -623,7 +633,7 @@ export default function DashcamPage() {
 
 interface EventLogEntryProps {
     event: DashcamEvent;
-    /** Called when the user confirms an ESCALATE detection. */
+    /** Called when the user retries a queued (offline) dashcam item. */
     onConfirm: () => void;
     /** Optimistically marks the event as saving before onConfirm resolves. */
     onMarkSaving: () => void;
@@ -632,9 +642,9 @@ interface EventLogEntryProps {
 /**
  * Renders a single entry in the dashcam detection event log.
  *
- * ESCALATE entries show a "Confirm incident" button. Clicking it marks the
- * entry as saving optimistically, then triggers incident creation. All other
- * decisions display their status inline.
+ * AUTO_LOG and ESCALATE both submit with no driver interaction. An entry only shows a "Confirm
+ * incident" (really: retry-send) button if that submission failed for lack of connection —
+ * tapping it retries the same send, it isn't a review/approval step.
  */
 function EventLogEntry({ event, onConfirm, onMarkSaving }: EventLogEntryProps) {
     const decisionColour: Record<RoutingDecision, string> = {
@@ -645,10 +655,8 @@ function EventLogEntry({ event, onConfirm, onMarkSaving }: EventLogEntryProps) {
 
     const statusText: Record<EventStatus, string> = {
         saving: "Saving…",
-        // AUTO_LOG only reaches pending_confirm by being queued offline — ESCALATE reaches it
-        // by design (always needs a human tap). Same label works for both: either way, this
-        // entry needs the driver to confirm before it's sent.
-        pending_confirm: event.decision === "AUTO_LOG" ? "No connection — tap to send" : "Awaiting confirmation",
+        // Only ever reached by being queued offline — neither tier needs a review tap anymore.
+        pending_confirm: "No connection — tap to send",
         logged: "Logged",
         duplicate: "Duplicate — already on record",
         discarded: "Discarded",
@@ -661,21 +669,37 @@ function EventLogEntry({ event, onConfirm, onMarkSaving }: EventLogEntryProps) {
         !!event.imageBase64 &&
         !!event.gps;
 
+    // Whichever model scored higher is shown as the dominant line — purely a display choice,
+    // routing below is always driven by the road-damage model's own confidence regardless of
+    // which one is bigger here.
+    const hasStock = !!event.stockLabel && typeof event.stockConfidence === "number";
+    const stockIsHigher = hasStock && (event.stockConfidence as number) > event.confidence;
+    const primary = stockIsHigher
+        ? { source: "General detector", label: event.stockLabel!, confidence: event.stockConfidence! }
+        : { source: "Road damage", label: event.label, confidence: event.confidence };
+    const secondary = hasStock
+        ? (stockIsHigher
+            ? { source: "Road damage", label: event.label, confidence: event.confidence }
+            : { source: "General detector", label: event.stockLabel!, confidence: event.stockConfidence! })
+        : null;
+
     return (
         <div className="bg-gray-900 rounded-lg px-3 py-2.5 flex flex-col gap-1">
-            {/* Primary: label + confidence — the dominant visual element of the log */}
+            {/* Primary: whichever model scored higher — the dominant visual element of the log */}
             <div className="flex items-center justify-between gap-2">
-                <span className="text-base font-bold text-white">{event.label.replace(/_/g, " ")}</span>
+                <span className="text-base font-bold text-white">
+                    {primary.label.replace(/_/g, " ")}
+                    <span className="text-[11px] font-normal text-gray-500 ml-1.5">({primary.source})</span>
+                </span>
                 <span className="text-lg font-bold text-gray-100 tabular-nums">
-                    {Math.round(event.confidence * 100)}%
+                    {Math.round(primary.confidence * 100)}%
                 </span>
             </div>
 
-            {/* Secondary: general object detector score, if present */}
-            {event.stockLabel && (
+            {/* Secondary: the other model's score, if present */}
+            {secondary && (
                 <span className="text-[11px] text-gray-500">
-                    General detector: {event.stockLabel.replace(/_/g, " ")}
-                    {typeof event.stockConfidence === "number" && ` (${Math.round(event.stockConfidence * 100)}%)`}
+                    {secondary.source}: {secondary.label.replace(/_/g, " ")} ({Math.round(secondary.confidence * 100)}%)
                 </span>
             )}
 
@@ -701,7 +725,7 @@ function EventLogEntry({ event, onConfirm, onMarkSaving }: EventLogEntryProps) {
                     onClick={() => { onMarkSaving(); onConfirm(); }}
                     className="mt-1 self-start bg-yellow-500 hover:bg-yellow-400 text-black text-xs font-semibold px-3 py-1.5 rounded-md transition-colors"
                 >
-                    Confirm incident
+                    Retry send
                 </button>
             )}
         </div>

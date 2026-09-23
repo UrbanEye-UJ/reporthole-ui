@@ -1,6 +1,6 @@
 /**
  * Tests for lib/hooks/useOfflineSync.ts — replays queued offline mutations on mount and on
- * reconnect, except AUTO_LOG dashcam items (held for the dashcam page's own confirm UI).
+ * reconnect, except dashcam items (either tier — held for the dashcam page's own retry-send UI).
  */
 
 import { render, waitFor } from "@testing-library/react";
@@ -89,7 +89,11 @@ describe("useOfflineSync", () => {
         );
     });
 
-    it("replays a device-token dashcam-report via fetch with a bearer header", async () => {
+    it("replays a device-token mutation via fetch with a bearer header", async () => {
+        // Exercises the device-token/fetch replay mechanism directly. In the live app every real
+        // dashcam-report item always carries a dashcamDecision (see below), which holds it back —
+        // omitting one here isn't a realistic dashcam-report, just the cleanest way to unit-test
+        // this branch of the sync loop in isolation.
         await enqueue({
             kind: "dashcam-report",
             url: "/incidents/create",
@@ -97,7 +101,6 @@ describe("useOfflineSync", () => {
             body: { incidentType: "CRACK" },
             authMode: "device-token",
             deviceToken: "device-abc",
-            dashcamDecision: "ESCALATE",
         });
 
         renderHarness();
@@ -112,24 +115,27 @@ describe("useOfflineSync", () => {
         );
     });
 
-    it("does not replay an AUTO_LOG dashcam-report — leaves it queued for manual confirmation", async () => {
-        await enqueue({
-            kind: "dashcam-report",
-            url: "/incidents/create",
-            method: "POST",
-            body: { incidentType: "POTHOLE" },
-            authMode: "device-token",
-            deviceToken: "device-abc",
-            dashcamDecision: "AUTO_LOG",
-        });
+    it.each(["AUTO_LOG", "ESCALATE"] as const)(
+        "does not replay a %s dashcam-report — leaves it queued for a retry-send tap",
+        async (decision) => {
+            await enqueue({
+                kind: "dashcam-report",
+                url: "/incidents/create",
+                method: "POST",
+                body: { incidentType: "POTHOLE" },
+                authMode: "device-token",
+                deviceToken: "device-abc",
+                dashcamDecision: decision,
+            });
 
-        renderHarness();
+            renderHarness();
 
-        // Give the effect a tick to run, then confirm nothing was sent and it's still queued.
-        await new Promise((r) => setTimeout(r, 0));
-        expect(global.fetch).not.toHaveBeenCalled();
-        expect(await count()).toBe(1);
-    });
+            // Give the effect a tick to run, then confirm nothing was sent and it's still queued.
+            await new Promise((r) => setTimeout(r, 0));
+            expect(global.fetch).not.toHaveBeenCalled();
+            expect(await count()).toBe(1);
+        }
+    );
 
     it("stops replaying (leaves the rest queued) on the first failure rather than hammering a down backend", async () => {
         await enqueue({ kind: "contractor-accept", url: "/incidents/1/accept", method: "POST", body: {}, authMode: "jwt" });
