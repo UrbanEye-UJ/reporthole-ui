@@ -28,6 +28,7 @@ import Link from "next/link";
 import { useGenerateToken } from "@/app/api/generated/devices/devices";
 import { enqueue, remove, listQueued, isNetworkError, type QueuedMutation } from "@/lib/offlineQueue";
 import { dispatchQueueChanged } from "@/lib/hooks/useOfflineSync";
+import { reverseGeocode, distanceMetres } from "@/lib/reverseGeocode";
 
 const DISCARD_THRESHOLD = 0.65;
 const AUTO_LOG_THRESHOLD = 0.75;
@@ -107,6 +108,8 @@ export default function DashcamPage() {
     // ── GPS state ──────────────────────────────────────────────────────────
     const [gps, setGps] = useState<{ latitude: number; longitude: number } | null>(null);
     const [gpsError, setGpsError] = useState<string | null>(null);
+    /** Human-readable address for the current GPS fix — re-resolved as the vehicle moves. */
+    const [address, setAddress] = useState<string | null>(null);
 
     // ── Detection feedback ─────────────────────────────────────────────────
     const [lastDetection, setLastDetection] = useState<{ label: string; confidence: number } | null>(null);
@@ -122,10 +125,16 @@ export default function DashcamPage() {
     const gpsRef = useRef<{ latitude: number; longitude: number } | null>(null);
     /** Mirrors deviceToken state so the interval callback always reads the latest value. */
     const tokenRef = useRef<string | null>(null);
+    /** Mirrors address state so the interval callback always reads the latest value. */
+    const addressRef = useRef<string | null>(null);
+    /** Coordinates the address was last resolved for — re-geocode only once the vehicle has actually moved. */
+    const lastGeocodedAtRef = useRef<{ latitude: number; longitude: number } | null>(null);
+    const geocodingRef = useRef(false);
 
     // Keep refs in sync with state
     useEffect(() => { gpsRef.current = gps; }, [gps]);
     useEffect(() => { tokenRef.current = deviceToken; }, [deviceToken]);
+    useEffect(() => { addressRef.current = address; }, [address]);
 
     // ── GPS watcher (starts once token is known) ───────────────────────────
     useEffect(() => {
@@ -137,8 +146,21 @@ export default function DashcamPage() {
         }
         const id = navigator.geolocation.watchPosition(
             (pos) => {
-                setGps({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+                const coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+                setGps(coords);
                 setGpsError(null);
+
+                // Re-resolve the address once we've moved ~40m from the last fix we geocoded —
+                // keeps it current on a moving vehicle without hammering Nominatim on every
+                // sub-metre GPS jitter (its usage policy caps at ~1 request/second).
+                const last = lastGeocodedAtRef.current;
+                if (!geocodingRef.current && (!last || distanceMetres(last, coords) > 40)) {
+                    lastGeocodedAtRef.current = coords;
+                    geocodingRef.current = true;
+                    reverseGeocode(coords.latitude, coords.longitude)
+                        .then(setAddress)
+                        .finally(() => { geocodingRef.current = false; });
+                }
             },
             (err) => setGpsError(`GPS unavailable: ${err.message}`),
             { enableHighAccuracy: true }
@@ -224,6 +246,7 @@ export default function DashcamPage() {
             source: "DASHCAM",
             latitude: coords.latitude,
             longitude: coords.longitude,
+            locationAddress: addressRef.current ?? undefined,
             imageBase64,
             forceCreate: false,
             occurredAt: new Date().toISOString(),
@@ -571,7 +594,7 @@ export default function DashcamPage() {
                         <span className="text-yellow-400">{gpsError}</span>
                     ) : gps ? (
                         <span className="text-gray-400">
-                            {gps.latitude.toFixed(5)}, {gps.longitude.toFixed(5)}
+                            {address ?? `${gps.latitude.toFixed(5)}, ${gps.longitude.toFixed(5)}`}
                         </span>
                     ) : (
                         <span className="text-gray-600">Waiting for GPS…</span>
