@@ -17,6 +17,7 @@ import {
 } from "@/app/api/generated/openAPIDefinition.schemas";
 import { enqueue, isNetworkError, listQueued } from "@/lib/offlineQueue";
 import { dispatchQueueChanged } from "@/lib/hooks/useOfflineSync";
+import { reverseGeocode as reverseGeocodeCoords } from "@/lib/reverseGeocode";
 
 const LocationPickerMap = dynamic(() => import("./LocationPickerMap"), { ssr: false });
 
@@ -168,20 +169,8 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
 
     const reverseGeocode = useCallback(async (lat: number, lng: number) => {
         setGeocoding(true);
-        try {
-            const res = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
-                { headers: { "User-Agent": "Reporthole/1.0 (refentsengoako101@gmail.com)" } }
-            );
-            const data = await res.json();
-            const { road, suburb, city, town, village, county } = data.address ?? {};
-            const parts = [road, suburb, city ?? town ?? village ?? county].filter(Boolean);
-            setAddress(parts.join(", ") || data.display_name || null);
-        } catch {
-            setAddress(null);
-        } finally {
-            setGeocoding(false);
-        }
+        setAddress(await reverseGeocodeCoords(lat, lng));
+        setGeocoding(false);
     }, []);
 
     // Request geolocation whenever the modal becomes visible (not just on first open)
