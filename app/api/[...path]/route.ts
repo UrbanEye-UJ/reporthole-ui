@@ -35,6 +35,8 @@ async function proxy(request: NextRequest, path: string[]): Promise<Response> {
 
     const backendResponse = await fetch(targetUrl, init);
 
+    console.log(`[BFF-PROXY] ${request.method} /${path.join("/")} -> ${backendResponse.status}`);
+
     // Hop-by-hop headers that don't survive re-wrapping the body below without mismatching.
     const responseHeaders = new Headers(backendResponse.headers);
     responseHeaders.delete("content-encoding");

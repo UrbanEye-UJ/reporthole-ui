@@ -15,13 +15,17 @@ export async function POST(request: NextRequest) {
 
     if (token) {
         try {
-            await fetch(`${BACKEND_URL}/auth/logout`, {
+            const backendResponse = await fetch(`${BACKEND_URL}/auth/logout`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` },
             });
-        } catch {
-            // Best-effort — see doc comment above.
+            console.log(`[BFF-LOGOUT] POST /auth/logout -> ${backendResponse.status}`);
+        } catch (err) {
+            // Best-effort — see doc comment above. Still logged so a dead backend link shows up.
+            console.error("[BFF-LOGOUT] backend call failed", err);
         }
+    } else {
+        console.log("[BFF-LOGOUT] no reporthole_token cookie present — clearing cookies only");
     }
 
     const response = NextResponse.json({ success: true });
