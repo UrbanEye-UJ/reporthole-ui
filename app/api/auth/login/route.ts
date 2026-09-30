@@ -23,6 +23,8 @@ export async function POST(request: NextRequest) {
     const payload = await backendResponse.json().catch(() => null);
     const token: string | undefined = payload?.data?.token;
 
+    console.log(`[BFF-LOGIN] POST /auth/login -> ${backendResponse.status} cookieSet=${Boolean(backendResponse.ok && token)}`);
+
     // Never echo the token back in the JSON body — it only ever leaves this server as the
     // HttpOnly cookie below, so client JS (including an injected script, in the event of an
     // unrelated XSS bug) never has it to read.
