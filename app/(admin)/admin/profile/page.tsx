@@ -36,6 +36,7 @@ import PageHeader from "../../_components/ui/PageHeader";
 import { maskName, maskEmail, maskPhone } from "@/lib/piiMask";
 import { useInstallPrompt } from "@/lib/hooks/useInstallPrompt";
 import InstallInstructionsModal from "@/components/shared/InstallInstructionsModal";
+import { clearSessionCookies } from "@/lib/session";
 
 type EditState = { firstName: string; lastName: string; phoneNumber: string };
 
@@ -93,10 +94,8 @@ export default function AdminProfilePage() {
 
   const { mutate: deleteAccount, isPending: isDeleting } = useDeleteAccount({
     mutation: {
-      onSuccess: () => {
-        document.cookie = "reporthole_token=; path=/; max-age=0";
-        document.cookie = "reporthole_role=; path=/; max-age=0";
-        document.cookie = "reporthole_user_id=; path=/; max-age=0";
+      onSuccess: async () => {
+        await clearSessionCookies();
         router.push("/");
       },
       onError: () => setConfirmDelete(false),

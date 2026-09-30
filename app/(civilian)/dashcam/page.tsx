@@ -458,7 +458,10 @@ export default function DashcamPage() {
 
     // ── Token generation ───────────────────────────────────────────────────
 
-    const isLoggedIn = typeof document !== "undefined" && !!document.cookie.match(/reporthole_token=[^;]+/);
+    // reporthole_token is HttpOnly now and unreadable here — reporthole_user_id is set
+    // alongside it at login and cleared alongside it at logout, so its presence is an
+    // equally reliable signal of "logged in".
+    const isLoggedIn = typeof document !== "undefined" && !!document.cookie.match(/reporthole_user_id=[^;]+/);
 
     const { mutate: generateToken, isPending: isGenerating } = useGenerateToken({
         mutation: {

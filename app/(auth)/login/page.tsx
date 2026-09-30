@@ -21,14 +21,11 @@ function LoginForm() {
     const { mutate: login } = useLogin({
         mutation: {
             onSuccess: (response) => {
-                const token = response.data?.token;
+                // The token itself is never in this response — the login Route Handler
+                // (app/api/auth/login/route.ts) sets it as an HttpOnly cookie directly and
+                // strips it from the body. role/userId/token-expiry cookies are also set there;
+                // role is read here only to decide which dashboard to redirect to.
                 const role = response.data?.role;
-                const userId = response.data?.userId;
-
-                const maxAge = 60 * 60 * 24;
-                document.cookie = `reporthole_token=${token}; path=/; max-age=${maxAge}; SameSite=Strict`;
-                document.cookie = `reporthole_role=${role}; path=/; max-age=${maxAge}; SameSite=Strict`;
-                document.cookie = `reporthole_user_id=${userId}; path=/; max-age=${maxAge}; SameSite=Strict`;
 
                 const dashboards: Record<string, string> = {
                     CIVILIAN: "/civilian/dashboard",

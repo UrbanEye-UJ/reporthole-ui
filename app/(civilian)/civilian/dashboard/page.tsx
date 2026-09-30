@@ -134,12 +134,13 @@ export default function CivilianDashboard() {
         }
     }, [data]);
 
-    // Real-time updates: EventSource connects directly to Spring Boot.
-    // JWT is passed as ?token= because EventSource does not support custom headers.
+    // Real-time updates: EventSource connects to the catch-all proxy (app/api/[...path]/route.ts),
+    // which reads the HttpOnly reporthole_token cookie server-side and forwards it to the backend
+    // as a real Authorization header — EventSource itself can't set custom headers, which is why
+    // this used to need the token in the URL as a query param.
     useEffect(() => {
-        const token = getCookie("reporthole_token");
-        if (!token) return;
-        const es = new EventSource(`/api/incidents/events?token=${token}`);
+        if (!getCookie("reporthole_user_id")) return;
+        const es = new EventSource(`/api/incidents/events`);
         es.addEventListener("incident-updated", () => {
             refetch();
             // Also covers a new comment on whichever incident's comment list is currently

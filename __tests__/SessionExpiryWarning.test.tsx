@@ -4,14 +4,9 @@ import SessionExpiryWarning from "@/components/shared/SessionExpiryWarning";
 const mockPush = jest.fn();
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push: mockPush }) }));
 
-function makeJwt(exp: number): string {
-    const payload = btoa(JSON.stringify({ sub: "user-1", exp }));
-    return `header.${payload}.sig`;
-}
-
-function setCookie(token: string) {
+function setExpiryCookie(exp: number) {
     Object.defineProperty(document, "cookie", {
-        get: () => `reporthole_token=${token}`,
+        get: () => `reporthole_token_exp=${exp}`,
         set: () => {},
         configurable: true,
     });
@@ -37,26 +32,26 @@ afterEach(() => {
 });
 
 describe("SessionExpiryWarning", () => {
-    describe("natural expiry (JWT exp clock)", () => {
+    describe("natural expiry (reporthole_token_exp cookie)", () => {
         it("renders nothing when token is far from expiry", () => {
-            setCookie(makeJwt(Math.floor(Date.now() / 1000) + 3600));
+            setExpiryCookie(Math.floor(Date.now() / 1000) + 3600);
             render(<SessionExpiryWarning />);
             expect(screen.queryByText("Session Expiring Soon")).not.toBeInTheDocument();
         });
 
-        it("renders nothing when no token is present", () => {
+        it("renders nothing when no expiry cookie is present", () => {
             render(<SessionExpiryWarning />);
             expect(screen.queryByText(/Session/)).not.toBeInTheDocument();
         });
 
         it("shows 'Session Expiring Soon' when already inside the warn window", () => {
-            setCookie(makeJwt(Math.floor(Date.now() / 1000) + 10));
+            setExpiryCookie(Math.floor(Date.now() / 1000) + 10);
             render(<SessionExpiryWarning />);
             expect(screen.getByText("Session Expiring Soon")).toBeInTheDocument();
         });
 
         it("shows warning after the timer fires", async () => {
-            setCookie(makeJwt(Math.floor(Date.now() / 1000) + 60));
+            setExpiryCookie(Math.floor(Date.now() / 1000) + 60);
             render(<SessionExpiryWarning />);
             expect(screen.queryByText("Session Expiring Soon")).not.toBeInTheDocument();
 
@@ -66,7 +61,7 @@ describe("SessionExpiryWarning", () => {
         });
 
         it("auto-redirects to login when countdown reaches zero", async () => {
-            setCookie(makeJwt(Math.floor(Date.now() / 1000) + 5));
+            setExpiryCookie(Math.floor(Date.now() / 1000) + 5);
             render(<SessionExpiryWarning />);
 
             await act(async () => { jest.advanceTimersByTime(5000); });
@@ -75,7 +70,7 @@ describe("SessionExpiryWarning", () => {
         });
 
         it("redirects immediately when Continue to login is clicked", () => {
-            setCookie(makeJwt(Math.floor(Date.now() / 1000) + 10));
+            setExpiryCookie(Math.floor(Date.now() / 1000) + 10);
             render(<SessionExpiryWarning />);
             fireEvent.click(screen.getByRole("button", { name: /go to home/i }));
             expect(mockPush).toHaveBeenCalledWith("/");
