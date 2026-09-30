@@ -29,10 +29,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (!SAFE_FILENAME.test(filename)) {
+        console.error(`[BFF-IMAGE-PROXY] rejected unsafe filename derived from url param: ${filename}`);
         return NextResponse.json({ error: "Invalid image filename" }, { status: 400 });
     }
 
     const backendResponse = await fetch(`${BACKEND_URL}/uploads/incidents/${filename}`);
+
+    console.log(`[BFF-IMAGE-PROXY] GET ${filename} -> ${backendResponse.status}`);
 
     if (!backendResponse.ok) {
         return NextResponse.json({ error: "Image not found" }, { status: backendResponse.status });
