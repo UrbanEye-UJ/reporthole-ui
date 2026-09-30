@@ -348,8 +348,6 @@ describe("ReportIssueModal", () => {
         const OTHER_USER_ID = "other-user-uuid";
         const OWN_USER_ID = "own-user-uuid";
 
-        const jwtWithOwnId = `eyJhbGciOiJIUzI1NiJ9.${btoa(JSON.stringify({ sub: OWN_USER_ID }))}.sig`;
-
         const duplicateData = {
             duplicate: true,
             existingIncidentId: "existing-123",
@@ -389,7 +387,7 @@ describe("ReportIssueModal", () => {
 
         it("shows own-report message when the duplicate was submitted by the current user", async () => {
             Object.defineProperty(document, "cookie", {
-                get: () => `reporthole_token=${jwtWithOwnId}`,
+                get: () => `reporthole_user_id=${OWN_USER_ID}`,
                 configurable: true,
             });
             mockCreateMutate.mockImplementationOnce((_: unknown, { onSuccess }: SuccessOnlyHandlers) => {

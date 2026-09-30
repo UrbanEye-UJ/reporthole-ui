@@ -1,4 +1,5 @@
 import axios, { type AxiosRequestConfig, type InternalAxiosRequestConfig } from "axios";
+import { clearSessionCookies } from "@/lib/session";
 
 const maskEmail = (email: string): string => {
     const atIndex = email.indexOf("@");
@@ -25,16 +26,13 @@ export const getCookie = (name: string): string | undefined => {
         ?.split("=")[1];
 };
 
+/**
+ * Logs each outgoing call. Authorization is no longer attached here — `reporthole_token` is an
+ * `HttpOnly` cookie now (client JS can't read it), so the browser sends it automatically to
+ * same-origin `/api/*`, and the catch-all proxy Route Handler (`app/api/[...path]/route.ts`)
+ * translates it into an `Authorization` header server-side before forwarding to the backend.
+ */
 export const requestInterceptor = (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
-    const token = document.cookie
-        .split("; ")
-        .find((row) => row.startsWith("reporthole_token="))
-        ?.split("=")[1];
-
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-
     const method = config.method?.toUpperCase() ?? "REQUEST";
     const url = config.url ?? "";
 
@@ -62,10 +60,12 @@ export const responseErrorInterceptor = (error: unknown): Promise<never> => {
     console.error(`[API] ${status ?? "NETWORK_ERROR"} ${url}`);
 
     if (status === 401) {
-        const hadToken = document.cookie.includes("reporthole_token=");
-        document.cookie = "reporthole_token=; path=/; max-age=0";
-        document.cookie = "reporthole_role=; path=/; max-age=0";
-        if (hadToken) {
+        // reporthole_token is HttpOnly now — this can't read it to tell "had a session" apart
+        // from "never logged in" the way it used to. reporthole_role is a plain cookie set
+        // alongside the token, so its presence stands in for "had a session" instead.
+        const hadSession = document.cookie.includes("reporthole_role=");
+        void clearSessionCookies();
+        if (hadSession) {
             console.warn("[API] Session invalid — showing expiry warning");
             window.dispatchEvent(new CustomEvent("session-invalid"));
         } else {

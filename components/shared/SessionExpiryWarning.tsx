@@ -2,29 +2,29 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { clearSessionCookies } from "@/lib/session";
 
 const WARN_BEFORE_SECONDS = 15;
 const COUNTDOWN_SECONDS = 15;
 
 type Reason = "expiring" | "invalid";
 
+/**
+ * Reads the expiry set alongside login (see app/api/auth/login/route.ts) rather than decoding
+ * the JWT itself — the token is an HttpOnly cookie now and client JS can't read it at all.
+ */
 function getTokenExpiry(): number | null {
     try {
-        const token = document.cookie
+        const exp = document.cookie
             .split("; ")
-            .find((r) => r.startsWith("reporthole_token="))
+            .find((r) => r.startsWith("reporthole_token_exp="))
             ?.split("=")[1];
-        if (!token) return null;
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        return typeof payload.exp === "number" ? payload.exp : null;
+        if (!exp) return null;
+        const parsed = Number(exp);
+        return Number.isFinite(parsed) ? parsed : null;
     } catch {
         return null;
     }
-}
-
-function clearSession() {
-    document.cookie = "reporthole_token=; path=/; max-age=0";
-    document.cookie = "reporthole_role=; path=/; max-age=0";
 }
 
 function getInitialSecondsLeft(): number | null {
@@ -89,13 +89,13 @@ export default function SessionExpiryWarning() {
     // Auto-redirect when countdown reaches zero
     useEffect(() => {
         if (secondsLeft === 0) {
-            clearSession();
+            void clearSessionCookies();
             router.push("/");
         }
     }, [secondsLeft]);
 
     const handleContinue = () => {
-        clearSession();
+        void clearSessionCookies();
         router.push("/");
     };
 
