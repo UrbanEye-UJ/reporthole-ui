@@ -58,7 +58,7 @@ const renderWithClient = (ui: React.ReactElement) =>
 
 beforeEach(() => {
     mockPush.mockClear();
-    setCookie("reporthole_token=test-token; reporthole_role=CIVILIAN");
+    setCookie("reporthole_role=CIVILIAN; reporthole_user_id=user-1");
 });
 
 describe("CivilianDashboard", () => {

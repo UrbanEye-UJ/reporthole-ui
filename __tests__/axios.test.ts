@@ -25,22 +25,14 @@ const setCookie = (value: string) => {
 
 describe("axios interceptors", () => {
     describe("request interceptor", () => {
-        it("adds Authorization header when token cookie is present", () => {
-            setCookie("reporthole_token=my-jwt");
-            const result = requestInterceptor(configWithHeaders({}));
-            expect((result.headers as Record<string, string>).Authorization).toBe("Bearer my-jwt");
-        });
-
-        it("does not add Authorization header when no token cookie", () => {
-            setCookie("");
+        // reporthole_token is HttpOnly now — the browser attaches it to same-origin /api/*
+        // requests on its own, and the catch-all proxy Route Handler (app/api/[...path]/route.ts)
+        // is what turns it into an Authorization header, server-side. This interceptor no longer
+        // reads cookies or touches Authorization at all.
+        it("never sets an Authorization header", () => {
+            setCookie("reporthole_role=CIVILIAN; reporthole_user_id=abc123");
             const result = requestInterceptor(configWithHeaders({}));
             expect((result.headers as Record<string, string>).Authorization).toBeUndefined();
-        });
-
-        it("reads only the token cookie when multiple cookies are present", () => {
-            setCookie("other=value; reporthole_token=abc123; reporthole_role=CIVILIAN");
-            const result = requestInterceptor(configWithHeaders({}));
-            expect((result.headers as Record<string, string>).Authorization).toBe("Bearer abc123");
         });
     });
 

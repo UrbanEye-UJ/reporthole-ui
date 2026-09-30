@@ -18,6 +18,7 @@ import {
 import { enqueue, isNetworkError, listQueued } from "@/lib/offlineQueue";
 import { dispatchQueueChanged } from "@/lib/hooks/useOfflineSync";
 import { reverseGeocode as reverseGeocodeCoords } from "@/lib/reverseGeocode";
+import { clearSessionCookies } from "@/lib/session";
 
 const LocationPickerMap = dynamic(() => import("./LocationPickerMap"), { ssr: false });
 
@@ -30,12 +31,10 @@ const ISSUE_TYPES = Object.values(IncidentRequestDTOIncidentType);
  */
 const AI_AUTO_ACCEPT_THRESHOLD = 0.75;
 
+/** reporthole_token is HttpOnly and unreadable here, but reporthole_user_id carries the same ID and stays a plain cookie. */
 function getCurrentUserId(): string | null {
     try {
-        const token = document.cookie.split("; ").find((r) => r.startsWith("reporthole_token="))?.split("=")[1];
-        if (!token) return null;
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        return payload.sub ?? null;
+        return document.cookie.split("; ").find((r) => r.startsWith("reporthole_user_id="))?.split("=")[1] ?? null;
     } catch {
         return null;
     }
@@ -312,8 +311,7 @@ export default function ReportIssueModal({ visible, onClose }: ReportIssueModalP
             }
             const status = (err as { response?: { status?: number } }).response?.status;
             if (status === 404 || status === 401) {
-                document.cookie = "reporthole_token=; path=/; max-age=0";
-                document.cookie = "reporthole_role=; path=/; max-age=0";
+                void clearSessionCookies();
                 window.location.href = "/";
             } else {
                 setError("Something went wrong. Please try again.");

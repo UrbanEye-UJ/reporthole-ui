@@ -16,6 +16,7 @@ import InstallInstructionsModal from "@/components/shared/InstallInstructionsMod
 import { useCivilianTheme } from "../_context/CivilianThemeContext";
 import { apiClient } from "@/lib/axios";
 import { maskName, maskEmail, maskPhone } from "@/lib/piiMask";
+import { clearSessionCookies } from "@/lib/session";
 
 type EditState = {
     firstName: string;
@@ -123,10 +124,8 @@ export default function ProfilePage() {
 
     const { mutate: deleteAccount, isPending: isDeleting } = useDeleteAccount({
         mutation: {
-            onSuccess: () => {
-                document.cookie = "reporthole_token=; path=/; max-age=0";
-                document.cookie = "reporthole_role=; path=/; max-age=0";
-                document.cookie = "reporthole_user_id=; path=/; max-age=0";
+            onSuccess: async () => {
+                await clearSessionCookies();
                 router.push("/login");
             },
             onError: () => setConfirmDelete(false),

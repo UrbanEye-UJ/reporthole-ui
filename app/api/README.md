@@ -1,47 +1,44 @@
 # Next.js Route Handlers (`app/api/`)
 
-Server-side Route Handlers that proxy requests between the browser and external services. The browser only ever talks to the Next.js server — it never needs to know the backend's address or hold credentials for third-party services.
+Server-side Route Handlers that proxy requests between the browser and the Spring Boot backend. The browser only ever talks to the Next.js server — it never needs to know the backend's address, and it never sees the JWT directly.
 
 ---
 
 ## Route handlers
 
-### `/api/incidents/events` — SSE proxy
+### `/api/[...path]` — generic proxy
 
-**File:** `app/api/incidents/events/route.ts`
+**File:** `app/api/[...path]/route.ts`
 
-Proxies the real-time SSE stream from the Spring Boot backend to the browser.
+Catch-all for every `/api/**` request that isn't handled by a more specific route below. Reads the `reporthole_token` cookie (`HttpOnly` — set by `/api/auth/login`, so client JS can't read it) and forwards the request to the backend with `Authorization: Bearer <token>` attached, streaming the response back unchanged. This is also what makes `/api/incidents/events` (SSE) work: the Route Handler runs server-side, so it can attach a real `Authorization` header even though the browser's `EventSource` API can't set custom headers itself.
 
-**Why a proxy?** The browser's `EventSource` API cannot set custom headers, so the JWT cannot be sent as `Authorization: Bearer`. The Route Handler runs on the Next.js server, reads the `reporthole_token` cookie from the incoming request, and forwards it as an `Authorization` header when connecting to `GET /incidents/events?token=<jwt>` on the backend.
-
-The browser connects to `/api/incidents/events` — it never needs the backend's address.
-
-In Docker, `INTERNAL_API_URL=http://reporthole-be:8080/api` ensures the Route Handler reaches the backend via the Docker internal network.
+Backend address comes from `lib/backend.ts` (`INTERNAL_API_URL`, set at build time — `.env.local` in dev, a Dockerfile `ARG` pointing at `http://reporthole-be:8080/api` in Docker).
 
 ---
 
-### `/api/image-proxy` — image proxy
+### `/api/image-proxy` — incident image proxy
 
 **File:** `app/api/image-proxy/route.ts`
 
-Fetches incident images from the backend's local disk storage and streams them to the browser.
+Streams an incident image server-side instead of letting the browser request the stored `imageUrl` directly. That URL is built by the backend from `SERVICES_WEB_BASE_URL` or an auto-detected local/Docker IP (see `LocalImageStorageServiceImpl`), which in Docker dev is only reachable from other containers, not from the browser on the host.
 
-**Why a proxy?** Images are stored at `uploads/incidents/<uuid>.jpg` on the backend server. In Docker, the URL stored in the DB uses the Docker service name (`http://reporthole-be:8080/...`) which the browser cannot resolve. The proxy rewrites the URL using `INTERNAL_API_URL` and fetches the image server-side, then streams the response to the browser.
-
-Usage in components:
-```tsx
-<img src={`/api/image-proxy?url=${encodeURIComponent(incident.imageUrl)}`} />
-```
+Only the filename is trusted from the incoming `url` query param (validated against the backend's `<uuid>.jpg` naming convention) — the request is always re-issued against `INTERNAL_API_URL` + `/uploads/incidents/<filename>`, so the param can't redirect this server-side fetch at an arbitrary host. `/uploads/**` is `permitAll` on the backend (see `SecurityConfig`), so no `Authorization` header is needed.
 
 ---
 
-### `/api/ml/predict` — ML inference proxy
+### `/api/auth/login` — login
 
-**File:** `app/api/ml/predict/route.ts`
+**File:** `app/api/auth/login/route.ts`
 
-Forwards dashcam frame images from the browser to the `reporthole-ml` FastAPI inference service.
+Forwards `POST /auth/login` to the backend, then converts the token in the response body into an `HttpOnly`, `Secure` cookie instead of returning it to client JS. Also sets plain (non-`HttpOnly`) `reporthole_role`, `reporthole_user_id` and `reporthole_token_exp` cookies the UI reads directly (role-based redirects, the "is someone logged in" check, the session-expiry countdown).
 
-**Why a proxy?** Keeps the ML service address (`http://localhost:8001`) server-side so the browser doesn't need direct access to it. Also allows adding auth headers or request preprocessing without changing the dashcam client code.
+---
+
+### `/api/auth/logout` — logout
+
+**File:** `app/api/auth/logout/route.ts`
+
+Invalidates the session server-side (best-effort call to the backend's `POST /auth/logout`) and clears every session cookie via the response's `Set-Cookie` headers — the only way to clear `reporthole_token` now that it's `HttpOnly`.
 
 ---
 
